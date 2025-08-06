@@ -44,12 +44,15 @@ export default function Navigation({ user }: NavigationProps) {
     logoutMutation.mutate();
   };
 
-  const navItems = [
-    { href: "/", label: "Dashboard", current: location === "/" },
-    { href: "/deals", label: "My Deals", current: location === "/deals" },
-    { href: "/rewards", label: "Rewards", current: location === "/rewards" },
-    ...(user.role === "admin" ? [{ href: "/admin", label: "Admin", current: location === "/admin" }] : []),
-  ];
+  const navItems = user.role === "admin" 
+    ? [
+        { href: "/admin", label: "Admin Panel", current: location === "/admin" },
+      ]
+    : [
+        { href: "/", label: "Dashboard", current: location === "/" },
+        { href: "/deals", label: "My Deals", current: location === "/deals" },
+        { href: "/rewards", label: "Rewards", current: location === "/rewards" },
+      ];
 
   const userInitials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
 
