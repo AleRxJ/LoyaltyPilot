@@ -224,27 +224,22 @@ export default function Login() {
                     )}
                   />
                 </div>
-                <FormField
-                  control={registerForm.control}
-                  name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Username</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="johnsmith"
-                          data-testid="input-register-username"
-                          value={field.value}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          name={field.name}
-                          ref={field.ref}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                <div className="space-y-2">
+                  <label htmlFor="username" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Username
+                  </label>
+                  <Input
+                    id="username"
+                    placeholder="johnsmith"
+                    data-testid="input-register-username"
+                    {...registerForm.register("username")}
+                  />
+                  {registerForm.formState.errors.username && (
+                    <p className="text-sm font-medium text-destructive">
+                      {registerForm.formState.errors.username.message}
+                    </p>
                   )}
-                />
+                </div>
                 <FormField
                   control={registerForm.control}
                   name="email"
