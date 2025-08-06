@@ -51,6 +51,7 @@ export default function Login() {
       lastName: "",
       country: "",
     },
+    mode: "onChange",
   });
 
   const loginMutation = useMutation({
@@ -210,19 +211,26 @@ export default function Login() {
                 <FormField
                   control={registerForm.control}
                   name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Username</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="johnsmith"
-                          data-testid="input-register-username"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    console.log("Username field render:", field);
+                    return (
+                      <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="johnsmith"
+                            data-testid="input-register-username"
+                            onChange={(e) => {
+                              console.log("Username onChange:", e.target.value);
+                              field.onChange(e);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
                 <FormField
                   control={registerForm.control}
