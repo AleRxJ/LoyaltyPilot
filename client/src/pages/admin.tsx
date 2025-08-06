@@ -39,8 +39,8 @@ export default function Admin() {
   const [isRewardModalOpen, setIsRewardModalOpen] = useState(false);
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
   const [reportFilters, setReportFilters] = useState({
-    country: "",
-    partnerLevel: "",
+    country: "all",
+    partnerLevel: "all",
     startDate: "",
     endDate: "",
   });
@@ -301,7 +301,7 @@ export default function Admin() {
                       <SelectValue placeholder="All Countries" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Countries</SelectItem>
+                      <SelectItem value="all">All Countries</SelectItem>
                       <SelectItem value="US">United States</SelectItem>
                       <SelectItem value="CA">Canada</SelectItem>
                       <SelectItem value="MX">Mexico</SelectItem>
@@ -319,7 +319,7 @@ export default function Admin() {
                       <SelectValue placeholder="All Levels" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Levels</SelectItem>
+                      <SelectItem value="all">All Levels</SelectItem>
                       <SelectItem value="bronze">Bronze</SelectItem>
                       <SelectItem value="silver">Silver</SelectItem>
                       <SelectItem value="gold">Gold</SelectItem>

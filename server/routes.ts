@@ -312,8 +312,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const filters = {
-        country: req.query.country as string,
-        partnerLevel: req.query.partnerLevel as string,
+        country: req.query.country === "all" ? undefined : req.query.country as string,
+        partnerLevel: req.query.partnerLevel === "all" ? undefined : req.query.partnerLevel as string,
         startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
         endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
       };
