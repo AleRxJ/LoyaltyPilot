@@ -1,0 +1,116 @@
+📛 Nombre del Proyecto:
+Loyalty Program Platform (Plataforma de Programa de Lealtad)
+
+📌 Descripción General:
+Crear una plataforma web autoadministrable en PHP, jQuery, HTML y CSS (sin frameworks modernos), para la gestión de un programa de lealtad de fabricantes y distribuidores de productos (hardware y software). El sistema permitirá a los usuarios acumular puntos por ventas realizadas, redimir premios y visualizar su historial. Además, los administradores podrán gestionar usuarios, deals, reportes y campañas.
+
+🎯 Objetivo Principal:
+Recompensar y fidelizar a vendedores, distribuidores y partners a través de un sistema de puntos basado en sus ventas, con funcionalidades administrativas y reportes por país, usuario, nivel de partner, y más.
+
+👥 Tipos de Clientes y Usuarios:
+
+Fabricantes
+
+Distribuidores
+
+Partners (con niveles jerárquicos opcionales)
+
+Vendedores internos
+
+Distribuidores
+
+Partners
+
+Vendedores internos
+
+🏆 Métricas para Otorgar Recompensas:
+
+Software:
+
+Cantidad de licencias
+
+Monto en miles de dólares
+
+Fechas específicas de cierre de “Deals”
+
+Cantidad total de deals
+
+Hardware:
+
+Cantidad de dispositivos
+
+Monto en miles de dólares
+
+Fechas específicas de cierre de “Deals”
+
+Cantidad total de deals
+
+👤 Funcionalidades del Usuario Final:
+
+Registro por invitación (con validación)
+
+Edición de perfil
+
+Recuperar contraseña
+
+Visualizar:
+
+Puntos acumulados
+
+Ventas aprobadas y pendientes
+
+Estado de redención de premios
+
+🔐 Funcionalidades Administrativas:
+
+Crear y aprobar nuevos usuarios
+
+Auditoría y aprobación de deals registrados
+
+Gestión de redención de premios
+
+Configuración de periodos de acumulación y vencimiento de puntos
+
+Administración de promociones aceleradas (por ejemplo, campañas trimestrales)
+
+Gestión de premios (como e-Gift Cards)
+
+Envío de correos electrónicos automáticos:
+
+Notificaciones
+
+Informativos
+
+Promocionales
+
+📊 Reportes Administrativos (exportables o imprimibles):
+
+Por país
+
+Por nivel de partner
+
+Por periodo de tiempo
+
+Usuarios registrados
+
+Ventas registradas
+
+Premios canjeados
+
+Premios sin canjear
+
+Premios entregados
+
+Premios sin entregar
+
+🌐 Tecnologías a Utilizar:
+
+Frontend: HTML5, CSS3, jQuery (para AJAX e interacciones dinámicas)
+
+Backend: PHP puro (sin framework), estructurado en archivos independientes (MVC opcional)
+
+Base de Datos: MySQL o MariaDB
+
+Gestión de sesiones: PHP sessions (login/logout con permisos por rol)
+
+Internacionalización: Soporte multilenguaje (Español, Inglés, Portugués), usando archivos de idioma .php o .json
