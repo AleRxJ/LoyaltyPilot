@@ -21,8 +21,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Store user in session
-      (req as any).session.userId = user.id;
-      (req as any).session.userRole = user.role;
+      if (req.session) {
+        req.session.userId = user.id;
+        req.session.userRole = user.role;
+      }
 
       res.json({ 
         id: user.id, 
@@ -66,12 +68,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/auth/logout", (req, res) => {
-    (req as any).session.destroy();
-    res.json({ message: "Logged out" });
+    if (req.session) {
+      req.session.destroy((err) => {
+        if (err) {
+          return res.status(500).json({ message: "Could not log out" });
+        }
+        res.json({ message: "Logged out" });
+      });
+    } else {
+      res.json({ message: "Logged out" });
+    }
   });
 
   app.get("/api/auth/me", async (req, res) => {
-    const userId = (req as any).session?.userId;
+    const userId = req.session?.userId;
     if (!userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -95,7 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // User routes
   app.get("/api/users/stats", async (req, res) => {
-    const userId = (req as any).session?.userId;
+    const userId = req.session?.userId;
     if (!userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -110,7 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Deal routes
   app.post("/api/deals", async (req, res) => {
-    const userId = (req as any).session?.userId;
+    const userId = req.session?.userId;
     if (!userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -128,7 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/deals", async (req, res) => {
-    const userId = (req as any).session?.userId;
+    const userId = req.session?.userId;
     if (!userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -142,7 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/deals/recent", async (req, res) => {
-    const userId = (req as any).session?.userId;
+    const userId = req.session?.userId;
     if (!userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -157,8 +167,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/deals/:id/approve", async (req, res) => {
-    const userRole = (req as any).session?.userRole;
-    const userId = (req as any).session?.userId;
+    const userRole = req.session?.userRole;
+    const userId = req.session?.userId;
     
     if (userRole !== "admin") {
       return res.status(403).json({ message: "Admin access required" });
@@ -176,7 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/deals/:id/reject", async (req, res) => {
-    const userRole = (req as any).session?.userRole;
+    const userRole = req.session?.userRole;
     
     if (userRole !== "admin") {
       return res.status(403).json({ message: "Admin access required" });
@@ -204,7 +214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/rewards/:id/redeem", async (req, res) => {
-    const userId = (req as any).session?.userId;
+    const userId = req.session?.userId;
     if (!userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -222,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/user-rewards", async (req, res) => {
-    const userId = (req as any).session?.userId;
+    const userId = req.session?.userId;
     if (!userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -237,7 +247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Points routes
   app.get("/api/points/history", async (req, res) => {
-    const userId = (req as any).session?.userId;
+    const userId = req.session?.userId;
     if (!userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -252,7 +262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin routes
   app.get("/api/admin/users", async (req, res) => {
-    const userRole = (req as any).session?.userRole;
+    const userRole = req.session?.userRole;
     if (userRole !== "admin") {
       return res.status(403).json({ message: "Admin access required" });
     }
@@ -266,7 +276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/admin/deals", async (req, res) => {
-    const userRole = (req as any).session?.userRole;
+    const userRole = req.session?.userRole;
     if (userRole !== "admin") {
       return res.status(403).json({ message: "Admin access required" });
     }
@@ -280,7 +290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/admin/deals/pending", async (req, res) => {
-    const userRole = (req as any).session?.userRole;
+    const userRole = req.session?.userRole;
     if (userRole !== "admin") {
       return res.status(403).json({ message: "Admin access required" });
     }
@@ -294,7 +304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/admin/reports", async (req, res) => {
-    const userRole = (req as any).session?.userRole;
+    const userRole = req.session?.userRole;
     if (userRole !== "admin") {
       return res.status(403).json({ message: "Admin access required" });
     }
