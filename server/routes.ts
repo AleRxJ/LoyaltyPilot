@@ -38,6 +38,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Login error:", error);
+      console.error("Request body:", req.body);
       res.status(500).json({ message: "Login failed" });
     }
   });
