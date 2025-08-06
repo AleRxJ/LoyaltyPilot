@@ -132,9 +132,13 @@ export default function Login() {
                       <FormLabel>Username</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
                           placeholder="Enter your username"
                           data-testid="input-username"
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage />
@@ -149,10 +153,14 @@ export default function Login() {
                       <FormLabel>Password</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
                           type="password"
                           placeholder="Enter your password"
                           data-testid="input-password"
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage />
@@ -181,9 +189,13 @@ export default function Login() {
                         <FormLabel>First Name</FormLabel>
                         <FormControl>
                           <Input
-                            {...field}
                             placeholder="John"
                             data-testid="input-firstName"
+                            value={field.value}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            name={field.name}
+                            ref={field.ref}
                           />
                         </FormControl>
                         <FormMessage />
@@ -198,9 +210,13 @@ export default function Login() {
                         <FormLabel>Last Name</FormLabel>
                         <FormControl>
                           <Input
-                            {...field}
                             placeholder="Smith"
                             data-testid="input-lastName"
+                            value={field.value}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            name={field.name}
+                            ref={field.ref}
                           />
                         </FormControl>
                         <FormMessage />
@@ -211,26 +227,23 @@ export default function Login() {
                 <FormField
                   control={registerForm.control}
                   name="username"
-                  render={({ field }) => {
-                    console.log("Username field render:", field);
-                    return (
-                      <FormItem>
-                        <FormLabel>Username</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="johnsmith"
-                            data-testid="input-register-username"
-                            onChange={(e) => {
-                              console.log("Username onChange:", e.target.value);
-                              field.onChange(e);
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="johnsmith"
+                          data-testid="input-register-username"
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
                 <FormField
                   control={registerForm.control}
@@ -240,10 +253,14 @@ export default function Login() {
                       <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
                           type="email"
                           placeholder="john@example.com"
                           data-testid="input-email"
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage />
@@ -258,10 +275,14 @@ export default function Login() {
                       <FormLabel>Password</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
                           type="password"
                           placeholder="Create a password"
                           data-testid="input-register-password"
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage />
