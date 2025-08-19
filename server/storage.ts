@@ -304,6 +304,18 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users).orderBy(desc(users.createdAt));
   }
 
+  async updateUserRole(userId: string, role: "user" | "admin", partnerLevel: "bronze" | "silver" | "gold" | "platinum"): Promise<User | undefined> {
+    const [updatedUser] = await db.update(users)
+      .set({ 
+        role, 
+        partnerLevel,
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser || undefined;
+  }
+
   async getAllDeals(): Promise<Deal[]> {
     return await db.select().from(deals).orderBy(desc(deals.createdAt));
   }

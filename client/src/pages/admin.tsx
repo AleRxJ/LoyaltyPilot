@@ -120,12 +120,36 @@ export default function Admin() {
     },
   });
 
+  const updateUserRoleMutation = useMutation({
+    mutationFn: async ({ userId, role, partnerLevel }: { userId: string; role: string; partnerLevel: string }) => {
+      return apiRequest("PATCH", `/api/admin/users/${userId}/role`, { role, partnerLevel });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "User role updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user role",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleApproveDeal = (dealId: string) => {
     approveDealMutation.mutate(dealId);
   };
 
   const handleRejectDeal = (dealId: string) => {
     rejectDealMutation.mutate(dealId);
+  };
+
+  const handleUpdateUserRole = (userId: string, role: string, partnerLevel: string) => {
+    updateUserRoleMutation.mutate({ userId, role, partnerLevel });
   };
 
   const handleExportReport = () => {
@@ -440,6 +464,9 @@ export default function Admin() {
                           User
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Role
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Partner Level
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -450,6 +477,9 @@ export default function Admin() {
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Joined
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
                         </th>
                       </tr>
                     </thead>
@@ -465,9 +495,36 @@ export default function Admin() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge variant="outline">
-                              {user.partnerLevel.charAt(0).toUpperCase() + user.partnerLevel.slice(1)}
-                            </Badge>
+                            <Select
+                              value={user.role}
+                              onValueChange={(newRole) => handleUpdateUserRole(user.id, newRole, user.partnerLevel)}
+                              disabled={updateUserRoleMutation.isPending}
+                            >
+                              <SelectTrigger className="w-24" data-testid={`select-role-${user.id}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="user">User</SelectItem>
+                                <SelectItem value="admin">Admin</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <Select
+                              value={user.partnerLevel}
+                              onValueChange={(newLevel) => handleUpdateUserRole(user.id, user.role, newLevel)}
+                              disabled={updateUserRoleMutation.isPending}
+                            >
+                              <SelectTrigger className="w-32" data-testid={`select-partner-level-${user.id}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="bronze">Bronze</SelectItem>
+                                <SelectItem value="silver">Silver</SelectItem>
+                                <SelectItem value="gold">Gold</SelectItem>
+                                <SelectItem value="platinum">Platinum</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {user.country}
@@ -479,6 +536,13 @@ export default function Admin() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {formatDate(user.createdAt.toString())}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {updateUserRoleMutation.isPending ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                            ) : (
+                              <span className="text-green-600">✓</span>
+                            )}
                           </td>
                         </tr>
                       ))}
