@@ -4,6 +4,7 @@ import Uppy from "@uppy/core";
 import { DashboardModal } from "@uppy/react";
 import "@uppy/core/dist/style.min.css";
 import "@uppy/dashboard/dist/style.min.css";
+import AwsS3 from "@uppy/aws-s3";
 import type { UploadResult } from "@uppy/core";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
@@ -45,7 +46,7 @@ export function CSVUploader({
       },
       autoProceed: false,
     })
-      .use(require('@uppy/aws-s3'), {
+      .use(AwsS3, {
         shouldUseMultipart: false,
         getUploadParameters: onGetUploadParameters,
       })
