@@ -1,0 +1,6 @@
+usuario,valor,status,tipo
+user1,15000,pending,software
+user2,25000,approved,hardware
+user3,8000,rejected,software
+user4,50000,pending,hardware
+user5,12000,approved,software

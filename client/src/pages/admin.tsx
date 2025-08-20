@@ -177,7 +177,7 @@ export default function Admin() {
   });
 
   const handleGetCSVUploadParameters = async () => {
-    const response = await apiRequest("POST", "/api/admin/csv/upload-url");
+    const response: any = await apiRequest("POST", "/api/admin/csv/upload-url");
     return {
       method: 'PUT' as const,
       url: response.uploadURL,
@@ -186,7 +186,7 @@ export default function Admin() {
 
   const handleCSVUploadComplete = (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
     if (result.successful && result.successful.length > 0) {
-      const uploadURL = result.successful[0].uploadURL;
+      const uploadURL = (result.successful[0] as any).uploadURL;
       if (uploadURL) {
         processCSVMutation.mutate(uploadURL);
       }

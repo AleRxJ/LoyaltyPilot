@@ -77,7 +77,6 @@ export function CSVUploader({
         onRequestClose={() => setShowModal(false)}
         proudlyDisplayPoweredByUppy={false}
         note="Upload a CSV file with columns: usuario, valor, status, tipo"
-        height={400}
       />
     </div>
   );
