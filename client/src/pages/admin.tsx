@@ -19,13 +19,16 @@ import {
   Download,
   Calendar,
   MapPin,
-  Award
+  Award,
+  Upload
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import RewardModal from "@/components/modals/reward-modal";
+import { CSVUploader } from "@/components/CSVUploader";
 import type { User, Deal, Reward } from "@shared/schema";
 import type { AuthUser } from "@/lib/auth";
+import type { UploadResult } from '@uppy/core';
 
 interface ReportsData {
   userCount: number;
@@ -150,6 +153,44 @@ export default function Admin() {
 
   const handleUpdateUserRole = (userId: string, role: string, partnerLevel: string) => {
     updateUserRoleMutation.mutate({ userId, role, partnerLevel });
+  };
+
+  const processCSVMutation = useMutation({
+    mutationFn: async (csvPath: string) => {
+      return apiRequest("POST", `/api/admin/csv/process`, { csvPath });
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "Success",
+        description: `${data.message}${data.errors ? `. ${data.errors.length} errors occurred.` : ''}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/deals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/deals/pending"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process CSV file",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleGetCSVUploadParameters = async () => {
+    const response = await apiRequest("POST", "/api/admin/csv/upload-url");
+    return {
+      method: 'PUT' as const,
+      url: response.uploadURL,
+    };
+  };
+
+  const handleCSVUploadComplete = (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (result.successful && result.successful.length > 0) {
+      const uploadURL = result.successful[0].uploadURL;
+      if (uploadURL) {
+        processCSVMutation.mutate(uploadURL);
+      }
+    }
   };
 
   const handleExportReport = () => {
@@ -562,7 +603,20 @@ export default function Admin() {
         <TabsContent value="deals" className="mt-6">
           <Card className="shadow-material">
             <CardHeader>
-              <CardTitle>Deal Management</CardTitle>
+              <div className="flex justify-between items-center">
+                <CardTitle>Deal Management</CardTitle>
+                <CSVUploader
+                  onGetUploadParameters={handleGetCSVUploadParameters}
+                  onComplete={handleCSVUploadComplete}
+                  buttonClassName="bg-accent-600 hover:bg-accent-700"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import Deals CSV
+                </CSVUploader>
+              </div>
+              <div className="text-sm text-gray-600 mt-2">
+                CSV format: usuario, valor, status, tipo (where status = pending/approved/rejected, tipo = software/hardware)
+              </div>
             </CardHeader>
             <CardContent>
               {dealsLoading ? (
