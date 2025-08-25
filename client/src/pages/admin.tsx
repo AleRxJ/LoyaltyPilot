@@ -605,36 +605,14 @@ export default function Admin() {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>Deal Management</CardTitle>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => {
-                      console.log("Current user:", currentUser);
-                      console.log("User role:", currentUser?.role);
-                      toast({
-                        title: "Debug Info",
-                        description: `User: ${currentUser?.username}, Role: ${currentUser?.role}`,
-                      });
-                    }}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Debug User
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      console.log("CSV Upload clicked");
-                      toast({
-                        title: "CSV Upload",
-                        description: "Button clicked successfully",
-                      });
-                    }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                    data-testid="button-upload-csv-test"
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Import CSV
-                  </Button>
-                </div>
+                <CSVUploader
+                  onGetUploadParameters={handleGetCSVUploadParameters}
+                  onComplete={handleCSVUploadComplete}
+                  buttonClassName="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import Deals CSV
+                </CSVUploader>
               </div>
               <div className="text-sm text-gray-600 mt-2">
                 CSV format: usuario, valor, status, tipo (where status = pending/approved/rejected, tipo = software/hardware)
