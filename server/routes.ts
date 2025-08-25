@@ -457,6 +457,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Users CSV upload URL endpoint
+  app.post("/api/admin/csv/users/upload-url", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { ObjectStorageService } = await import("./objectStorage");
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting users CSV upload URL:", error);
+      res.status(500).json({ message: "Failed to get upload URL" });
+    }
+  });
+
   app.post("/api/admin/csv/process", async (req, res) => {
     const userRole = req.session?.userRole;
     if (userRole !== "admin") {
@@ -593,6 +611,174 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error("Error processing CSV:", error);
+      res.status(500).json({ message: "Failed to process CSV file" });
+    }
+  });
+
+  // Users CSV processing endpoint
+  app.post("/api/admin/csv/users/process", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { csvPath } = req.body;
+      if (!csvPath) {
+        return res.status(400).json({ message: "CSV path is required" });
+      }
+
+      const { ObjectStorageService } = await import("./objectStorage");
+      const objectStorageService = new ObjectStorageService();
+      
+      // Download and parse CSV content
+      const objectPath = objectStorageService.normalizeObjectEntityPath(csvPath);
+      const csvContent = await objectStorageService.downloadCSVContent(objectPath);
+      
+      // Parse CSV content
+      const lines = csvContent.trim().split('\n');
+      if (lines.length < 2) {
+        return res.status(400).json({ message: "CSV file must have at least a header and one data row" });
+      }
+
+      const header = lines[0].toLowerCase().split(',').map(h => h.trim());
+      const expectedHeaders = ['first name', 'last name', 'username', 'email', 'password', 'country', 'role', 'partner level'];
+      
+      // Validate headers
+      const hasAllHeaders = expectedHeaders.every(h => header.includes(h));
+      if (!hasAllHeaders) {
+        return res.status(400).json({ 
+          message: `CSV must have columns: ${expectedHeaders.join(', ')}. Found: ${header.join(', ')}` 
+        });
+      }
+
+      const firstNameIndex = header.indexOf('first name');
+      const lastNameIndex = header.indexOf('last name');
+      const usernameIndex = header.indexOf('username');
+      const emailIndex = header.indexOf('email');
+      const passwordIndex = header.indexOf('password');
+      const countryIndex = header.indexOf('country');
+      const roleIndex = header.indexOf('role');
+      const partnerLevelIndex = header.indexOf('partner level');
+
+      const usersToInsert = [];
+      const errors = [];
+
+      // Process each data row
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(',').map(cell => cell.trim());
+        
+        if (row.length !== header.length) {
+          errors.push(`Row ${i + 1}: Column count mismatch`);
+          continue;
+        }
+
+        const firstName = row[firstNameIndex];
+        const lastName = row[lastNameIndex];
+        const username = row[usernameIndex];
+        const email = row[emailIndex];
+        const password = row[passwordIndex];
+        const country = row[countryIndex];
+        const role = row[roleIndex].toLowerCase();
+        const partnerLevel = row[partnerLevelIndex].toLowerCase();
+
+        // Validate data
+        if (!firstName) {
+          errors.push(`Row ${i + 1}: First name is required`);
+          continue;
+        }
+
+        if (!lastName) {
+          errors.push(`Row ${i + 1}: Last name is required`);
+          continue;
+        }
+
+        if (!username || username.length < 3) {
+          errors.push(`Row ${i + 1}: Username is required and must be at least 3 characters`);
+          continue;
+        }
+
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          errors.push(`Row ${i + 1}: Valid email is required`);
+          continue;
+        }
+
+        if (!password || password.length < 6) {
+          errors.push(`Row ${i + 1}: Password is required and must be at least 6 characters`);
+          continue;
+        }
+
+        if (!country) {
+          errors.push(`Row ${i + 1}: Country is required`);
+          continue;
+        }
+
+        if (!['user', 'admin'].includes(role)) {
+          errors.push(`Row ${i + 1}: Role must be either 'user' or 'admin'`);
+          continue;
+        }
+
+        if (!['bronze', 'silver', 'gold', 'platinum'].includes(partnerLevel)) {
+          errors.push(`Row ${i + 1}: Partner level must be bronze, silver, gold, or platinum`);
+          continue;
+        }
+
+        // Check if user already exists
+        try {
+          const existingUserByUsername = await storage.getUserByUsername(username);
+          if (existingUserByUsername) {
+            errors.push(`Row ${i + 1}: Username '${username}' already exists`);
+            continue;
+          }
+
+          const existingUserByEmail = await storage.getUserByEmail(email);
+          if (existingUserByEmail) {
+            errors.push(`Row ${i + 1}: Email '${email}' already exists`);
+            continue;
+          }
+        } catch (error) {
+          errors.push(`Row ${i + 1}: Error checking existing user`);
+          continue;
+        }
+
+        usersToInsert.push({
+          firstName,
+          lastName,
+          username,
+          email,
+          password,
+          country,
+          role: role as "user" | "admin",
+          partnerLevel: partnerLevel as "bronze" | "silver" | "gold" | "platinum",
+          isActive: true,
+        });
+      }
+
+      // Insert users in batch
+      let createdCount = 0;
+      for (const userData of usersToInsert) {
+        try {
+          const hashedPassword = await bcrypt.hash(userData.password, 10);
+          await storage.createUser({
+            ...userData,
+            password: hashedPassword,
+          });
+          createdCount++;
+        } catch (error) {
+          console.error("Error creating user:", error);
+          errors.push(`Failed to create user ${userData.username}`);
+        }
+      }
+
+      res.json({
+        message: `Successfully created ${createdCount} users`,
+        createdCount,
+        errorCount: errors.length,
+        errors: errors.slice(0, 10), // Return first 10 errors only
+      });
+
+    } catch (error) {
+      console.error("Users CSV processing error:", error);
       res.status(500).json({ message: "Failed to process CSV file" });
     }
   });

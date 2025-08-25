@@ -247,6 +247,44 @@ export default function Admin() {
     deleteUserMutation.mutate(userId);
   };
 
+  // Users CSV processing mutation
+  const processUsersCSVMutation = useMutation({
+    mutationFn: async (csvPath: string) => {
+      return apiRequest("POST", `/api/admin/csv/users/process`, { csvPath });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "Success",
+        description: `${data.message}${data.errors && data.errors.length > 0 ? `. ${data.errorCount} errors occurred.` : ''}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process users CSV file",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleGetUsersCSVUploadParameters = async () => {
+    const response: any = await apiRequest("POST", "/api/admin/csv/users/upload-url");
+    return {
+      method: 'PUT' as const,
+      url: response.uploadURL,
+    };
+  };
+
+  const handleUsersCSVUploadComplete = (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (result.successful && result.successful.length > 0) {
+      const uploadURL = (result.successful[0] as any).uploadURL;
+      if (uploadURL) {
+        processUsersCSVMutation.mutate(uploadURL);
+      }
+    }
+  };
+
   const processCSVMutation = useMutation({
     mutationFn: async (csvPath: string) => {
       return apiRequest("POST", `/api/admin/csv/process`, { csvPath });
@@ -583,13 +621,22 @@ export default function Admin() {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>User Management</CardTitle>
-                <Dialog open={isCreateUserModalOpen} onOpenChange={setIsCreateUserModalOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="button-create-user">
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Create User
-                    </Button>
-                  </DialogTrigger>
+                <div className="flex space-x-2">
+                  <CSVUploader
+                    onGetUploadParameters={handleGetUsersCSVUploadParameters}
+                    onComplete={handleUsersCSVUploadComplete}
+                    buttonClassName="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Import Users CSV
+                  </CSVUploader>
+                  <Dialog open={isCreateUserModalOpen} onOpenChange={setIsCreateUserModalOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="button-create-user">
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Create User
+                      </Button>
+                    </DialogTrigger>
                   <DialogContent className="sm:max-w-[600px]">
                     <DialogHeader>
                       <DialogTitle>Create New User</DialogTitle>
@@ -753,6 +800,10 @@ export default function Admin() {
                     </Form>
                   </DialogContent>
                 </Dialog>
+                </div>
+              </div>
+              <div className="text-sm text-gray-600 mt-2">
+                CSV format: First Name, Last Name, Username, Email, Password, Country, Role, Partner Level
               </div>
             </CardHeader>
             <CardContent>
