@@ -17,7 +17,7 @@ interface NavigationProps {
 }
 
 export default function Navigation({ user }: NavigationProps) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState(getLanguage());
   const queryClient = useQueryClient();
@@ -31,6 +31,8 @@ export default function Navigation({ user }: NavigationProps) {
         title: "Success",
         description: "Logged out successfully",
       });
+      // Redirect to main page after logout
+      setLocation("/");
     },
   });
 
