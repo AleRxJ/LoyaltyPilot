@@ -5,6 +5,14 @@ import bcrypt from "bcryptjs";
 import { insertUserSchema, insertDealSchema, insertRewardSchema } from "@shared/schema";
 import { z } from "zod";
 
+// Extend session data interface
+declare module 'express-session' {
+  interface SessionData {
+    userId?: string;
+    userRole?: string;
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.post("/api/auth/login", async (req, res) => {

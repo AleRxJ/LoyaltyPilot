@@ -50,9 +50,9 @@ export default function DealModal({ isOpen, onClose }: DealModalProps) {
     mutationFn: async (data: DealForm) => {
       const dealData = {
         ...data,
-        dealValue: parseFloat(data.dealValue),
+        dealValue: data.dealValue, // Keep as string
         quantity: parseInt(data.quantity),
-        closeDate: new Date(data.closeDate).toISOString(),
+        closeDate: new Date(data.closeDate),
       };
       return apiRequest("POST", "/api/deals", dealData);
     },
