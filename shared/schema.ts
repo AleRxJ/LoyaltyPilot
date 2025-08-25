@@ -150,6 +150,8 @@ export const insertDealSchema = createInsertSchema(deals).omit({
   approvedAt: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  closeDate: z.string().transform((str) => new Date(str)),
 });
 
 export const insertRewardSchema = createInsertSchema(rewards).omit({

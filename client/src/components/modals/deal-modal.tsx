@@ -52,7 +52,7 @@ export default function DealModal({ isOpen, onClose }: DealModalProps) {
         ...data,
         dealValue: data.dealValue, // Keep as string
         quantity: parseInt(data.quantity),
-        closeDate: new Date(data.closeDate),
+        closeDate: data.closeDate, // Send as string, will be transformed by schema
       };
       return apiRequest("POST", "/api/deals", dealData);
     },
