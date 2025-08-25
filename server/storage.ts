@@ -2,7 +2,8 @@ import {
   users, deals, rewards, userRewards, pointsHistory, campaigns,
   type User, type InsertUser, type Deal, type InsertDeal, 
   type Reward, type InsertReward, type UserReward, type InsertUserReward,
-  type PointsHistory, type InsertPointsHistory, type Campaign, type InsertCampaign
+  type PointsHistory, type InsertPointsHistory, type Campaign, type InsertCampaign,
+  type DealWithUser
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, lte, sum, count } from "drizzle-orm";
@@ -52,7 +53,7 @@ export interface IStorage {
 
   // Admin methods
   getAllUsers(): Promise<User[]>;
-  getAllDeals(): Promise<Deal[]>;
+  getAllDeals(): Promise<DealWithUser[]>;
   getReportsData(filters: {
     country?: string;
     partnerLevel?: string;
@@ -316,8 +317,18 @@ export class DatabaseStorage implements IStorage {
     return updatedUser || undefined;
   }
 
-  async getAllDeals(): Promise<Deal[]> {
-    return await db.select().from(deals).orderBy(desc(deals.createdAt));
+  async getAllDeals(): Promise<DealWithUser[]> {
+    const result = await db.select({
+      ...deals,
+      userFirstName: users.firstName,
+      userLastName: users.lastName,
+      userName: users.username
+    })
+    .from(deals)
+    .leftJoin(users, eq(deals.userId, users.id))
+    .orderBy(desc(deals.createdAt));
+
+    return result as DealWithUser[];
   }
 
   async getReportsData(filters: {

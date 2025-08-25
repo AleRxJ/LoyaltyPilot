@@ -188,3 +188,10 @@ export type PointsHistory = typeof pointsHistory.$inferSelect;
 export type InsertPointsHistory = z.infer<typeof insertPointsHistorySchema>;
 export type Campaign = typeof campaigns.$inferSelect;
 export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
+
+// Deal with user information for admin views
+export type DealWithUser = Deal & {
+  userFirstName: string;
+  userLastName: string;
+  userName: string;
+};

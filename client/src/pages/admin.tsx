@@ -61,7 +61,7 @@ export default function Admin() {
     enabled: currentUser?.role === "admin",
   });
 
-  const { data: allDeals, isLoading: dealsLoading } = useQuery<Deal[]>({
+  const { data: allDeals, isLoading: dealsLoading } = useQuery<Array<Deal & { userFirstName?: string; userLastName?: string; userName?: string }>>({
     queryKey: ["/api/admin/deals"],
     enabled: currentUser?.role === "admin",
   });
@@ -631,6 +631,9 @@ export default function Admin() {
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          User
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Product
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -650,6 +653,15 @@ export default function Admin() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {allDeals.map((deal) => (
                         <tr key={deal.id} data-testid={`row-deal-${deal.id}`}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {deal.userFirstName && deal.userLastName 
+                                  ? `${deal.userFirstName} ${deal.userLastName}`
+                                  : deal.userName || 'Unknown User'}
+                              </div>
+                            </div>
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
                               <div className="text-sm font-medium text-gray-900">
