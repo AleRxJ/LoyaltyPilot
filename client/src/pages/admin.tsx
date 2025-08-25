@@ -8,6 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { 
   Users, 
   ClipboardCheck, 
@@ -20,7 +25,8 @@ import {
   Calendar,
   MapPin,
   Award,
-  Upload
+  Upload,
+  UserPlus
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -37,10 +43,26 @@ interface ReportsData {
   redeemedRewards: number;
 }
 
+// User creation form schema
+const createUserSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  country: z.string().min(1, "Country is required"),
+  role: z.enum(["user", "admin"]).default("user"),
+  partnerLevel: z.enum(["bronze", "silver", "gold", "platinum"]).default("bronze"),
+  isActive: z.boolean().default(true),
+});
+
+type CreateUserForm = z.infer<typeof createUserSchema>;
+
 export default function Admin() {
   const [activeTab, setActiveTab] = useState("overview");
   const [isRewardModalOpen, setIsRewardModalOpen] = useState(false);
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
   const [reportFilters, setReportFilters] = useState({
     country: "all",
     partnerLevel: "all",
@@ -50,6 +72,22 @@ export default function Admin() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // User creation form
+  const createUserForm = useForm<CreateUserForm>({
+    resolver: zodResolver(createUserSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+      password: "",
+      firstName: "",
+      lastName: "",
+      country: "",
+      role: "user",
+      partnerLevel: "bronze",
+      isActive: true,
+    },
+  });
 
   // Check if user is admin
   const { data: currentUser } = useQuery<AuthUser>({
@@ -153,6 +191,33 @@ export default function Admin() {
 
   const handleUpdateUserRole = (userId: string, role: string, partnerLevel: string) => {
     updateUserRoleMutation.mutate({ userId, role, partnerLevel });
+  };
+
+  // Create user mutation
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: CreateUserForm) => {
+      return apiRequest("POST", "/api/admin/users", userData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "Success",
+        description: "User created successfully",
+      });
+      setIsCreateUserModalOpen(false);
+      createUserForm.reset();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateUser = (data: CreateUserForm) => {
+    createUserMutation.mutate(data);
   };
 
   const processCSVMutation = useMutation({
@@ -489,7 +554,179 @@ export default function Admin() {
         <TabsContent value="users" className="mt-6">
           <Card className="shadow-material">
             <CardHeader>
-              <CardTitle>User Management</CardTitle>
+              <div className="flex justify-between items-center">
+                <CardTitle>User Management</CardTitle>
+                <Dialog open={isCreateUserModalOpen} onOpenChange={setIsCreateUserModalOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="button-create-user">
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Create User
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                      <DialogTitle>Create New User</DialogTitle>
+                      <DialogDescription>
+                        Add a new user to the loyalty program platform.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <Form {...createUserForm}>
+                      <form onSubmit={createUserForm.handleSubmit(handleCreateUser)} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={createUserForm.control}
+                            name="firstName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>First Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="John" {...field} data-testid="input-first-name" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={createUserForm.control}
+                            name="lastName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Last Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Doe" {...field} data-testid="input-last-name" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <FormField
+                          control={createUserForm.control}
+                          name="username"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Username</FormLabel>
+                              <FormControl>
+                                <Input placeholder="johndoe" {...field} data-testid="input-username" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={createUserForm.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input type="email" placeholder="john@example.com" {...field} data-testid="input-email" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={createUserForm.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="••••••••" {...field} data-testid="input-password" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={createUserForm.control}
+                          name="country"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Country</FormLabel>
+                              <FormControl>
+                                <Input placeholder="United States" {...field} data-testid="input-country" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={createUserForm.control}
+                            name="role"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Role</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger data-testid="select-role">
+                                      <SelectValue placeholder="Select a role" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="user">User</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={createUserForm.control}
+                            name="partnerLevel"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Partner Level</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger data-testid="select-partner-level">
+                                      <SelectValue placeholder="Select partner level" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="bronze">Bronze</SelectItem>
+                                    <SelectItem value="silver">Silver</SelectItem>
+                                    <SelectItem value="gold">Gold</SelectItem>
+                                    <SelectItem value="platinum">Platinum</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <div className="flex justify-end space-x-2 pt-4">
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={() => setIsCreateUserModalOpen(false)}
+                            data-testid="button-cancel-create"
+                          >
+                            Cancel
+                          </Button>
+                          <Button 
+                            type="submit" 
+                            disabled={createUserMutation.isPending}
+                            data-testid="button-submit-create"
+                          >
+                            {createUserMutation.isPending ? "Creating..." : "Create User"}
+                          </Button>
+                        </div>
+                      </form>
+                    </Form>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
             <CardContent>
               {usersLoading ? (
