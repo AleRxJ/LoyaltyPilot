@@ -66,7 +66,7 @@ export default function Admin() {
     enabled: currentUser?.role === "admin",
   });
 
-  const { data: pendingDeals, isLoading: pendingDealsLoading } = useQuery<Deal[]>({
+  const { data: pendingDeals, isLoading: pendingDealsLoading } = useQuery<Array<Deal & { userFirstName?: string; userLastName?: string; userName?: string }>>({
     queryKey: ["/api/admin/deals/pending"],
     enabled: currentUser?.role === "admin",
   });
@@ -449,7 +449,9 @@ export default function Admin() {
                       <div>
                         <h4 className="font-medium">{deal.productName}</h4>
                         <p className="text-sm text-gray-600">
-                          {formatCurrency(deal.dealValue)} • {formatDate(deal.createdAt.toString())}
+                          {deal.userFirstName && deal.userLastName 
+                            ? `${deal.userFirstName} ${deal.userLastName}`
+                            : deal.userName || 'Unknown User'} • {formatCurrency(deal.dealValue)} • {formatDate(deal.createdAt.toString())}
                         </p>
                       </div>
                       <div className="flex space-x-2">

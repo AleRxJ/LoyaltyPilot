@@ -184,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const deal = await storage.approveDeal(req.params.id, userId);
+      const deal = await storage.approveDeal(req.params.id, userId!);
       if (!deal) {
         return res.status(404).json({ message: "Deal not found" });
       }
@@ -470,7 +470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: user.id,
           productType: type as "software" | "hardware",
           productName: `Imported Deal - ${type}`,
-          dealValue: parseFloat(value),
+          dealValue: value, // Keep as string
           quantity: 1,
           closeDate: new Date(),
           clientInfo: `Bulk import from CSV on ${new Date().toISOString()}`,

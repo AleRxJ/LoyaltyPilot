@@ -28,7 +28,7 @@ export interface IStorage {
   createDeal(deal: InsertDeal): Promise<Deal>;
   getDeal(id: string): Promise<Deal | undefined>;
   getUserDeals(userId: string): Promise<Deal[]>;
-  getPendingDeals(): Promise<Deal[]>;
+  getPendingDeals(): Promise<DealWithUser[]>;
   approveDeal(id: string, approvedBy: string): Promise<Deal | undefined>;
   rejectDeal(id: string): Promise<Deal | undefined>;
   getRecentDeals(userId: string, limit?: number): Promise<Deal[]>;
@@ -151,10 +151,32 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(deals.createdAt));
   }
 
-  async getPendingDeals(): Promise<Deal[]> {
-    return await db.select().from(deals)
-      .where(eq(deals.status, "pending"))
-      .orderBy(desc(deals.createdAt));
+  async getPendingDeals(): Promise<DealWithUser[]> {
+    const result = await db.select({
+      id: deals.id,
+      userId: deals.userId,
+      productType: deals.productType,
+      productName: deals.productName,
+      dealValue: deals.dealValue,
+      quantity: deals.quantity,
+      closeDate: deals.closeDate,
+      clientInfo: deals.clientInfo,
+      status: deals.status,
+      pointsEarned: deals.pointsEarned,
+      approvedBy: deals.approvedBy,
+      approvedAt: deals.approvedAt,
+      createdAt: deals.createdAt,
+      updatedAt: deals.updatedAt,
+      userFirstName: users.firstName,
+      userLastName: users.lastName,
+      userName: users.username
+    })
+    .from(deals)
+    .leftJoin(users, eq(deals.userId, users.id))
+    .where(eq(deals.status, "pending"))
+    .orderBy(desc(deals.createdAt));
+
+    return result as DealWithUser[];
   }
 
   async approveDeal(id: string, approvedBy: string): Promise<Deal | undefined> {
@@ -319,7 +341,20 @@ export class DatabaseStorage implements IStorage {
 
   async getAllDeals(): Promise<DealWithUser[]> {
     const result = await db.select({
-      ...deals,
+      id: deals.id,
+      userId: deals.userId,
+      productType: deals.productType,
+      productName: deals.productName,
+      dealValue: deals.dealValue,
+      quantity: deals.quantity,
+      closeDate: deals.closeDate,
+      clientInfo: deals.clientInfo,
+      status: deals.status,
+      pointsEarned: deals.pointsEarned,
+      approvedBy: deals.approvedBy,
+      approvedAt: deals.approvedAt,
+      createdAt: deals.createdAt,
+      updatedAt: deals.updatedAt,
       userFirstName: users.firstName,
       userLastName: users.lastName,
       userName: users.username
