@@ -339,6 +339,13 @@ export class DatabaseStorage implements IStorage {
     return updatedUser || undefined;
   }
 
+  async deleteUser(userId: string): Promise<User | undefined> {
+    const [deletedUser] = await db.delete(users)
+      .where(eq(users.id, userId))
+      .returning();
+    return deletedUser || undefined;
+  }
+
   async getAllDeals(): Promise<DealWithUser[]> {
     const result = await db.select({
       id: deals.id,
