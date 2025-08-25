@@ -135,13 +135,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
+      console.log("Received deal data:", req.body);
       const dealData = insertDealSchema.parse({ ...req.body, userId });
+      console.log("Parsed deal data:", dealData);
       const deal = await storage.createDeal(dealData);
       res.status(201).json(deal);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.log("Validation errors:", error.errors);
         return res.status(400).json({ message: "Invalid data", errors: error.errors });
       }
+      console.log("Deal creation error:", error);
       res.status(500).json({ message: "Failed to create deal" });
     }
   });
