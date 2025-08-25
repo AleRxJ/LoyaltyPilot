@@ -605,14 +605,20 @@ export default function Admin() {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>Deal Management</CardTitle>
-                <CSVUploader
-                  onGetUploadParameters={handleGetCSVUploadParameters}
-                  onComplete={handleCSVUploadComplete}
-                  buttonClassName="bg-accent-600 hover:bg-accent-700"
+                <Button
+                  onClick={() => {
+                    console.log("CSV Upload clicked");
+                    toast({
+                      title: "Debug",
+                      description: "CSV Upload button clicked",
+                    });
+                  }}
+                  className="bg-accent-600 hover:bg-accent-700"
+                  data-testid="button-upload-csv-debug"
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  Import Deals CSV
-                </CSVUploader>
+                  Import Deals CSV (Debug)
+                </Button>
               </div>
               <div className="text-sm text-gray-600 mt-2">
                 CSV format: usuario, valor, status, tipo (where status = pending/approved/rejected, tipo = software/hardware)
