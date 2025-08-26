@@ -230,17 +230,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin reward creation endpoint
   app.post("/api/admin/rewards", async (req, res) => {
+    console.log("POST /api/admin/rewards - Session:", req.session);
+    console.log("POST /api/admin/rewards - Body:", req.body);
+    
     const userRole = req.session?.userRole;
+    console.log("User role:", userRole);
+    
     if (userRole !== "admin") {
+      console.log("Access denied - not admin");
       return res.status(403).json({ message: "Admin access required" });
     }
 
     try {
       const rewardData = insertRewardSchema.parse(req.body);
+      console.log("Parsed reward data:", rewardData);
+      
       const newReward = await storage.createReward(rewardData);
+      console.log("Created reward:", newReward);
+      
       res.status(201).json(newReward);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.log("Validation error:", error.errors);
         return res.status(400).json({ message: "Invalid data", errors: error.errors });
       }
       console.error("Create reward error:", error);
