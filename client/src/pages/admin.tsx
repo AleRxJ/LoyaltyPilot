@@ -113,6 +113,12 @@ export default function Admin() {
     enabled: currentUser?.role === "admin",
   });
 
+  // All reward redemptions query
+  const { data: allRedemptions, isLoading: allRedemptionsLoading } = useQuery<Array<any>>({
+    queryKey: ["/api/admin/rewards/redemptions"],
+    enabled: currentUser?.role === "admin",
+  });
+
   const { data: allDeals, isLoading: dealsLoading } = useQuery<Array<Deal & { userFirstName?: string; userLastName?: string; userName?: string }>>({
     queryKey: ["/api/admin/deals"],
     enabled: currentUser?.role === "admin",
@@ -476,13 +482,14 @@ export default function Admin() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
           <TabsTrigger value="users" data-testid="tab-users">Users</TabsTrigger>
           <TabsTrigger value="pending" data-testid="tab-pending">Pending Users</TabsTrigger>
           <TabsTrigger value="deals" data-testid="tab-deals">Deals</TabsTrigger>
           <TabsTrigger value="rewards" data-testid="tab-rewards">Rewards</TabsTrigger>
           <TabsTrigger value="reward-approvals" data-testid="tab-reward-approvals">Reward Approvals</TabsTrigger>
+          <TabsTrigger value="reward-history" data-testid="tab-reward-history">Reward History</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -1452,6 +1459,101 @@ export default function Admin() {
               ) : (
                 <p className="text-gray-500 text-center py-8" data-testid="text-no-pending-redemptions">
                   No pending reward redemptions
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Reward History Tab */}
+        <TabsContent value="reward-history" className="mt-6">
+          <Card className="shadow-material">
+            <CardHeader>
+              <CardTitle>All Reward Redemptions</CardTitle>
+              <div className="text-sm text-gray-600 mt-2">
+                Complete history of all user reward redemptions
+              </div>
+            </CardHeader>
+            <CardContent>
+              {allRedemptionsLoading ? (
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} className="h-20 w-full" />
+                  ))}
+                </div>
+              ) : allRedemptions && allRedemptions.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          User
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Reward
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Points Cost
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Requested Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Approved By
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Approved Date
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {allRedemptions.map((redemption: any) => (
+                        <tr key={redemption.id} data-testid={`row-redemption-${redemption.id}`}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {redemption.userFirstName} {redemption.userLastName}
+                              </div>
+                              <div className="text-sm text-gray-500">@{redemption.userName}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              {redemption.rewardName}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {redemption.pointsCost?.toLocaleString()} points
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(redemption.redeemedAt.toString())}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <Badge className={`${
+                              redemption.status === 'approved' ? 'bg-green-100 text-green-800' :
+                              redemption.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {redemption.status === 'approved' ? 'Approved' :
+                               redemption.status === 'pending' ? 'Pending' : 'Rejected'}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {redemption.approvedBy ? 'Admin' : '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {redemption.approvedAt ? formatDate(redemption.approvedAt.toString()) : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-8" data-testid="text-no-redemptions">
+                  No reward redemptions found
                 </p>
               )}
             </CardContent>

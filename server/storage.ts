@@ -43,6 +43,8 @@ export interface IStorage {
   approveRewardRedemption(rewardRedemptionId: string, adminId: string): Promise<UserReward | undefined>;
   rejectRewardRedemption(rewardRedemptionId: string, adminId: string, reason?: string): Promise<UserReward | undefined>;
   getPendingRewardRedemptions(): Promise<Array<UserReward & { userName?: string; userFirstName?: string; userLastName?: string; rewardName?: string }>>;
+  getAllRewardRedemptions(): Promise<Array<UserReward & { userName?: string; userFirstName?: string; userLastName?: string; rewardName?: string; pointsCost?: number }>>;
+  getUserRewardsWithDetails(userId: string): Promise<Array<UserReward & { rewardName?: string; pointsCost?: number }>>;
 
   // Points methods
   addPointsHistory(entry: InsertPointsHistory): Promise<PointsHistory>;
@@ -352,6 +354,55 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(userRewards)
       .where(eq(userRewards.userId, userId))
       .orderBy(desc(userRewards.redeemedAt));
+  }
+
+  async getAllRewardRedemptions(): Promise<Array<UserReward & { userName?: string; userFirstName?: string; userLastName?: string; rewardName?: string; pointsCost?: number }>> {
+    const result = await db.select({
+      id: userRewards.id,
+      userId: userRewards.userId,
+      rewardId: userRewards.rewardId,
+      status: userRewards.status,
+      approvedBy: userRewards.approvedBy,
+      approvedAt: userRewards.approvedAt,
+      rejectionReason: userRewards.rejectionReason,
+      redeemedAt: userRewards.redeemedAt,
+      deliveredAt: userRewards.deliveredAt,
+      deliveryAddress: userRewards.deliveryAddress,
+      userName: users.username,
+      userFirstName: users.firstName,
+      userLastName: users.lastName,
+      rewardName: rewards.name,
+      pointsCost: rewards.pointsCost,
+    })
+    .from(userRewards)
+    .leftJoin(users, eq(userRewards.userId, users.id))
+    .leftJoin(rewards, eq(userRewards.rewardId, rewards.id))
+    .orderBy(desc(userRewards.redeemedAt));
+
+    return result as Array<UserReward & { userName?: string; userFirstName?: string; userLastName?: string; rewardName?: string; pointsCost?: number }>;
+  }
+
+  async getUserRewardsWithDetails(userId: string): Promise<Array<UserReward & { rewardName?: string; pointsCost?: number }>> {
+    const result = await db.select({
+      id: userRewards.id,
+      userId: userRewards.userId,
+      rewardId: userRewards.rewardId,
+      status: userRewards.status,
+      approvedBy: userRewards.approvedBy,
+      approvedAt: userRewards.approvedAt,
+      rejectionReason: userRewards.rejectionReason,
+      redeemedAt: userRewards.redeemedAt,
+      deliveredAt: userRewards.deliveredAt,
+      deliveryAddress: userRewards.deliveryAddress,
+      rewardName: rewards.name,
+      pointsCost: rewards.pointsCost,
+    })
+    .from(userRewards)
+    .leftJoin(rewards, eq(userRewards.rewardId, rewards.id))
+    .where(eq(userRewards.userId, userId))
+    .orderBy(desc(userRewards.redeemedAt));
+
+    return result as Array<UserReward & { rewardName?: string; pointsCost?: number }>;
   }
 
   async addPointsHistory(entry: InsertPointsHistory): Promise<PointsHistory> {

@@ -284,45 +284,58 @@ export default function Rewards() {
               ))}
             </div>
           ) : userRewards && userRewards.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {userRewards.map((userReward) => {
-                const reward = rewards?.find(r => r.id === userReward.rewardId);
-                if (!reward) return null;
-                
-                return (
-                  <Card key={userReward.id} className="shadow-material" data-testid={`card-user-reward-${userReward.id}`}>
-                    <CardContent className="p-6">
-                      <div className="flex items-center space-x-4 mb-4">
-                        <div className={`w-12 h-12 bg-gradient-to-br ${getCategoryColor(reward.category)} rounded-lg flex items-center justify-center`}>
-                          {getRewardIcon(reward.category)}
+            <div className="space-y-4">
+              {userRewards.map((userReward: any) => (
+                <Card key={userReward.id} className="shadow-material" data-testid={`card-user-reward-${userReward.id}`}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-12 h-12 ${
+                          userReward.status === 'approved' ? 'bg-green-100' :
+                          userReward.status === 'pending' ? 'bg-yellow-100' : 'bg-red-100'
+                        } rounded-lg flex items-center justify-center`}>
+                          <Award className={`w-6 h-6 ${
+                            userReward.status === 'approved' ? 'text-green-600' :
+                            userReward.status === 'pending' ? 'text-yellow-600' : 'text-red-600'
+                          }`} />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900">{reward.name}</h3>
+                          <h3 className="font-semibold text-gray-900" data-testid={`text-reward-name-${userReward.id}`}>
+                            {userReward.rewardName || 'Unknown Reward'}
+                          </h3>
                           <p className="text-sm text-gray-600">
-                            Redeemed {formatDate(userReward.redeemedAt.toString())}
+                            {userReward.pointsCost?.toLocaleString()} points • {new Date(userReward.redeemedAt).toLocaleDateString()}
                           </p>
+                          {userReward.status === 'pending' && (
+                            <p className="text-sm text-yellow-600 mt-1">
+                              Waiting for administrator approval
+                            </p>
+                          )}
+                          {userReward.status === 'rejected' && userReward.rejectionReason && (
+                            <p className="text-sm text-red-600 mt-1">
+                              Rejected: {userReward.rejectionReason}
+                            </p>
+                          )}
+                          {userReward.status === 'approved' && userReward.approvedAt && (
+                            <p className="text-sm text-green-600 mt-1">
+                              Approved on {new Date(userReward.approvedAt).toLocaleDateString()}
+                            </p>
+                          )}
                         </div>
                       </div>
-                      
-                      <Badge className={`${getStatusColor(userReward.status)} border-0 mb-4`}>
-                        {userReward.status.charAt(0).toUpperCase() + userReward.status.slice(1)}
-                      </Badge>
-                      
-                      {userReward.deliveredAt && (
-                        <p className="text-sm text-green-600">
-                          Delivered {formatDate(userReward.deliveredAt!.toString())}
-                        </p>
-                      )}
-                      
-                      {userReward.status === "redeemed" && (
-                        <p className="text-sm text-gray-600">
-                          Processing your reward...
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      <div className="text-right">
+                        <Badge className={`${
+                          userReward.status === 'approved' ? 'bg-green-100 text-green-800' :
+                          userReward.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                        }`} data-testid={`badge-status-${userReward.id}`}>
+                          {userReward.status === 'approved' ? 'Approved' :
+                           userReward.status === 'pending' ? 'Pending' : 'Rejected'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           ) : (
             <Card className="shadow-material">
@@ -332,7 +345,7 @@ export default function Rewards() {
                   No rewards redeemed yet
                 </h3>
                 <p className="text-gray-600" data-testid="text-no-user-rewards-description">
-                  Start earning points from deals to redeem your first reward.
+                  Redeem your first reward to see it here!
                 </p>
               </CardContent>
             </Card>

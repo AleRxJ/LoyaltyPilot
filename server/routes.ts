@@ -307,7 +307,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const userRewards = await storage.getUserRewards(userId);
+      const userRewards = await storage.getUserRewardsWithDetails(userId);
       res.json(userRewards);
     } catch (error) {
       res.status(500).json({ message: "Failed to get user rewards" });
@@ -379,6 +379,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Reject redemption error:", error);
       res.status(500).json({ message: "Failed to reject redemption" });
+    }
+  });
+
+  // Admin endpoint to get all reward redemptions
+  app.get("/api/admin/rewards/redemptions", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const allRedemptions = await storage.getAllRewardRedemptions();
+      res.json(allRedemptions);
+    } catch (error) {
+      console.error("Get all redemptions error:", error);
+      res.status(500).json({ message: "Failed to get all redemptions" });
     }
   });
 
