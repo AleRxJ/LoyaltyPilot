@@ -228,6 +228,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin reward creation endpoint
+  app.post("/api/admin/rewards", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const rewardData = insertRewardSchema.parse(req.body);
+      const newReward = await storage.createReward(rewardData);
+      res.status(201).json(newReward);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Create reward error:", error);
+      res.status(500).json({ message: "Failed to create reward" });
+    }
+  });
+
+  // Admin reward update endpoint
+  app.patch("/api/admin/rewards/:id", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      
+      const updatedReward = await storage.updateReward(id, updates);
+      if (!updatedReward) {
+        return res.status(404).json({ message: "Reward not found" });
+      }
+      
+      res.json(updatedReward);
+    } catch (error) {
+      console.error("Update reward error:", error);
+      res.status(500).json({ message: "Failed to update reward" });
+    }
+  });
+
   app.post("/api/rewards/:id/redeem", async (req, res) => {
     const userId = req.session?.userId;
     if (!userId) {
