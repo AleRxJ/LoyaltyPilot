@@ -314,6 +314,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoints for reward approval
+  app.get("/api/admin/rewards/pending", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const pendingRedemptions = await storage.getPendingRewardRedemptions();
+      res.json(pendingRedemptions);
+    } catch (error) {
+      console.error("Get pending redemptions error:", error);
+      res.status(500).json({ message: "Failed to get pending redemptions" });
+    }
+  });
+
+  app.post("/api/admin/rewards/:redemptionId/approve", async (req, res) => {
+    const userRole = req.session?.userRole;
+    const adminId = req.session?.userId;
+    
+    if (userRole !== "admin" || !adminId) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { redemptionId } = req.params;
+      const updatedRedemption = await storage.approveRewardRedemption(redemptionId, adminId);
+      
+      if (!updatedRedemption) {
+        return res.status(404).json({ message: "Redemption not found" });
+      }
+      
+      res.json(updatedRedemption);
+    } catch (error) {
+      console.error("Approve redemption error:", error);
+      if (error instanceof Error) {
+        res.status(400).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Failed to approve redemption" });
+      }
+    }
+  });
+
+  app.post("/api/admin/rewards/:redemptionId/reject", async (req, res) => {
+    const userRole = req.session?.userRole;
+    const adminId = req.session?.userId;
+    
+    if (userRole !== "admin" || !adminId) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { redemptionId } = req.params;
+      const { reason } = req.body;
+      
+      const updatedRedemption = await storage.rejectRewardRedemption(redemptionId, adminId, reason);
+      
+      if (!updatedRedemption) {
+        return res.status(404).json({ message: "Redemption not found" });
+      }
+      
+      res.json(updatedRedemption);
+    } catch (error) {
+      console.error("Reject redemption error:", error);
+      res.status(500).json({ message: "Failed to reject redemption" });
+    }
+  });
+
   // Points routes
   app.get("/api/points/history", async (req, res) => {
     const userId = req.session?.userId;

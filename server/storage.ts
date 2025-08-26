@@ -40,6 +40,9 @@ export interface IStorage {
   updateReward(id: string, updates: Partial<Reward>): Promise<Reward | undefined>;
   redeemReward(userId: string, rewardId: string): Promise<UserReward>;
   getUserRewards(userId: string): Promise<UserReward[]>;
+  approveRewardRedemption(rewardRedemptionId: string, adminId: string): Promise<UserReward | undefined>;
+  rejectRewardRedemption(rewardRedemptionId: string, adminId: string, reason?: string): Promise<UserReward | undefined>;
+  getPendingRewardRedemptions(): Promise<Array<UserReward & { userName?: string; userFirstName?: string; userLastName?: string; rewardName?: string }>>;
 
   // Points methods
   addPointsHistory(entry: InsertPointsHistory): Promise<PointsHistory>;
@@ -261,22 +264,88 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Insufficient points");
     }
 
-    // Create redemption record
+    // Create pending redemption record
     const [userReward] = await db.insert(userRewards).values({
       userId,
       rewardId,
-      status: "redeemed",
+      status: "pending",
     }).returning();
 
-    // Deduct points
+    // Don't deduct points yet - wait for approval
+    return userReward;
+  }
+
+  async approveRewardRedemption(rewardRedemptionId: string, adminId: string): Promise<UserReward | undefined> {
+    // Get the reward redemption
+    const [redemption] = await db.select().from(userRewards).where(eq(userRewards.id, rewardRedemptionId));
+    if (!redemption) throw new Error("Redemption not found");
+    
+    if (redemption.status !== "pending") {
+      throw new Error("Redemption is not pending");
+    }
+
+    const reward = await this.getReward(redemption.rewardId);
+    if (!reward) throw new Error("Reward not found");
+
+    // Update redemption status
+    const [updatedRedemption] = await db.update(userRewards)
+      .set({ 
+        status: "approved", 
+        approvedBy: adminId,
+        approvedAt: new Date()
+      })
+      .where(eq(userRewards.id, rewardRedemptionId))
+      .returning();
+
+    // Now deduct points
     await this.addPointsHistory({
-      userId,
-      rewardId,
+      userId: redemption.userId,
+      rewardId: redemption.rewardId,
       points: -reward.pointsCost,
       description: `Points redeemed for: ${reward.name}`,
     });
 
-    return userReward;
+    return updatedRedemption || undefined;
+  }
+
+  async rejectRewardRedemption(rewardRedemptionId: string, adminId: string, reason?: string): Promise<UserReward | undefined> {
+    const [updatedRedemption] = await db.update(userRewards)
+      .set({ 
+        status: "rejected", 
+        approvedBy: adminId,
+        approvedAt: new Date(),
+        rejectionReason: reason
+      })
+      .where(eq(userRewards.id, rewardRedemptionId))
+      .returning();
+
+    return updatedRedemption || undefined;
+  }
+
+  async getPendingRewardRedemptions(): Promise<Array<UserReward & { userName?: string; userFirstName?: string; userLastName?: string; rewardName?: string }>> {
+    const result = await db.select({
+      id: userRewards.id,
+      userId: userRewards.userId,
+      rewardId: userRewards.rewardId,
+      status: userRewards.status,
+      approvedBy: userRewards.approvedBy,
+      approvedAt: userRewards.approvedAt,
+      rejectionReason: userRewards.rejectionReason,
+      redeemedAt: userRewards.redeemedAt,
+      deliveredAt: userRewards.deliveredAt,
+      deliveryAddress: userRewards.deliveryAddress,
+      userName: users.username,
+      userFirstName: users.firstName,
+      userLastName: users.lastName,
+      rewardName: rewards.name,
+    })
+    .from(userRewards)
+    .leftJoin(users, eq(userRewards.userId, users.id))
+    .leftJoin(rewards, eq(userRewards.rewardId, rewards.id))
+    .where(eq(userRewards.status, "pending"))
+    .orderBy(desc(userRewards.redeemedAt));
+
+    return result as Array<UserReward & { userName?: string; userFirstName?: string; userLastName?: string; rewardName?: string }>;
   }
 
   async getUserRewards(userId: string): Promise<UserReward[]> {

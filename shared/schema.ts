@@ -7,7 +7,7 @@ export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
 export const partnerLevelEnum = pgEnum("partner_level", ["bronze", "silver", "gold", "platinum"]);
 export const dealStatusEnum = pgEnum("deal_status", ["pending", "approved", "rejected"]);
 export const productTypeEnum = pgEnum("product_type", ["software", "hardware"]);
-export const rewardStatusEnum = pgEnum("reward_status", ["available", "redeemed", "delivered"]);
+export const rewardStatusEnum = pgEnum("reward_status", ["pending", "approved", "rejected", "delivered"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -64,7 +64,10 @@ export const userRewards = pgTable("user_rewards", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   rewardId: varchar("reward_id").notNull().references(() => rewards.id),
-  status: rewardStatusEnum("status").notNull().default("redeemed"),
+  status: rewardStatusEnum("status").notNull().default("pending"),
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  rejectionReason: text("rejection_reason"),
   redeemedAt: timestamp("redeemed_at").notNull().default(sql`now()`),
   deliveredAt: timestamp("delivered_at"),
   deliveryAddress: text("delivery_address"),
@@ -128,6 +131,10 @@ export const userRewardsRelations = relations(userRewards, ({ one }) => ({
   reward: one(rewards, {
     fields: [userRewards.rewardId],
     references: [rewards.id],
+  }),
+  approver: one(users, {
+    fields: [userRewards.approvedBy],
+    references: [users.id],
   }),
 }));
 

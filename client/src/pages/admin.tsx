@@ -107,6 +107,12 @@ export default function Admin() {
     enabled: currentUser?.role === "admin",
   });
 
+  // Pending reward redemptions query
+  const { data: pendingRedemptions, isLoading: pendingRedemptionsLoading } = useQuery<Array<any>>({
+    queryKey: ["/api/admin/rewards/pending"],
+    enabled: currentUser?.role === "admin",
+  });
+
   const { data: allDeals, isLoading: dealsLoading } = useQuery<Array<Deal & { userFirstName?: string; userLastName?: string; userName?: string }>>({
     queryKey: ["/api/admin/deals"],
     enabled: currentUser?.role === "admin",
@@ -317,6 +323,56 @@ export default function Admin() {
     approveUserMutation.mutate(userId);
   };
 
+  // Approve reward redemption mutation
+  const approveRedemptionMutation = useMutation({
+    mutationFn: async (redemptionId: string) => {
+      return apiRequest("POST", `/api/admin/rewards/${redemptionId}/approve`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rewards/pending"] });
+      toast({
+        title: "Success",
+        description: "Reward redemption approved successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to approve redemption",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Reject reward redemption mutation
+  const rejectRedemptionMutation = useMutation({
+    mutationFn: async ({ redemptionId, reason }: { redemptionId: string; reason?: string }) => {
+      return apiRequest("POST", `/api/admin/rewards/${redemptionId}/reject`, { reason });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rewards/pending"] });
+      toast({
+        title: "Success",
+        description: "Reward redemption rejected",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reject redemption",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleApproveRedemption = (redemptionId: string) => {
+    approveRedemptionMutation.mutate(redemptionId);
+  };
+
+  const handleRejectRedemption = (redemptionId: string, reason?: string) => {
+    rejectRedemptionMutation.mutate({ redemptionId, reason });
+  };
+
   const processCSVMutation = useMutation({
     mutationFn: async (csvPath: string) => {
       return apiRequest("POST", `/api/admin/csv/process`, { csvPath });
@@ -420,12 +476,13 @@ export default function Admin() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
           <TabsTrigger value="users" data-testid="tab-users">Users</TabsTrigger>
-          <TabsTrigger value="pending" data-testid="tab-pending">Pending Approval</TabsTrigger>
+          <TabsTrigger value="pending" data-testid="tab-pending">Pending Users</TabsTrigger>
           <TabsTrigger value="deals" data-testid="tab-deals">Deals</TabsTrigger>
           <TabsTrigger value="rewards" data-testid="tab-rewards">Rewards</TabsTrigger>
+          <TabsTrigger value="reward-approvals" data-testid="tab-reward-approvals">Reward Approvals</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -1297,6 +1354,105 @@ export default function Admin() {
                     Add First Reward
                   </Button>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Reward Approvals Tab */}
+        <TabsContent value="reward-approvals" className="mt-6">
+          <Card className="shadow-material">
+            <CardHeader>
+              <CardTitle>Pending Reward Redemptions</CardTitle>
+              <div className="text-sm text-gray-600 mt-2">
+                User reward redemptions awaiting administrator approval
+              </div>
+            </CardHeader>
+            <CardContent>
+              {pendingRedemptionsLoading ? (
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-20 w-full" />
+                  ))}
+                </div>
+              ) : pendingRedemptions && pendingRedemptions.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          User
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Reward
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Requested Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {pendingRedemptions.map((redemption: any) => (
+                        <tr key={redemption.id} data-testid={`row-pending-redemption-${redemption.id}`}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {redemption.userFirstName} {redemption.userLastName}
+                              </div>
+                              <div className="text-sm text-gray-500">@{redemption.userName}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              {redemption.rewardName}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(redemption.redeemedAt.toString())}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <Badge className="bg-yellow-100 text-yellow-800">
+                              {redemption.status}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex space-x-2">
+                              <Button
+                                onClick={() => handleApproveRedemption(redemption.id)}
+                                disabled={approveRedemptionMutation.isPending}
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                size="sm"
+                                data-testid={`button-approve-redemption-${redemption.id}`}
+                              >
+                                {approveRedemptionMutation.isPending ? "Approving..." : "Approve"}
+                              </Button>
+                              <Button
+                                onClick={() => handleRejectRedemption(redemption.id, "Rejected by administrator")}
+                                disabled={rejectRedemptionMutation.isPending}
+                                variant="outline"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                size="sm"
+                                data-testid={`button-reject-redemption-${redemption.id}`}
+                              >
+                                {rejectRedemptionMutation.isPending ? "Rejecting..." : "Reject"}
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-8" data-testid="text-no-pending-redemptions">
+                  No pending reward redemptions
+                </p>
               )}
             </CardContent>
           </Card>
