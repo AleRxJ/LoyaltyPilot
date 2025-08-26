@@ -38,8 +38,8 @@ export default function Rewards() {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Reward redeemed successfully!",
+        title: "Redemption Submitted",
+        description: "Your reward redemption is pending administrator approval. You'll receive notification once approved.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user-rewards"] });
       queryClient.invalidateQueries({ queryKey: ["/api/users/stats"] });
