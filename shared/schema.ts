@@ -20,6 +20,9 @@ export const users = pgTable("users", {
   partnerLevel: partnerLevelEnum("partner_level").notNull().default("bronze"),
   country: text("country").notNull(),
   isActive: boolean("is_active").notNull().default(true),
+  isApproved: boolean("is_approved").notNull().default(false),
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
   inviteToken: text("invite_token"),
   resetToken: text("reset_token"),
   resetTokenExpiry: timestamp("reset_token_expiry"),
@@ -102,6 +105,13 @@ export const dealsRelations = relations(deals, ({ one }) => ({
   }),
   approver: one(users, {
     fields: [deals.approvedBy],
+    references: [users.id],
+  }),
+}));
+
+export const userApprovalRelations = relations(users, ({ one }) => ({
+  approver: one(users, {
+    fields: [users.approvedBy],
     references: [users.id],
   }),
 }));

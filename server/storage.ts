@@ -54,6 +54,9 @@ export interface IStorage {
   // Admin methods
   getAllUsers(): Promise<User[]>;
   getAllDeals(): Promise<DealWithUser[]>;
+  getPendingUsers(): Promise<User[]>;
+  approveUser(userId: string, approvedBy: string): Promise<User | undefined>;
+  deleteUser(id: string): Promise<void>;
   getReportsData(filters: {
     country?: string;
     partnerLevel?: string;
@@ -325,6 +328,27 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async getPendingUsers(): Promise<User[]> {
+    return db.select().from(users).where(and(eq(users.isActive, true), eq(users.isApproved, false))).orderBy(desc(users.createdAt));
+  }
+
+  async approveUser(userId: string, approvedBy: string): Promise<User | undefined> {
+    const [user] = await db.update(users)
+      .set({ 
+        isApproved: true, 
+        approvedBy: approvedBy,
+        approvedAt: new Date(),
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user || undefined;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
   }
 
   async updateUserRole(userId: string, role: "user" | "admin", partnerLevel: "bronze" | "silver" | "gold" | "platinum"): Promise<User | undefined> {

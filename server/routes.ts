@@ -28,6 +28,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Account inactive" });
       }
 
+      if (!user.isApproved) {
+        return res.status(401).json({ message: "Account pending approval. Please wait for administrator approval." });
+      }
+
       // Store user in session
       if (req.session) {
         req.session.userId = user.id;
@@ -59,6 +63,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.createUser({
         ...userData,
         password: hashedPassword,
+        isApproved: false, // New users need approval
       });
 
       res.status(201).json({ 
@@ -66,7 +71,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: user.username,
         email: user.email,
         firstName: user.firstName,
-        lastName: user.lastName
+        lastName: user.lastName,
+        message: "Registration successful. Please wait for administrator approval before you can log in."
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -780,6 +786,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Users CSV processing error:", error);
       res.status(500).json({ message: "Failed to process CSV file" });
+    }
+  });
+
+  // Get pending users for approval
+  app.get("/api/admin/users/pending", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const pendingUsers = await storage.getPendingUsers();
+      res.json(pendingUsers);
+    } catch (error) {
+      console.error("Error fetching pending users:", error);
+      res.status(500).json({ message: "Failed to fetch pending users" });
+    }
+  });
+
+  // Approve user registration
+  app.put("/api/admin/users/:userId/approve", async (req, res) => {
+    const userRole = req.session?.userRole;
+    const adminUserId = req.session?.userId;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { userId } = req.params;
+      const approvedUser = await storage.approveUser(userId, adminUserId!);
+      
+      if (!approvedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({ 
+        message: "User approved successfully", 
+        user: {
+          id: approvedUser.id,
+          username: approvedUser.username,
+          email: approvedUser.email,
+          firstName: approvedUser.firstName,
+          lastName: approvedUser.lastName,
+          isApproved: approvedUser.isApproved
+        }
+      });
+    } catch (error) {
+      console.error("Error approving user:", error);
+      res.status(500).json({ message: "Failed to approve user" });
     }
   });
 

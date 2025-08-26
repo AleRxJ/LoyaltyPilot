@@ -74,10 +74,10 @@ export default function Login() {
 
   const registerMutation = useMutation({
     mutationFn: (userData: RegisterForm) => register(userData),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       toast({
         title: "Success",
-        description: "Account created successfully. Please login.",
+        description: data.message || "Account created successfully. Please wait for administrator approval before you can log in.",
       });
       setIsLogin(true);
       registerForm.reset();

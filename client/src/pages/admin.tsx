@@ -101,6 +101,12 @@ export default function Admin() {
     enabled: currentUser?.role === "admin",
   });
 
+  // Pending users query
+  const { data: pendingUsers, isLoading: pendingUsersLoading } = useQuery<User[]>({
+    queryKey: ["/api/admin/users/pending"],
+    enabled: currentUser?.role === "admin",
+  });
+
   const { data: allDeals, isLoading: dealsLoading } = useQuery<Array<Deal & { userFirstName?: string; userLastName?: string; userName?: string }>>({
     queryKey: ["/api/admin/deals"],
     enabled: currentUser?.role === "admin",
@@ -285,6 +291,32 @@ export default function Admin() {
     }
   };
 
+  // Approve user mutation
+  const approveUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest("PUT", `/api/admin/users/${userId}/approve`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "Success",
+        description: "User approved successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to approve user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleApproveUser = (userId: string) => {
+    approveUserMutation.mutate(userId);
+  };
+
   const processCSVMutation = useMutation({
     mutationFn: async (csvPath: string) => {
       return apiRequest("POST", `/api/admin/csv/process`, { csvPath });
@@ -388,9 +420,10 @@ export default function Admin() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
           <TabsTrigger value="users" data-testid="tab-users">Users</TabsTrigger>
+          <TabsTrigger value="pending" data-testid="tab-pending">Pending Approval</TabsTrigger>
           <TabsTrigger value="deals" data-testid="tab-deals">Deals</TabsTrigger>
           <TabsTrigger value="rewards" data-testid="tab-rewards">Rewards</TabsTrigger>
         </TabsList>
@@ -947,6 +980,103 @@ export default function Admin() {
               ) : (
                 <p className="text-gray-500 text-center py-8" data-testid="text-no-users">
                   No users found
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Pending Approval Tab */}
+        <TabsContent value="pending" className="mt-6">
+          <Card className="shadow-material">
+            <CardHeader>
+              <CardTitle>Pending User Approvals</CardTitle>
+              <div className="text-sm text-gray-600 mt-2">
+                New user registrations awaiting administrator approval
+              </div>
+            </CardHeader>
+            <CardContent>
+              {pendingUsersLoading ? (
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-20 w-full" />
+                  ))}
+                </div>
+              ) : pendingUsers && pendingUsers.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          User
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Role
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Partner Level
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Country
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Registration Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {pendingUsers.map((user: any) => (
+                        <tr key={user.id} data-testid={`row-pending-user-${user.id}`}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {user.firstName} {user.lastName}
+                              </div>
+                              <div className="text-sm text-gray-500">{user.email}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <Badge className={user.role === "admin" ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800"}>
+                              {user.role}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <Badge className={
+                              user.partnerLevel === "platinum" ? "bg-gray-100 text-gray-800" :
+                              user.partnerLevel === "gold" ? "bg-yellow-100 text-yellow-800" :
+                              user.partnerLevel === "silver" ? "bg-gray-100 text-gray-600" :
+                              "bg-orange-100 text-orange-800"
+                            }>
+                              {user.partnerLevel}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {user.country}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(user.createdAt.toString())}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <Button
+                              onClick={() => handleApproveUser(user.id)}
+                              disabled={approveUserMutation.isPending}
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                              data-testid={`button-approve-${user.id}`}
+                            >
+                              {approveUserMutation.isPending ? "Approving..." : "Approve"}
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-8" data-testid="text-no-pending-users">
+                  No pending user approvals
                 </p>
               )}
             </CardContent>
