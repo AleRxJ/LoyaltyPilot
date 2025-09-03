@@ -66,8 +66,7 @@ export default function Navigation({ user }: NavigationProps) {
 
   const userInitials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
 
-  // Debug log to see if navigation is rendering for admin
-  console.log('Navigation rendering for user:', user.role, 'at location:', location);
+  // Navigation is working correctly now
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">

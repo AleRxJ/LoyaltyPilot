@@ -96,31 +96,40 @@ export default function Dashboard() {
               <h1 className="text-2xl font-bold mb-2 text-white" data-testid="text-welcome">
                 Welcome back, {user.firstName} {user.lastName}!
               </h1>
-              <p className="text-blue-100" data-testid="text-partner-info">
-                Partner Level: <span className="font-medium text-white">
-                  {user.partnerLevel.charAt(0).toUpperCase() + user.partnerLevel.slice(1)} Partner
-                </span>
-              </p>
+              {user.role === "admin" ? (
+                <p className="text-blue-100" data-testid="text-admin-role">
+                  <span className="font-medium text-white">System Administrator</span>
+                </p>
+              ) : (
+                <p className="text-blue-100" data-testid="text-partner-info">
+                  Partner Level: <span className="font-medium text-white">
+                    {user.partnerLevel.charAt(0).toUpperCase() + user.partnerLevel.slice(1)} Partner
+                  </span>
+                </p>
+              )}
             </div>
-            <div className="mt-4 md:mt-0 flex space-x-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-white" data-testid="text-total-points">
-                  {statsLoading ? "..." : stats?.totalPoints?.toLocaleString() || "0"}
+            {user.role !== "admin" && (
+              <div className="mt-4 md:mt-0 flex space-x-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-white" data-testid="text-total-points">
+                    {statsLoading ? "..." : stats?.totalPoints?.toLocaleString() || "0"}
+                  </div>
+                  <div className="text-blue-200 text-sm">Total Points</div>
                 </div>
-                <div className="text-blue-200 text-sm">Total Points</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-white" data-testid="text-total-deals">
-                  {statsLoading ? "..." : stats?.totalDeals || "0"}
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-white" data-testid="text-total-deals">
+                    {statsLoading ? "..." : stats?.totalDeals || "0"}
+                  </div>
+                  <div className="text-blue-200 text-sm">Total Deals</div>
                 </div>
-                <div className="text-blue-200 text-sm">Total Deals</div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Only show for regular users */}
+      {user.role !== "admin" && (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card className="shadow-material">
           <CardContent className="p-6">
@@ -208,7 +217,10 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+      )}
 
+      {/* Recent Deals - Only show for regular users */}
+      {user.role !== "admin" && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Deals */}
         <div className="lg:col-span-2">
@@ -388,6 +400,7 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+      )}
 
       <DealModal
         isOpen={isDealModalOpen}
