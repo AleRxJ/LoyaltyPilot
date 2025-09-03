@@ -65,6 +65,7 @@ export default function Admin() {
   const [isRewardModalOpen, setIsRewardModalOpen] = useState(false);
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [reportFilters, setReportFilters] = useState({
     country: "all",
     partnerLevel: "all",
@@ -119,9 +120,23 @@ export default function Admin() {
     enabled: currentUser?.role === "admin",
   });
 
-  const { data: allDeals, isLoading: dealsLoading } = useQuery<Array<Deal & { userFirstName?: string; userLastName?: string; userName?: string }>>({
-    queryKey: ["/api/admin/deals"],
+  const { data: dealsData, isLoading: dealsLoading } = useQuery<{ deals: Array<Deal & { userFirstName?: string; userLastName?: string; userName?: string }>, total: number }>({
+    queryKey: ["/api/admin/deals", currentPage],
     enabled: currentUser?.role === "admin",
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append("page", currentPage.toString());
+      params.append("limit", "20");
+      
+      const url = `/api/admin/deals?${params.toString()}`;
+      const response = await fetch(url, { credentials: "include" });
+      
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+      
+      return response.json();
+    },
   });
 
   const { data: pendingDeals, isLoading: pendingDealsLoading } = useQuery<Array<Deal & { userFirstName?: string; userLastName?: string; userName?: string }>>({
@@ -166,6 +181,7 @@ export default function Admin() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/deals"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/deals/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/reports"] });
     },
     onError: (error: any) => {
       toast({
@@ -187,6 +203,7 @@ export default function Admin() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/deals"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/deals/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/reports"] });
     },
     onError: (error: any) => {
       toast({
@@ -1189,7 +1206,7 @@ export default function Admin() {
                     <Skeleton key={i} className="h-20 w-full" />
                   ))}
                 </div>
-              ) : allDeals && allDeals.length > 0 ? (
+              ) : dealsData?.deals && dealsData.deals.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50">
@@ -1215,7 +1232,7 @@ export default function Admin() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {allDeals.map((deal) => (
+                      {dealsData.deals.map((deal) => (
                         <tr key={deal.id} data-testid={`row-deal-${deal.id}`}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
@@ -1283,6 +1300,38 @@ export default function Admin() {
                 </p>
               )}
             </CardContent>
+            {dealsData && dealsData.total > 20 && (
+              <div className="px-6 py-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, dealsData.total)} of {dealsData.total} deals
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      data-testid="button-prev-page"
+                    >
+                      Previous
+                    </Button>
+                    <span className="flex items-center px-3 text-sm text-gray-600">
+                      Page {currentPage} of {Math.ceil(dealsData.total / 20)}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => prev + 1)}
+                      disabled={currentPage >= Math.ceil(dealsData.total / 20)}
+                      data-testid="button-next-page"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </Card>
         </TabsContent>
 

@@ -58,7 +58,7 @@ export interface IStorage {
 
   // Admin methods
   getAllUsers(): Promise<User[]>;
-  getAllDeals(): Promise<DealWithUser[]>;
+  getAllDeals(page?: number, limit?: number): Promise<{ deals: DealWithUser[], total: number }>;
   getPendingUsers(): Promise<User[]>;
   approveUser(userId: string, approvedBy: string): Promise<User | undefined>;
   deleteUser(id: string): Promise<User | undefined>;
@@ -486,7 +486,13 @@ export class DatabaseStorage implements IStorage {
     return deletedUser || undefined;
   }
 
-  async getAllDeals(): Promise<DealWithUser[]> {
+  async getAllDeals(page: number = 1, limit: number = 20): Promise<{ deals: DealWithUser[], total: number }> {
+    // Get total count
+    const [countResult] = await db.select({ count: count() }).from(deals);
+    const totalCount = countResult?.count || 0;
+
+    // Get paginated results
+    const offset = (page - 1) * limit;
     const result = await db.select({
       id: deals.id,
       userId: deals.userId,
@@ -508,9 +514,14 @@ export class DatabaseStorage implements IStorage {
     })
     .from(deals)
     .leftJoin(users, eq(deals.userId, users.id))
-    .orderBy(desc(deals.createdAt));
+    .orderBy(desc(deals.createdAt))
+    .limit(limit)
+    .offset(offset);
 
-    return result as DealWithUser[];
+    return {
+      deals: result as DealWithUser[],
+      total: totalCount
+    };
   }
 
   async getReportsData(filters: {

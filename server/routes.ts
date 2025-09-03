@@ -541,8 +541,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const deals = await storage.getAllDeals();
-      res.json(deals);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      
+      const result = await storage.getAllDeals(page, limit);
+      res.json(result);
     } catch (error) {
       res.status(500).json({ message: "Failed to get all deals" });
     }
