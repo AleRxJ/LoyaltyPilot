@@ -492,6 +492,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteUser(userId: string): Promise<User | undefined> {
+    // First, delete all deals associated with this user
+    await db.delete(deals).where(eq(deals.userId, userId));
+    
+    // Delete all user rewards associated with this user
+    await db.delete(userRewards).where(eq(userRewards.userId, userId));
+    
+    // Delete all points history associated with this user
+    await db.delete(pointsHistory).where(eq(pointsHistory.userId, userId));
+    
+    // Finally, delete the user
     const [deletedUser] = await db.delete(users)
       .where(eq(users.id, userId))
       .returning();
