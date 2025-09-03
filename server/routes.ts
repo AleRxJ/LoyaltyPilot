@@ -980,6 +980,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/admin/users/:userId/reject", async (req, res) => {
+    const userRole = req.session?.userRole;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { userId } = req.params;
+      const rejectedUser = await storage.rejectUser(userId);
+      
+      if (!rejectedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({ 
+        message: "User rejected successfully", 
+        user: {
+          id: rejectedUser.id,
+          username: rejectedUser.username,
+          email: rejectedUser.email,
+          firstName: rejectedUser.firstName,
+          lastName: rejectedUser.lastName,
+          isActive: rejectedUser.isActive
+        }
+      });
+    } catch (error) {
+      console.error("Error rejecting user:", error);
+      res.status(500).json({ message: "Failed to reject user" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

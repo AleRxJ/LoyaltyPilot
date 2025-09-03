@@ -61,6 +61,7 @@ export interface IStorage {
   getAllDeals(page?: number, limit?: number): Promise<{ deals: DealWithUser[], total: number }>;
   getPendingUsers(): Promise<User[]>;
   approveUser(userId: string, approvedBy: string): Promise<User | undefined>;
+  rejectUser(userId: string): Promise<User | undefined>;
   deleteUser(id: string): Promise<User | undefined>;
   getReportsData(filters: {
     country?: string;
@@ -460,6 +461,17 @@ export class DatabaseStorage implements IStorage {
         isApproved: true, 
         approvedBy: approvedBy,
         approvedAt: new Date(),
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user || undefined;
+  }
+
+  async rejectUser(userId: string): Promise<User | undefined> {
+    const [user] = await db.update(users)
+      .set({ 
+        isActive: false,
         updatedAt: new Date() 
       })
       .where(eq(users.id, userId))

@@ -358,8 +358,34 @@ export default function Admin() {
     },
   });
 
+  // Reject user mutation
+  const rejectUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest("PUT", `/api/admin/users/${userId}/reject`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "Success",
+        description: "User rejected successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reject user",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleApproveUser = (userId: string) => {
     approveUserMutation.mutate(userId);
+  };
+
+  const handleRejectUser = (userId: string) => {
+    rejectUserMutation.mutate(userId);
   };
 
   // Approve reward redemption mutation
@@ -1157,14 +1183,25 @@ export default function Admin() {
                             {formatDate(user.createdAt.toString())}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <Button
-                              onClick={() => handleApproveUser(user.id)}
-                              disabled={approveUserMutation.isPending}
-                              className="bg-green-600 hover:bg-green-700 text-white"
-                              data-testid={`button-approve-${user.id}`}
-                            >
-                              {approveUserMutation.isPending ? "Approving..." : "Approve"}
-                            </Button>
+                            <div className="flex space-x-2">
+                              <Button
+                                onClick={() => handleApproveUser(user.id)}
+                                disabled={approveUserMutation.isPending || rejectUserMutation.isPending}
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                data-testid={`button-approve-${user.id}`}
+                              >
+                                {approveUserMutation.isPending ? "Approving..." : "Approve"}
+                              </Button>
+                              <Button
+                                onClick={() => handleRejectUser(user.id)}
+                                disabled={approveUserMutation.isPending || rejectUserMutation.isPending}
+                                variant="outline"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-300"
+                                data-testid={`button-reject-${user.id}`}
+                              >
+                                {rejectUserMutation.isPending ? "Rejecting..." : "Reject"}
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}
