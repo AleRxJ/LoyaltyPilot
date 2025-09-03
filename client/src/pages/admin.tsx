@@ -135,8 +135,24 @@ export default function Admin() {
   });
 
   const { data: reportsData, isLoading: reportsLoading } = useQuery<ReportsData>({
-    queryKey: ["/api/admin/reports", reportFilters],
+    queryKey: ["/api/admin/reports", reportFilters.country, reportFilters.partnerLevel, reportFilters.startDate, reportFilters.endDate],
     enabled: currentUser?.role === "admin",
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (reportFilters.country !== "all") params.append("country", reportFilters.country);
+      if (reportFilters.partnerLevel !== "all") params.append("partnerLevel", reportFilters.partnerLevel);
+      if (reportFilters.startDate) params.append("startDate", reportFilters.startDate);
+      if (reportFilters.endDate) params.append("endDate", reportFilters.endDate);
+      
+      const url = `/api/admin/reports${params.toString() ? `?${params.toString()}` : ""}`;
+      const response = await fetch(url, { credentials: "include" });
+      
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+      
+      return response.json();
+    },
   });
 
   const approveDealMutation = useMutation({
