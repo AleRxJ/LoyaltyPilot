@@ -74,7 +74,7 @@ export default function Navigation({ user }: NavigationProps) {
           <div className="flex items-center space-x-4">
             <div className="flex-shrink-0">
               <Link href="/">
-                <h1 className="text-xl font-bold text-primary-600 cursor-pointer" data-testid="logo">
+                <h1 className="text-xl font-bold text-blue-600 cursor-pointer" data-testid="logo">
                   LoyaltyPro
                 </h1>
               </Link>
@@ -88,8 +88,8 @@ export default function Navigation({ user }: NavigationProps) {
                     <button
                       className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         item.current
-                          ? "text-primary-600 bg-primary-50"
-                          : "text-gray-700 hover:text-primary-600"
+                          ? "text-blue-600 bg-blue-50"
+                          : "text-gray-700 hover:text-blue-600"
                       }`}
                       data-testid={`nav-${item.label.toLowerCase().replace(" ", "-")}`}
                     >
@@ -128,7 +128,7 @@ export default function Navigation({ user }: NavigationProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-2" data-testid="button-user-menu">
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary-100 text-primary-600">
+                    <AvatarFallback className="bg-blue-100 text-blue-600">
                       {userInitials}
                     </AvatarFallback>
                   </Avatar>
@@ -174,8 +174,8 @@ export default function Navigation({ user }: NavigationProps) {
                   <button
                     className={`block px-3 py-2 rounded-md text-base font-medium w-full text-left ${
                       item.current
-                        ? "text-primary-600 bg-primary-50"
-                        : "text-gray-700 hover:text-primary-600 hover:bg-gray-50"
+                        ? "text-blue-600 bg-blue-50"
+                        : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
                     }`}
                     onClick={() => setIsMobileMenuOpen(false)}
                     data-testid={`mobile-nav-${item.label.toLowerCase().replace(" ", "-")}`}
