@@ -61,7 +61,7 @@ export interface IStorage {
   getAllDeals(): Promise<DealWithUser[]>;
   getPendingUsers(): Promise<User[]>;
   approveUser(userId: string, approvedBy: string): Promise<User | undefined>;
-  deleteUser(id: string): Promise<void>;
+  deleteUser(id: string): Promise<User | undefined>;
   getReportsData(filters: {
     country?: string;
     partnerLevel?: string;
@@ -467,10 +467,6 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
-  async deleteUser(id: string): Promise<void> {
-    await db.delete(users).where(eq(users.id, id));
-  }
-
   async updateUserRole(userId: string, role: "user" | "admin", partnerLevel: "bronze" | "silver" | "gold" | "platinum"): Promise<User | undefined> {
     const [updatedUser] = await db.update(users)
       .set({ 
@@ -528,12 +524,6 @@ export class DatabaseStorage implements IStorage {
     totalRevenue: number;
     redeemedRewards: number;
   }> {
-    let userQuery = db.select({ count: count() }).from(users);
-    let dealQuery = db.select({ 
-      count: count(), 
-      revenue: sum(deals.dealValue) 
-    }).from(deals);
-
     // Apply filters
     const userConditions = [];
     const dealConditions = [];
@@ -551,15 +541,21 @@ export class DatabaseStorage implements IStorage {
       dealConditions.push(lte(deals.createdAt, filters.endDate));
     }
     
-    if (userConditions.length > 0) {
-      userQuery = userQuery.where(and(...userConditions));
-    }
-    if (dealConditions.length > 0) {
-      dealQuery = dealQuery.where(and(...dealConditions));
-    }
+    // Build queries with conditions
+    const userQueryBuilder = db.select({ count: count() }).from(users);
+    const dealQueryBuilder = db.select({ 
+      count: count(), 
+      revenue: sum(deals.dealValue) 
+    }).from(deals);
 
-    const [userResult] = await userQuery;
-    const [dealResult] = await dealQuery;
+    const [userResult] = userConditions.length > 0 
+      ? await userQueryBuilder.where(and(...userConditions))
+      : await userQueryBuilder;
+      
+    const [dealResult] = dealConditions.length > 0 
+      ? await dealQueryBuilder.where(and(...dealConditions))
+      : await dealQueryBuilder;
+      
     const [rewardResult] = await db.select({ count: count() }).from(userRewards);
 
     return {

@@ -21,7 +21,7 @@ export const users = pgTable("users", {
   country: text("country").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   isApproved: boolean("is_approved").notNull().default(false),
-  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedBy: varchar("approved_by"),
   approvedAt: timestamp("approved_at"),
   inviteToken: text("invite_token"),
   resetToken: text("reset_token"),
