@@ -26,12 +26,20 @@ export default function Navigation({ user }: NavigationProps) {
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      // Clear all queries from cache
+      queryClient.clear();
       toast({
         title: "Success",
         description: "Logged out successfully",
       });
-      // Redirect to login page after logout
+      // Immediate redirect to login page
+      setTimeout(() => {
+        setLocation("/login");
+      }, 100);
+    },
+    onError: () => {
+      // Even if logout fails, redirect to login
+      queryClient.clear();
       setLocation("/login");
     },
   });
