@@ -280,6 +280,7 @@ export default function Admin() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/reports"] });
       toast({
         title: "Success",
         description: "User deleted successfully",
