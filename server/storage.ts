@@ -548,13 +548,14 @@ export class DatabaseStorage implements IStorage {
       revenue: sum(deals.dealValue) 
     }).from(deals);
 
+    // Always filter deals by approved status
+    dealConditions.unshift(eq(deals.status, "approved"));
+
     const [userResult] = userConditions.length > 0 
       ? await userQueryBuilder.where(and(...userConditions))
       : await userQueryBuilder;
       
-    const [dealResult] = dealConditions.length > 0 
-      ? await dealQueryBuilder.where(and(...dealConditions))
-      : await dealQueryBuilder;
+    const [dealResult] = await dealQueryBuilder.where(and(...dealConditions));
       
     const [rewardResult] = await db.select({ count: count() }).from(userRewards)
       .where(eq(userRewards.status, "approved"));
