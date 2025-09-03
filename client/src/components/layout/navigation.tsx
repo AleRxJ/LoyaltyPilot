@@ -31,8 +31,8 @@ export default function Navigation({ user }: NavigationProps) {
         title: "Success",
         description: "Logged out successfully",
       });
-      // Redirect to main page after logout
-      setLocation("/");
+      // Redirect to login page after logout
+      setLocation("/login");
     },
   });
 
