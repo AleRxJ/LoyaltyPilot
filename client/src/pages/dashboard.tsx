@@ -15,7 +15,8 @@ import {
   TrendingUp
 } from "lucide-react";
 import DealModal from "@/components/modals/deal-modal";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import type { AuthUser } from "@/lib/auth";
 
 interface UserStats {
@@ -45,10 +46,18 @@ interface Reward {
 
 export default function Dashboard() {
   const [isDealModalOpen, setIsDealModalOpen] = useState(false);
+  const [, navigate] = useLocation();
 
   const { data: user } = useQuery<AuthUser>({
     queryKey: ["/api/auth/me"],
   });
+
+  // Redirect admin users to admin panel
+  useEffect(() => {
+    if (user && user.role === "admin") {
+      navigate("/admin");
+    }
+  }, [user, navigate]);
 
   const { data: stats, isLoading: statsLoading } = useQuery<UserStats>({
     queryKey: ["/api/users/stats"],
