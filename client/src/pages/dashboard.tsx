@@ -90,30 +90,30 @@ export default function Dashboard() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Dashboard Header */}
       <div className="mb-8">
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl p-6 text-white shadow-material">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white shadow-material">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
             <div>
               <h1 className="text-2xl font-bold mb-2 text-white" data-testid="text-welcome">
                 Welcome back, {user.firstName} {user.lastName}!
               </h1>
-              <p className="text-primary-100" data-testid="text-partner-info">
-                Partner Level: <span className="font-medium">
+              <p className="text-blue-100" data-testid="text-partner-info">
+                Partner Level: <span className="font-medium text-white">
                   {user.partnerLevel.charAt(0).toUpperCase() + user.partnerLevel.slice(1)} Partner
                 </span>
               </p>
             </div>
             <div className="mt-4 md:mt-0 flex space-x-6">
               <div className="text-center">
-                <div className="text-3xl font-bold" data-testid="text-total-points">
+                <div className="text-3xl font-bold text-white" data-testid="text-total-points">
                   {statsLoading ? "..." : stats?.totalPoints?.toLocaleString() || "0"}
                 </div>
-                <div className="text-primary-200 text-sm">Total Points</div>
+                <div className="text-blue-200 text-sm">Total Points</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold" data-testid="text-total-deals">
+                <div className="text-3xl font-bold text-white" data-testid="text-total-deals">
                   {statsLoading ? "..." : stats?.totalDeals || "0"}
                 </div>
-                <div className="text-primary-200 text-sm">Total Deals</div>
+                <div className="text-blue-200 text-sm">Total Deals</div>
               </div>
             </div>
           </div>
