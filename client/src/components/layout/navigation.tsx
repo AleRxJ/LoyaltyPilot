@@ -17,6 +17,7 @@ interface NavigationProps {
 }
 
 export default function Navigation({ user }: NavigationProps) {
+  console.log('Navigation component received user:', user);
   const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState(getLanguage());
