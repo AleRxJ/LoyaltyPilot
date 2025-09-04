@@ -69,9 +69,23 @@ export default function Navigation({ user }: NavigationProps) {
 
   // Debug log to check navigation rendering
   console.log('Navigation rendering for user:', user.role, 'at location:', location, 'navItems:', navItems);
+  console.log('Navigation component is rendering with user:', user.username, 'role:', user.role);
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50" style={{backgroundColor: 'white'}}>
+    <nav 
+      className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50" 
+      style={{
+        backgroundColor: 'white', 
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        display: 'block',
+        visibility: 'visible',
+        opacity: 1,
+        width: '100%',
+        minHeight: '64px'
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo and Navigation */}
