@@ -9,7 +9,7 @@ import { Bell, ChevronDown, Menu, X } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { logout } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import { setLanguage, getLanguage } from "@/lib/i18n";
+import { useTranslation } from "@/hooks/useTranslation";
 import type { AuthUser } from "@/lib/auth";
 
 interface NavigationProps {
@@ -20,7 +20,7 @@ export default function Navigation({ user }: NavigationProps) {
   console.log('Navigation component received user:', user);
   const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState(getLanguage());
+  const { t, currentLanguage, changeLanguage } = useTranslation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -46,9 +46,7 @@ export default function Navigation({ user }: NavigationProps) {
   });
 
   const handleLanguageChange = (lang: string) => {
-    setLanguage(lang as any);
-    setCurrentLanguage(lang as any);
-    window.location.reload(); // Simple reload to apply language changes
+    changeLanguage(lang as any);
   };
 
   const handleLogout = () => {
@@ -57,12 +55,12 @@ export default function Navigation({ user }: NavigationProps) {
 
   const navItems = user.role === "admin" 
     ? [
-        { href: "/admin", label: "Admin Panel", current: location === "/admin" },
+        { href: "/admin", label: t("admin.panel"), current: location === "/admin" },
       ]
     : [
-        { href: "/", label: "Dashboard", current: location === "/" },
-        { href: "/deals", label: "My Deals", current: location === "/deals" },
-        { href: "/rewards", label: "Rewards", current: location === "/rewards" },
+        { href: "/", label: t("common.dashboard"), current: location === "/" },
+        { href: "/deals", label: t("common.deals"), current: location === "/deals" },
+        { href: "/rewards", label: t("common.rewards"), current: location === "/rewards" },
       ];
 
   const userInitials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
@@ -165,10 +163,10 @@ export default function Navigation({ user }: NavigationProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem data-testid="menu-profile">Profile</DropdownMenuItem>
+                <DropdownMenuItem data-testid="menu-profile">{t("common.profile")}</DropdownMenuItem>
                 <DropdownMenuItem data-testid="menu-settings">Settings</DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout} data-testid="menu-logout">
-                  Logout
+                  {t("common.logout")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

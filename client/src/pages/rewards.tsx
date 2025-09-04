@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Gift, CreditCard, Plane, Laptop, Smartphone, Award } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 import { apiRequest } from "@/lib/queryClient";
 import type { Reward, UserReward } from "@shared/schema";
 
@@ -15,6 +16,7 @@ interface UserStats {
 }
 
 export default function Rewards() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -38,8 +40,8 @@ export default function Rewards() {
     },
     onSuccess: () => {
       toast({
-        title: "Redemption Submitted",
-        description: "Your reward redemption is pending administrator approval. You'll receive notification once approved.",
+        title: t("rewards.redemptionSubmitted"),
+        description: t("rewards.redemptionPending"),
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user-rewards"] });
       queryClient.invalidateQueries({ queryKey: ["/api/users/stats"] });
@@ -56,7 +58,7 @@ export default function Rewards() {
   const handleRedeem = (reward: Reward) => {
     if (!stats || stats.availablePoints < reward.pointsCost) {
       toast({
-        title: "Insufficient Points",
+        title: t("rewards.insufficientPoints"),
         description: `You need ${reward.pointsCost.toLocaleString()} points to redeem this reward.`,
         variant: "destructive",
       });
@@ -153,15 +155,15 @@ export default function Rewards() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-2" data-testid="text-page-title">
-          Rewards Catalog
+          {t("rewards.catalog")}
         </h1>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <p className="text-gray-600 mb-4 sm:mb-0">
-            Redeem your points for amazing rewards
+            {t("rewards.redeemPoints")}
           </p>
           <div className="bg-primary-50 rounded-lg px-4 py-2">
             <span className="text-sm text-primary-600 font-medium">
-              Available Points: {stats?.availablePoints?.toLocaleString() || 0}
+              {t("rewards.availablePoints")}: {stats?.availablePoints?.toLocaleString() || 0}
             </span>
           </div>
         </div>
@@ -169,13 +171,13 @@ export default function Rewards() {
 
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6">
-          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="all">{t("rewards.allRewards")}</TabsTrigger>
           {categories.slice(0, 4).map((category) => (
             <TabsTrigger key={category} value={category}>
               {category}
             </TabsTrigger>
           ))}
-          <TabsTrigger value="my-rewards">My Rewards</TabsTrigger>
+          <TabsTrigger value="my-rewards">{t("rewards.myRewards")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="mt-6">
@@ -228,10 +230,10 @@ export default function Rewards() {
                       data-testid={`button-redeem-${reward.id}`}
                     >
                       {!stats || stats.availablePoints < reward.pointsCost
-                        ? "Insufficient Points"
+                        ? t("rewards.insufficientPoints")
                         : redeemMutation.isPending
-                        ? "Redeeming..."
-                        : "Redeem"}
+                        ? t("rewards.redeeming")
+                        : t("rewards.redeem")}
                     </Button>
                   </CardContent>
                 </Card>
@@ -242,10 +244,10 @@ export default function Rewards() {
               <CardContent className="p-12 text-center">
                 <Gift className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2" data-testid="text-no-rewards-title">
-                  No rewards available
+                  {t("rewards.noRewards")}
                 </h3>
                 <p className="text-gray-600" data-testid="text-no-rewards-description">
-                  Check back soon for new rewards to redeem with your points.
+                  {t("rewards.noRewardsDesc")}
                 </p>
               </CardContent>
             </Card>
@@ -338,17 +340,17 @@ export default function Rewards() {
                           {/* Status Information */}
                           {userReward.status === 'pending' && (
                             <p className="text-sm text-yellow-600 mt-1">
-                              Waiting for administrator approval
+                              {t("rewards.waitingApproval")}
                             </p>
                           )}
                           {userReward.status === 'rejected' && userReward.rejectionReason && (
                             <p className="text-sm text-red-600 mt-1">
-                              Rejected: {userReward.rejectionReason}
+                              {t("rewards.rejectedReason")}: {userReward.rejectionReason}
                             </p>
                           )}
                           {userReward.status === 'approved' && userReward.approvedAt && (
                             <p className="text-sm text-green-600 mt-1">
-                              Approved: {new Date(userReward.approvedAt).toLocaleDateString()}
+                              {t("rewards.approvedOn")}: {new Date(userReward.approvedAt).toLocaleDateString()}
                             </p>
                           )}
                           
@@ -364,10 +366,10 @@ export default function Rewards() {
                               {/* Shipment dates */}
                               <div className="mt-1 text-xs text-gray-500">
                                 {userReward.shippedAt && (
-                                  <div>Shipped: {new Date(userReward.shippedAt).toLocaleDateString()}</div>
+                                  <div>{t("rewards.shippedOn")}: {new Date(userReward.shippedAt).toLocaleDateString()}</div>
                                 )}
                                 {userReward.deliveredAt && (
-                                  <div>Delivered: {new Date(userReward.deliveredAt).toLocaleDateString()}</div>
+                                  <div>{t("rewards.deliveredOn")}: {new Date(userReward.deliveredAt).toLocaleDateString()}</div>
                                 )}
                               </div>
                             </div>
@@ -393,10 +395,10 @@ export default function Rewards() {
               <CardContent className="p-12 text-center">
                 <Award className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2" data-testid="text-no-user-rewards-title">
-                  No rewards redeemed yet
+                  {t("rewards.noUserRewards")}
                 </h3>
                 <p className="text-gray-600" data-testid="text-no-user-rewards-description">
-                  Redeem your first reward to see it here!
+                  {t("rewards.noUserRewardsDesc")}
                 </p>
               </CardContent>
             </Card>
