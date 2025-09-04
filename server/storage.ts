@@ -1,8 +1,9 @@
 import { 
-  users, deals, rewards, userRewards, pointsHistory, campaigns,
+  users, deals, rewards, userRewards, pointsHistory, campaigns, notifications,
   type User, type InsertUser, type Deal, type InsertDeal, 
   type Reward, type InsertReward, type UserReward, type InsertUserReward,
   type PointsHistory, type InsertPointsHistory, type Campaign, type InsertCampaign,
+  type Notification, type InsertNotification,
   type DealWithUser
 } from "@shared/schema";
 import { db } from "./db";
@@ -40,6 +41,7 @@ export interface IStorage {
   updateReward(id: string, updates: Partial<Reward>): Promise<Reward | undefined>;
   redeemReward(userId: string, rewardId: string): Promise<UserReward>;
   getUserRewards(userId: string): Promise<UserReward[]>;
+  updateRewardShipmentStatus(rewardRedemptionId: string, shipmentStatus: "pending" | "shipped" | "delivered", adminId: string): Promise<UserReward | undefined>;
   approveRewardRedemption(rewardRedemptionId: string, adminId: string): Promise<UserReward | undefined>;
   rejectRewardRedemption(rewardRedemptionId: string, adminId: string, reason?: string): Promise<UserReward | undefined>;
   getPendingRewardRedemptions(): Promise<Array<UserReward & { userName?: string; userFirstName?: string; userLastName?: string; rewardName?: string }>>;
@@ -74,6 +76,10 @@ export interface IStorage {
     totalRevenue: number;
     redeemedRewards: number;
   }>;
+
+  // Notification methods
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  getUserNotifications(userId: string): Promise<Notification[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -363,12 +369,15 @@ export class DatabaseStorage implements IStorage {
       userId: userRewards.userId,
       rewardId: userRewards.rewardId,
       status: userRewards.status,
+      shipmentStatus: userRewards.shipmentStatus,
       approvedBy: userRewards.approvedBy,
       approvedAt: userRewards.approvedAt,
       rejectionReason: userRewards.rejectionReason,
       redeemedAt: userRewards.redeemedAt,
       deliveredAt: userRewards.deliveredAt,
       deliveryAddress: userRewards.deliveryAddress,
+      shippedAt: userRewards.shippedAt,
+      shippedBy: userRewards.shippedBy,
       userName: users.username,
       userFirstName: users.firstName,
       userLastName: users.lastName,
@@ -389,12 +398,15 @@ export class DatabaseStorage implements IStorage {
       userId: userRewards.userId,
       rewardId: userRewards.rewardId,
       status: userRewards.status,
+      shipmentStatus: userRewards.shipmentStatus,
       approvedBy: userRewards.approvedBy,
       approvedAt: userRewards.approvedAt,
       rejectionReason: userRewards.rejectionReason,
       redeemedAt: userRewards.redeemedAt,
       deliveredAt: userRewards.deliveredAt,
       deliveryAddress: userRewards.deliveryAddress,
+      shippedAt: userRewards.shippedAt,
+      shippedBy: userRewards.shippedBy,
       rewardName: rewards.name,
       pointsCost: rewards.pointsCost,
     })
@@ -404,6 +416,67 @@ export class DatabaseStorage implements IStorage {
     .orderBy(desc(userRewards.redeemedAt));
 
     return result as Array<UserReward & { rewardName?: string; pointsCost?: number }>;
+  }
+
+  async updateRewardShipmentStatus(rewardRedemptionId: string, shipmentStatus: "pending" | "shipped" | "delivered", adminId: string): Promise<UserReward | undefined> {
+    // Get the current redemption to access reward and user info
+    const [currentRedemption] = await db.select({
+      id: userRewards.id,
+      userId: userRewards.userId,
+      rewardId: userRewards.rewardId,
+      rewardName: rewards.name,
+    })
+    .from(userRewards)
+    .leftJoin(rewards, eq(userRewards.rewardId, rewards.id))
+    .where(eq(userRewards.id, rewardRedemptionId));
+
+    if (!currentRedemption) {
+      return undefined;
+    }
+
+    const updateData: any = { 
+      shipmentStatus,
+      shippedBy: adminId 
+    };
+
+    if (shipmentStatus === "shipped") {
+      updateData.shippedAt = new Date();
+    } else if (shipmentStatus === "delivered") {
+      updateData.deliveredAt = new Date();
+    }
+
+    const [updatedRedemption] = await db.update(userRewards)
+      .set(updateData)
+      .where(eq(userRewards.id, rewardRedemptionId))
+      .returning();
+
+    // Create notification for user
+    if (updatedRedemption && currentRedemption.rewardName) {
+      let notificationTitle = "";
+      let notificationMessage = "";
+      let notificationType = "info";
+
+      if (shipmentStatus === "shipped") {
+        notificationTitle = "Reward Shipped! 📦";
+        notificationMessage = `Your reward "${currentRedemption.rewardName}" has been shipped and is on its way to you!`;
+        notificationType = "success";
+      } else if (shipmentStatus === "delivered") {
+        notificationTitle = "Reward Delivered! 🎉";
+        notificationMessage = `Your reward "${currentRedemption.rewardName}" has been successfully delivered. Enjoy your reward!`;
+        notificationType = "success";
+      }
+
+      if (notificationTitle) {
+        await this.createNotification({
+          userId: currentRedemption.userId,
+          title: notificationTitle,
+          message: notificationMessage,
+          type: notificationType,
+        });
+      }
+    }
+
+    return updatedRedemption || undefined;
   }
 
   async addPointsHistory(entry: InsertPointsHistory): Promise<PointsHistory> {
@@ -599,6 +672,19 @@ export class DatabaseStorage implements IStorage {
       totalRevenue: Number(dealResult?.revenue || 0),
       redeemedRewards: rewardResult?.count || 0,
     };
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [newNotification] = await db.insert(notifications).values(notification).returning();
+    return newNotification;
+  }
+
+  async getUserNotifications(userId: string): Promise<Notification[]> {
+    const userNotifications = await db.select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
+    return userNotifications;
   }
 }
 

@@ -381,6 +381,27 @@ export default function Admin() {
     },
   });
 
+  // Update reward shipment status mutation
+  const updateShipmentStatusMutation = useMutation({
+    mutationFn: async ({ redemptionId, shipmentStatus }: { redemptionId: string; shipmentStatus: string }) => {
+      return apiRequest("PUT", `/api/admin/rewards/${redemptionId}/shipment`, { shipmentStatus });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rewards/redemptions"] });
+      toast({
+        title: "Success",
+        description: "Shipment status updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update shipment status",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleApproveUser = (userId: string) => {
     approveUserMutation.mutate(userId);
   };
@@ -1610,6 +1631,12 @@ export default function Admin() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Approved Date
                         </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Shipment Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -1648,6 +1675,52 @@ export default function Admin() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {redemption.approvedAt ? formatDate(redemption.approvedAt.toString()) : '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <Badge className={`${
+                              redemption.shipmentStatus === 'delivered' ? 'bg-green-100 text-green-800' :
+                              redemption.shipmentStatus === 'shipped' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {redemption.shipmentStatus === 'delivered' ? 'Delivered' :
+                               redemption.shipmentStatus === 'shipped' ? 'Shipped' : 'Pending'}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            {redemption.status === 'approved' && (
+                              <div className="flex space-x-2">
+                                {redemption.shipmentStatus === 'pending' && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateShipmentStatusMutation.mutate({ 
+                                      redemptionId: redemption.id, 
+                                      shipmentStatus: 'shipped' 
+                                    })}
+                                    disabled={updateShipmentStatusMutation.isPending}
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                    data-testid={`button-ship-${redemption.id}`}
+                                  >
+                                    {updateShipmentStatusMutation.isPending ? "Updating..." : "Mark Shipped"}
+                                  </Button>
+                                )}
+                                {redemption.shipmentStatus === 'shipped' && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateShipmentStatusMutation.mutate({ 
+                                      redemptionId: redemption.id, 
+                                      shipmentStatus: 'delivered' 
+                                    })}
+                                    disabled={updateShipmentStatusMutation.isPending}
+                                    className="bg-green-600 hover:bg-green-700"
+                                    data-testid={`button-deliver-${redemption.id}`}
+                                  >
+                                    {updateShipmentStatusMutation.isPending ? "Updating..." : "Mark Delivered"}
+                                  </Button>
+                                )}
+                                {redemption.shipmentStatus === 'delivered' && (
+                                  <span className="text-green-600 font-medium">✓ Delivered</span>
+                                )}
+                              </div>
+                            )}
                           </td>
                         </tr>
                       ))}

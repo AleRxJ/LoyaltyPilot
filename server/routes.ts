@@ -398,6 +398,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to update reward shipment status
+  app.put("/api/admin/rewards/:redemptionId/shipment", async (req, res) => {
+    const userRole = req.session?.userRole;
+    const adminId = req.session?.userId;
+    
+    if (userRole !== "admin" || !adminId) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { redemptionId } = req.params;
+      const { shipmentStatus } = req.body;
+
+      // Validate shipment status
+      if (!["pending", "shipped", "delivered"].includes(shipmentStatus)) {
+        return res.status(400).json({ message: "Invalid shipment status" });
+      }
+
+      const updatedRedemption = await storage.updateRewardShipmentStatus(redemptionId, shipmentStatus, adminId);
+      
+      if (updatedRedemption) {
+        res.json({ 
+          message: `Reward shipment status updated to ${shipmentStatus}`,
+          shipmentStatus: updatedRedemption.shipmentStatus
+        });
+      } else {
+        res.status(404).json({ message: "Redemption not found" });
+      }
+    } catch (error) {
+      console.error("Update shipment status error:", error);
+      res.status(500).json({ message: "Failed to update shipment status" });
+    }
+  });
+
   // Points routes
   app.get("/api/points/history", async (req, res) => {
     const userId = req.session?.userId;

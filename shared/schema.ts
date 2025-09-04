@@ -8,6 +8,7 @@ export const partnerLevelEnum = pgEnum("partner_level", ["bronze", "silver", "go
 export const dealStatusEnum = pgEnum("deal_status", ["pending", "approved", "rejected"]);
 export const productTypeEnum = pgEnum("product_type", ["software", "hardware"]);
 export const rewardStatusEnum = pgEnum("reward_status", ["pending", "approved", "rejected", "delivered"]);
+export const shipmentStatusEnum = pgEnum("shipment_status", ["pending", "shipped", "delivered"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -65,12 +66,15 @@ export const userRewards = pgTable("user_rewards", {
   userId: varchar("user_id").notNull().references(() => users.id),
   rewardId: varchar("reward_id").notNull().references(() => rewards.id),
   status: rewardStatusEnum("status").notNull().default("pending"),
+  shipmentStatus: shipmentStatusEnum("shipment_status").notNull().default("pending"),
   approvedBy: varchar("approved_by").references(() => users.id),
   approvedAt: timestamp("approved_at"),
   rejectionReason: text("rejection_reason"),
   redeemedAt: timestamp("redeemed_at").notNull().default(sql`now()`),
   deliveredAt: timestamp("delivered_at"),
   deliveryAddress: text("delivery_address"),
+  shippedAt: timestamp("shipped_at"),
+  shippedBy: varchar("shipped_by").references(() => users.id),
 });
 
 export const pointsHistory = pgTable("points_history", {
@@ -94,11 +98,22 @@ export const campaigns = pgTable("campaigns", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  type: text("type").notNull().default("info"), // info, success, warning, error
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   deals: many(deals),
   userRewards: many(userRewards),
   pointsHistory: many(pointsHistory),
+  notifications: many(notifications),
 }));
 
 export const dealsRelations = relations(deals, ({ one }) => ({
@@ -136,6 +151,10 @@ export const userRewardsRelations = relations(userRewards, ({ one }) => ({
     fields: [userRewards.approvedBy],
     references: [users.id],
   }),
+  shipper: one(users, {
+    fields: [userRewards.shippedBy],
+    references: [users.id],
+  }),
 }));
 
 export const pointsHistoryRelations = relations(pointsHistory, ({ one }) => ({
@@ -150,6 +169,13 @@ export const pointsHistoryRelations = relations(pointsHistory, ({ one }) => ({
   reward: one(rewards, {
     fields: [pointsHistory.rewardId],
     references: [rewards.id],
+  }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
   }),
 }));
 
@@ -192,6 +218,11 @@ export const insertCampaignSchema = createInsertSchema(campaigns).omit({
   createdAt: true,
 });
 
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -205,6 +236,8 @@ export type PointsHistory = typeof pointsHistory.$inferSelect;
 export type InsertPointsHistory = z.infer<typeof insertPointsHistorySchema>;
 export type Campaign = typeof campaigns.$inferSelect;
 export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
 // Deal with user information for admin views
 export type DealWithUser = Deal & {
