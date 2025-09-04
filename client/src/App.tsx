@@ -1,4 +1,5 @@
 import { Switch, Route, useLocation } from "wouter";
+import { useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -25,6 +26,15 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   const [location] = useLocation();
+
+  // Add/remove body class for header spacing
+  useEffect(() => {
+    if (user) {
+      document.body.classList.add('with-header');
+    } else {
+      document.body.classList.remove('with-header');
+    }
+  }, [user]);
 
   if (isLoading) {
     return (
