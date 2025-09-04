@@ -72,18 +72,21 @@ export default function Navigation({ user }: NavigationProps) {
   console.log('Navigation component is rendering with user:', user.username, 'role:', user.role);
 
   return (
-    <nav 
+    <header 
       className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50" 
       style={{
         backgroundColor: 'white', 
-        position: 'sticky',
+        position: 'fixed',
         top: 0,
-        zIndex: 50,
-        display: 'block',
-        visibility: 'visible',
-        opacity: 1,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        display: 'block !important',
+        visibility: 'visible !important',
+        opacity: '1 !important',
         width: '100%',
-        minHeight: '64px'
+        minHeight: '64px',
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -206,6 +209,6 @@ export default function Navigation({ user }: NavigationProps) {
           </div>
         )}
       </div>
-    </nav>
+    </header>
   );
 }
