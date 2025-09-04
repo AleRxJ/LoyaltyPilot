@@ -151,6 +151,11 @@ export default function Rewards() {
     return rewards?.filter(reward => reward.category === category) || [];
   };
 
+  const availableRewards = () => {
+    if (!rewards || !stats) return [];
+    return rewards.filter(reward => stats.availablePoints >= reward.pointsCost);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
@@ -170,8 +175,9 @@ export default function Rewards() {
       </div>
 
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7">
           <TabsTrigger value="all">{t("rewards.allRewards")}</TabsTrigger>
+          <TabsTrigger value="available">{t("rewards.availableRewards")}</TabsTrigger>
           {categories.slice(0, 4).map((category) => (
             <TabsTrigger key={category} value={category}>
               {category}
@@ -248,6 +254,78 @@ export default function Rewards() {
                 </h3>
                 <p className="text-gray-600" data-testid="text-no-rewards-description">
                   {t("rewards.noRewardsDesc")}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="available" className="mt-6">
+          {rewardsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i} className="shadow-material">
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <Skeleton className="h-12 w-12 rounded-lg" />
+                      <div className="flex-1">
+                        <Skeleton className="h-5 w-3/4 mb-2" />
+                        <Skeleton className="h-4 w-1/2" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-10 w-full" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : availableRewards().length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {availableRewards().map((reward) => (
+                <Card key={reward.id} className="shadow-material border-green-200" data-testid={`card-available-reward-${reward.id}`}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div className={`w-12 h-12 bg-gradient-to-br ${getCategoryColor(reward.category)} rounded-lg flex items-center justify-center`}>
+                        {getRewardIcon(reward.category)}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900">{reward.name}</h3>
+                        <p className="text-sm text-green-600 font-medium">
+                          {reward.pointsCost.toLocaleString()} points ✓
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {reward.description && (
+                      <p className="text-sm text-gray-600 mb-4">{reward.description}</p>
+                    )}
+                    
+                    <Badge variant="outline" className="mb-4 border-green-200 text-green-700">
+                      {reward.category}
+                    </Badge>
+                    
+                    <Button
+                      className="w-full bg-green-600 hover:bg-green-700"
+                      onClick={() => handleRedeem(reward)}
+                      disabled={redeemMutation.isPending}
+                      data-testid={`button-redeem-available-${reward.id}`}
+                    >
+                      {redeemMutation.isPending
+                        ? t("rewards.redeeming")
+                        : t("rewards.redeem")}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="shadow-material">
+              <CardContent className="p-12 text-center">
+                <Gift className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2" data-testid="text-no-available-rewards-title">
+                  {t("rewards.noAvailableRewards")}
+                </h3>
+                <p className="text-gray-600" data-testid="text-no-available-rewards-description">
+                  {t("rewards.noAvailableRewardsDesc")}
                 </p>
               </CardContent>
             </Card>
