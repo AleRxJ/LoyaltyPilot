@@ -97,12 +97,40 @@ export default function Rewards() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "redeemed":
+      case "approved":
+        return "bg-green-100 text-green-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getShipmentStatusColor = (shipmentStatus: string) => {
+    switch (shipmentStatus) {
+      case "pending":
+        return "bg-orange-100 text-orange-800";
+      case "shipped":
         return "bg-blue-100 text-blue-800";
       case "delivered":
         return "bg-green-100 text-green-800";
       default:
         return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getShipmentStatusLabel = (shipmentStatus: string) => {
+    switch (shipmentStatus) {
+      case "pending":
+        return "Pending Shipment";
+      case "shipped":
+        return "Shipped";
+      case "delivered":
+        return "Delivered";
+      default:
+        return "Unknown";
     }
   };
 
@@ -304,8 +332,10 @@ export default function Rewards() {
                             {userReward.rewardName || 'Unknown Reward'}
                           </h3>
                           <p className="text-sm text-gray-600">
-                            {userReward.pointsCost?.toLocaleString()} points • {new Date(userReward.redeemedAt).toLocaleDateString()}
+                            {userReward.pointsCost?.toLocaleString()} points • Redeemed: {new Date(userReward.redeemedAt).toLocaleDateString()}
                           </p>
+                          
+                          {/* Status Information */}
                           {userReward.status === 'pending' && (
                             <p className="text-sm text-yellow-600 mt-1">
                               Waiting for administrator approval
@@ -318,8 +348,29 @@ export default function Rewards() {
                           )}
                           {userReward.status === 'approved' && userReward.approvedAt && (
                             <p className="text-sm text-green-600 mt-1">
-                              Approved on {new Date(userReward.approvedAt).toLocaleDateString()}
+                              Approved: {new Date(userReward.approvedAt).toLocaleDateString()}
                             </p>
+                          )}
+                          
+                          {/* Shipment Information - Only show if approved */}
+                          {userReward.status === 'approved' && userReward.shipmentStatus && (
+                            <div className="mt-2">
+                              <div className="flex items-center space-x-2">
+                                <Badge className={getShipmentStatusColor(userReward.shipmentStatus)} data-testid={`badge-shipment-${userReward.id}`}>
+                                  {getShipmentStatusLabel(userReward.shipmentStatus)}
+                                </Badge>
+                              </div>
+                              
+                              {/* Shipment dates */}
+                              <div className="mt-1 text-xs text-gray-500">
+                                {userReward.shippedAt && (
+                                  <div>Shipped: {new Date(userReward.shippedAt).toLocaleDateString()}</div>
+                                )}
+                                {userReward.deliveredAt && (
+                                  <div>Delivered: {new Date(userReward.deliveredAt).toLocaleDateString()}</div>
+                                )}
+                              </div>
+                            </div>
                           )}
                         </div>
                       </div>
