@@ -33,7 +33,7 @@ class EMBlueService {
         this.token = response.data.Token;
         // Token expires after 30 minutes
         this.tokenExpiry = new Date(Date.now() + 25 * 60 * 1000); // 25 minutes to be safe
-        return { success: true, token: this.token };
+        return { success: true, token: this.token || undefined };
       } else {
         return { success: false, error: 'Authentication failed' };
       }

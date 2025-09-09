@@ -997,6 +997,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
+      // Send welcome email after successful approval
+      try {
+        const { emblueService } = await import('./lib/emblue.js');
+        const emailSent = await emblueService.sendWelcomeEmail(
+          approvedUser.email, 
+          approvedUser.firstName || 'Usuario', 
+          approvedUser.lastName || ''
+        );
+        
+        if (emailSent) {
+          console.log(`Welcome email sent successfully to ${approvedUser.email}`);
+        } else {
+          console.warn(`Failed to send welcome email to ${approvedUser.email}`);
+        }
+      } catch (emailError) {
+        console.error("Error sending welcome email:", emailError);
+        // Don't fail the approval if email fails - log and continue
+      }
+
       res.json({ 
         message: "User approved successfully", 
         user: {
