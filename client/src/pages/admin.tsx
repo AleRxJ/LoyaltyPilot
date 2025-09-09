@@ -14,6 +14,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { 
   Users, 
   ClipboardCheck, 
@@ -498,11 +500,165 @@ export default function Admin() {
     }
   };
 
-  const handleExportReport = () => {
-    toast({
-      title: "Export Started",
-      description: "Your report is being generated and will download shortly.",
-    });
+  const handleExportReport = async () => {
+    try {
+      toast({
+        title: "Generating Report",
+        description: "Creating your PDF report...",
+      });
+
+      // Create new PDF document
+      const doc = new jsPDF();
+      
+      // Get current date for report
+      const currentDate = new Date().toLocaleDateString();
+      const reportTitle = `Loyalty Program Report - ${currentDate}`;
+      
+      // Add title
+      doc.setFontSize(20);
+      doc.setTextColor(40, 40, 40);
+      doc.text(reportTitle, 20, 25);
+      
+      // Add filters info
+      doc.setFontSize(12);
+      doc.setTextColor(80, 80, 80);
+      let yPos = 40;
+      
+      doc.text(`Report Filters:`, 20, yPos);
+      yPos += 8;
+      doc.text(`• Country: ${reportFilters.country === 'all' ? 'All Countries' : reportFilters.country}`, 25, yPos);
+      yPos += 6;
+      doc.text(`• Partner Level: ${reportFilters.partnerLevel === 'all' ? 'All Levels' : reportFilters.partnerLevel}`, 25, yPos);
+      yPos += 6;
+      if (reportFilters.startDate) {
+        doc.text(`• Start Date: ${reportFilters.startDate}`, 25, yPos);
+        yPos += 6;
+      }
+      if (reportFilters.endDate) {
+        doc.text(`• End Date: ${reportFilters.endDate}`, 25, yPos);
+        yPos += 6;
+      }
+      
+      yPos += 10;
+      
+      // Add summary statistics
+      doc.setFontSize(16);
+      doc.setTextColor(40, 40, 40);
+      doc.text('Summary Statistics', 20, yPos);
+      yPos += 15;
+      
+      const summaryData = [
+        ['Total Users', (reportsData?.userCount || 0).toString()],
+        ['Total Deals', (reportsData?.dealCount || 0).toString()],
+        ['Total Revenue', formatCurrency(reportsData?.totalRevenue || 0)],
+        ['Redeemed Rewards', (reportsData?.redeemedRewards || 0).toString()]
+      ];
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Metric', 'Value']],
+        body: summaryData,
+        theme: 'grid',
+        headStyles: { fillColor: [41, 128, 185] },
+        alternateRowStyles: { fillColor: [240, 248, 255] },
+        margin: { left: 20, right: 20 },
+      });
+      
+      // Add users table if data is available
+      if (users && users.length > 0) {
+        yPos = (doc as any).lastAutoTable.finalY + 20;
+        
+        doc.setFontSize(16);
+        doc.text('User Details', 20, yPos);
+        yPos += 10;
+        
+        const usersData = users.slice(0, 20).map(user => [
+          user.username || 'N/A',
+          `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'N/A',
+          user.email || 'N/A',
+          user.country || 'N/A',
+          user.partnerLevel || 'N/A',
+          user.role === 'admin' ? 'Admin' : 'User'
+        ]);
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Username', 'Name', 'Email', 'Country', 'Partner Level', 'Role']],
+          body: usersData,
+          theme: 'striped',
+          headStyles: { fillColor: [52, 152, 219] },
+          margin: { left: 20, right: 20 },
+          styles: { fontSize: 9 },
+        });
+      }
+      
+      // Add deals table if data is available
+      if (dealsData && dealsData.deals && dealsData.deals.length > 0) {
+        yPos = (doc as any).lastAutoTable.finalY + 20;
+        
+        // Check if we need a new page
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.setFontSize(16);
+        doc.text('Recent Deals', 20, yPos);
+        yPos += 10;
+        
+        const dealsPdfData = dealsData.deals.slice(0, 15).map((deal: any) => [
+          deal.productName || 'N/A',
+          deal.userName || 'N/A',
+          formatCurrency(deal.dealValue || 0),
+          (deal.pointsEarned || 0).toString(),
+          deal.status || 'N/A',
+          deal.createdAt ? new Date(deal.createdAt).toLocaleDateString() : 'N/A'
+        ]);
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Product', 'User', 'Value', 'Points', 'Status', 'Date']],
+          body: dealsPdfData,
+          theme: 'striped',
+          headStyles: { fillColor: [46, 204, 113] },
+          margin: { left: 20, right: 20 },
+          styles: { fontSize: 9 },
+        });
+      }
+      
+      // Add footer
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(10);
+        doc.setTextColor(128, 128, 128);
+        doc.text(
+          `Generated on ${currentDate} - Page ${i} of ${pageCount}`,
+          doc.internal.pageSize.width / 2,
+          doc.internal.pageSize.height - 10,
+          { align: 'center' }
+        );
+      }
+      
+      // Generate filename with current date and filters
+      const filename = `loyalty-report-${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      // Save the PDF
+      doc.save(filename);
+      
+      toast({
+        title: "Report Downloaded",
+        description: `Your report has been saved as ${filename}`,
+      });
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Export Failed",
+        description: "There was an error generating your report. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
