@@ -22,7 +22,8 @@ class EMBlueService {
     try {
       const response = await axios.post(`${this.baseUrl}/Authenticate`, {
         User: process.env.EMBLUE_USERNAME,
-        Pass: process.env.EMBLUE_PASSWORD
+        Pass: process.env.EMBLUE_PASSWORD,
+        Token: process.env.EMBLUE_API_TOKEN
       }, {
         headers: {
           'Content-Type': 'application/json'
