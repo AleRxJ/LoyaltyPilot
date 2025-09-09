@@ -14,20 +14,22 @@ interface SendEmailParams {
 }
 
 class EMBlueService {
-  private baseUrl = 'https://api.embluemail.com/Services/Emblue3Service.svc/json';
+  private baseUrl = 'https://api.embluemail.com/Services/Emblue3Service.svc/Json';
   private token: string | null = null;
   private tokenExpiry: Date | null = null;
 
-  private async authenticate(): Promise<EMBlueAuthResponse> {
+  async authenticate(): Promise<EMBlueAuthResponse> {
     try {
       const response = await axios.post(`${this.baseUrl}/Authenticate`, {
-        username: process.env.EMBLUE_USERNAME,
-        password: process.env.EMBLUE_PASSWORD
+        User: process.env.EMBLUE_USERNAME,
+        Pass: process.env.EMBLUE_PASSWORD
       }, {
         headers: {
           'Content-Type': 'application/json'
         }
       });
+
+      console.log('EMBlue authentication response:', response.data);
 
       if (response.data && response.data.Token) {
         this.token = response.data.Token;
@@ -35,10 +37,11 @@ class EMBlueService {
         this.tokenExpiry = new Date(Date.now() + 25 * 60 * 1000); // 25 minutes to be safe
         return { success: true, token: this.token || undefined };
       } else {
-        return { success: false, error: 'Authentication failed' };
+        console.error('EMBlue authentication failed:', response.data);
+        return { success: false, error: 'Authentication failed - no token received' };
       }
     } catch (error: any) {
-      console.error('EMBlue authentication error:', error);
+      console.error('EMBlue authentication error:', error.response?.data || error);
       return { 
         success: false, 
         error: error.response?.data?.Message || error.message 
@@ -147,23 +150,33 @@ Este es un email automático, por favor no responder directamente.
   private async sendEmail(params: SendEmailParams): Promise<boolean> {
     try {
       if (!(await this.ensureAuthenticated())) {
+        console.error('EMBlue authentication failed');
         return false;
       }
 
-      // EMBlue SendMailExpress API call
-      const response = await axios.post(`${this.baseUrl}/SendMailExpress`, {
-        token: this.token,
-        recipientEmail: params.to,
-        fromEmail: process.env.EMBLUE_FROM_EMAIL,
+      // Try simplified email sending approach
+      const emailData = {
+        Token: this.token,
+        Email: params.to,
+        Subject: params.subject,
+        HtmlBody: params.htmlContent,
+        TextBody: params.textContent || '',
+        FromEmail: process.env.EMBLUE_FROM_EMAIL || 'no-reply@example.com'
+      };
+
+      console.log('Sending email with EMBlue data:', { 
+        to: params.to, 
         subject: params.subject,
-        htmlBody: params.htmlContent,
-        textBody: params.textContent || '',
-        campaignName: 'User Approval Notification'
-      }, {
+        fromEmail: emailData.FromEmail
+      });
+
+      const response = await axios.post(`${this.baseUrl}/SendMailExpress`, emailData, {
         headers: {
           'Content-Type': 'application/json'
         }
       });
+
+      console.log('EMBlue send email response:', response.data);
 
       if (response.data && response.data.Code === 0) {
         console.log(`Email sent successfully to ${params.to}`);
@@ -174,7 +187,7 @@ Este es un email automático, por favor no responder directamente.
       }
 
     } catch (error: any) {
-      console.error('Error sending email via EMBlue:', error);
+      console.error('Error sending email via EMBlue:', error.response?.data || error);
       return false;
     }
   }
