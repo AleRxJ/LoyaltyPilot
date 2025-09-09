@@ -626,6 +626,76 @@ export default function Admin() {
         });
       }
       
+      // Add rewards catalog if data is available
+      if (rewards && rewards.length > 0) {
+        yPos = (doc as any).lastAutoTable.finalY + 20;
+        
+        // Check if we need a new page
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.setFontSize(16);
+        doc.text('Rewards Catalog', 20, yPos);
+        yPos += 10;
+        
+        const rewardsPdfData = rewards.slice(0, 20).map((reward: any) => [
+          reward.name || 'N/A',
+          reward.category || 'N/A',
+          (reward.pointsCost || 0).toLocaleString(),
+          reward.description || 'N/A',
+          reward.inStock ? 'In Stock' : 'Out of Stock'
+        ]);
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Name', 'Category', 'Points Cost', 'Description', 'Stock Status']],
+          body: rewardsPdfData,
+          theme: 'striped',
+          headStyles: { fillColor: [142, 68, 173] },
+          margin: { left: 20, right: 20 },
+          styles: { fontSize: 8, cellPadding: 3 },
+          columnStyles: {
+            3: { cellWidth: 60 }, // Description column wider
+          }
+        });
+      }
+      
+      // Add reward redemptions if data is available
+      if (allRedemptions && allRedemptions.length > 0) {
+        yPos = (doc as any).lastAutoTable.finalY + 20;
+        
+        // Check if we need a new page
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.setFontSize(16);
+        doc.text('Reward Redemptions', 20, yPos);
+        yPos += 10;
+        
+        const redemptionsPdfData = allRedemptions.slice(0, 15).map((redemption: any) => [
+          redemption.userName || 'N/A',
+          redemption.rewardName || 'N/A',
+          (redemption.pointsCost || 0).toLocaleString(),
+          redemption.status || 'N/A',
+          redemption.shipmentStatus || 'N/A',
+          redemption.redeemedAt ? new Date(redemption.redeemedAt).toLocaleDateString() : 'N/A'
+        ]);
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [['User', 'Reward', 'Points', 'Status', 'Shipment', 'Date']],
+          body: redemptionsPdfData,
+          theme: 'striped',
+          headStyles: { fillColor: [231, 76, 60] },
+          margin: { left: 20, right: 20 },
+          styles: { fontSize: 9 },
+        });
+      }
+      
       // Add footer
       const pageCount = doc.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
