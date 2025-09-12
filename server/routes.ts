@@ -997,24 +997,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Send welcome email after successful approval
-      try {
-        const { emblueService } = await import('./lib/emblue.js');
-        const emailSent = await emblueService.sendWelcomeEmail(
-          approvedUser.email, 
-          approvedUser.firstName || 'Usuario', 
-          approvedUser.lastName || ''
-        );
-        
-        if (emailSent) {
-          console.log(`Welcome email sent successfully to ${approvedUser.email}`);
-        } else {
-          console.warn(`Failed to send welcome email to ${approvedUser.email}`);
-        }
-      } catch (emailError) {
-        console.error("Error sending welcome email:", emailError);
-        // Don't fail the approval if email fails - log and continue
-      }
 
       res.json({ 
         message: "User approved successfully", 
@@ -1065,36 +1047,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Test EMBlue connection (admin only)
-  app.get("/api/admin/test-emblue", async (req, res) => {
-    const userRole = req.session?.userRole;
-    
-    if (userRole !== "admin") {
-      return res.status(403).json({ message: "Admin access required" });
-    }
-
-    try {
-      const { emblueService } = await import('./lib/emblue.js');
-      
-      // Test basic connection
-      const connectionTest = await emblueService.testConnection();
-      
-      // Test authentication
-      const authTest = await (emblueService as any).authenticate();
-      
-      res.json({
-        connection: connectionTest ? "OK" : "Failed",
-        authentication: authTest.success ? "OK" : authTest.error,
-        message: "EMBlue API test completed"
-      });
-    } catch (error: any) {
-      console.error("EMBlue test error:", error);
-      res.status(500).json({ 
-        message: "EMBlue test failed", 
-        error: error.message 
-      });
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;
