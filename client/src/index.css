@@ -13,7 +13,7 @@
   --card-foreground: hsl(20, 14.3%, 4.1%);
   --border: hsl(20, 5.9%, 90%);
   --input: hsl(20, 5.9%, 90%);
-  --primary: hsl(207, 90%, 54%);
+  --primary: hsl(253, 81%, 33%);
   --primary-foreground: hsl(211, 100%, 99%);
   --secondary: hsl(134, 34%, 37%);
   --secondary-foreground: hsl(60, 9.1%, 97.8%);
@@ -25,11 +25,11 @@
   --radius: 0.5rem;
 
   /* Custom colors matching the design */
-  --primary-50: hsl(207, 100%, 96%);
-  --primary-100: hsl(207, 96%, 90%);
-  --primary-500: hsl(207, 90%, 54%);
-  --primary-600: hsl(207, 73%, 47%);
-  --primary-700: hsl(207, 100%, 29%);
+  --primary-50: hsl(253, 81%, 96%);
+  --primary-100: hsl(253, 81%, 90%);
+  --primary-500: hsl(253, 81%, 33%);
+  --primary-600: hsl(253, 81%, 27%);
+  --primary-700: hsl(253, 81%, 20%);
   
   --secondary-50: hsl(134, 61%, 95%);
   --secondary-500: hsl(134, 34%, 37%);
@@ -52,7 +52,7 @@
   --card-foreground: hsl(0, 0%, 98%);
   --border: hsl(240, 3.7%, 15.9%);
   --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(207, 90%, 54%);
+  --primary: hsl(253, 81%, 33%);
   --primary-foreground: hsl(211, 100%, 99%);
   --secondary: hsl(240, 3.7%, 15.9%);
   --secondary-foreground: hsl(0, 0%, 98%);
