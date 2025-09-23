@@ -18,7 +18,7 @@ import DealModal from "@/components/modals/deal-modal";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import type { AuthUser } from "@/lib/auth";
-import backgroundImage from "@assets/image_1758665439803.png";
+import backgroundImage from "@assets/BANNER-PRINICPAL_1758666220909.jpg";
 
 interface UserStats {
   totalPoints: number;
