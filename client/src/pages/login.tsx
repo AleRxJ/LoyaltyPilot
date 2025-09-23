@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { login, register } from "@/lib/auth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import backgroundVideo from "@assets/social_u8721598234_httpss.mj.run9PeHEv50RaI_Se_mueva_el_humo_--ar_16_859139eb-2b54-44ba-a70e-0b35e099a25c_3_1758640235341.mp4";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -110,8 +111,21 @@ export default function Login() {
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-md">
+    <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden">
+      {/* Video Background */}
+      <video
+        autoPlay
+        loop
+        muted
+        className="absolute inset-0 w-full h-full object-cover z-0"
+      >
+        <source src={backgroundVideo} type="video/mp4" />
+      </video>
+      
+      {/* Overlay for better readability */}
+      <div className="absolute inset-0 bg-black/20 z-10"></div>
+      
+      <Card className="relative z-20 w-full max-w-md bg-white/95 backdrop-blur-sm">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-primary-600">
             LoyaltyPro
