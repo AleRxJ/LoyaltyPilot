@@ -56,7 +56,6 @@ const createUserSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   country: z.string().min(1, "Country is required"),
   role: z.enum(["user", "admin"]).default("user"),
-  partnerLevel: z.enum(["bronze", "silver", "gold", "platinum"]).default("bronze"),
   isActive: z.boolean().default(true),
 });
 
@@ -70,7 +69,6 @@ export default function Admin() {
   const [currentPage, setCurrentPage] = useState(1);
   const [reportFilters, setReportFilters] = useState({
     country: "all",
-    partnerLevel: "all",
     startDate: "",
     endDate: "",
   });
@@ -89,7 +87,6 @@ export default function Admin() {
       lastName: "",
       country: "",
       role: "user",
-      partnerLevel: "bronze",
       isActive: true,
     },
   });
@@ -152,12 +149,11 @@ export default function Admin() {
   });
 
   const { data: reportsData, isLoading: reportsLoading } = useQuery<ReportsData>({
-    queryKey: ["/api/admin/reports", reportFilters.country, reportFilters.partnerLevel, reportFilters.startDate, reportFilters.endDate],
+    queryKey: ["/api/admin/reports", reportFilters.country, reportFilters.startDate, reportFilters.endDate],
     enabled: currentUser?.role === "admin",
     queryFn: async () => {
       const params = new URLSearchParams();
       if (reportFilters.country !== "all") params.append("country", reportFilters.country);
-      if (reportFilters.partnerLevel !== "all") params.append("partnerLevel", reportFilters.partnerLevel);
       if (reportFilters.startDate) params.append("startDate", reportFilters.startDate);
       if (reportFilters.endDate) params.append("endDate", reportFilters.endDate);
       
@@ -217,8 +213,8 @@ export default function Admin() {
   });
 
   const updateUserRoleMutation = useMutation({
-    mutationFn: async ({ userId, role, partnerLevel }: { userId: string; role: string; partnerLevel: string }) => {
-      return apiRequest("PATCH", `/api/admin/users/${userId}/role`, { role, partnerLevel });
+    mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
+      return apiRequest("PATCH", `/api/admin/users/${userId}/role`, { role });
     },
     onSuccess: () => {
       toast({
@@ -244,8 +240,8 @@ export default function Admin() {
     rejectDealMutation.mutate(dealId);
   };
 
-  const handleUpdateUserRole = (userId: string, role: string, partnerLevel: string) => {
-    updateUserRoleMutation.mutate({ userId, role, partnerLevel });
+  const handleUpdateUserRole = (userId: string, role: string) => {
+    updateUserRoleMutation.mutate({ userId, role });
   };
 
   // Create user mutation
@@ -528,8 +524,6 @@ export default function Admin() {
       yPos += 8;
       doc.text(`• Country: ${reportFilters.country === 'all' ? 'All Countries' : reportFilters.country}`, 25, yPos);
       yPos += 6;
-      doc.text(`• Partner Level: ${reportFilters.partnerLevel === 'all' ? 'All Levels' : reportFilters.partnerLevel}`, 25, yPos);
-      yPos += 6;
       if (reportFilters.startDate) {
         doc.text(`• Start Date: ${reportFilters.startDate}`, 25, yPos);
         yPos += 6;
@@ -577,13 +571,12 @@ export default function Admin() {
           `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'N/A',
           user.email || 'N/A',
           user.country || 'N/A',
-          user.partnerLevel || 'N/A',
           user.role === 'admin' ? 'Admin' : 'User'
         ]);
         
         autoTable(doc, {
           startY: yPos,
-          head: [['Username', 'Name', 'Email', 'Country', 'Partner Level', 'Role']],
+          head: [['Username', 'Name', 'Email', 'Country', 'Role']],
           body: usersData,
           theme: 'striped',
           headStyles: { fillColor: [52, 152, 219] },
@@ -909,24 +902,6 @@ export default function Admin() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="partnerLevel">Partner Level</Label>
-                  <Select
-                    value={reportFilters.partnerLevel}
-                    onValueChange={(value) => setReportFilters(prev => ({ ...prev, partnerLevel: value }))}
-                  >
-                    <SelectTrigger data-testid="select-report-partner-level">
-                      <SelectValue placeholder="All Levels" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Levels</SelectItem>
-                      <SelectItem value="bronze">Bronze</SelectItem>
-                      <SelectItem value="silver">Silver</SelectItem>
-                      <SelectItem value="gold">Gold</SelectItem>
-                      <SelectItem value="platinum">Platinum</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
                   <Label htmlFor="startDate">Start Date</Label>
                   <Input
                     id="startDate"
@@ -1158,29 +1133,6 @@ export default function Admin() {
                             )}
                           />
                           
-                          <FormField
-                            control={createUserForm.control}
-                            name="partnerLevel"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Partner Level</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger data-testid="select-partner-level">
-                                      <SelectValue placeholder="Select partner level" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="bronze">Bronze</SelectItem>
-                                    <SelectItem value="silver">Silver</SelectItem>
-                                    <SelectItem value="gold">Gold</SelectItem>
-                                    <SelectItem value="platinum">Platinum</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
                         </div>
                         
                         <div className="flex justify-end space-x-2 pt-4">
@@ -1207,7 +1159,7 @@ export default function Admin() {
                 </div>
               </div>
               <div className="text-sm text-gray-600 mt-2">
-                CSV format: First Name, Last Name, Username, Email, Password, Country, Role, Partner Level
+                CSV format: First Name, Last Name, Username, Email, Password, Country, Role
               </div>
             </CardHeader>
             <CardContent>
@@ -1259,7 +1211,7 @@ export default function Admin() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <Select
                               value={user.role}
-                              onValueChange={(newRole) => handleUpdateUserRole(user.id, newRole, user.partnerLevel)}
+                              onValueChange={(newRole) => handleUpdateUserRole(user.id, newRole)}
                               disabled={updateUserRoleMutation.isPending}
                             >
                               <SelectTrigger className="w-24" data-testid={`select-role-${user.id}`}>
@@ -1268,23 +1220,6 @@ export default function Admin() {
                               <SelectContent>
                                 <SelectItem value="user">User</SelectItem>
                                 <SelectItem value="admin">Admin</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Select
-                              value={user.partnerLevel}
-                              onValueChange={(newLevel) => handleUpdateUserRole(user.id, user.role, newLevel)}
-                              disabled={updateUserRoleMutation.isPending}
-                            >
-                              <SelectTrigger className="w-32" data-testid={`select-partner-level-${user.id}`}>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="bronze">Bronze</SelectItem>
-                                <SelectItem value="silver">Silver</SelectItem>
-                                <SelectItem value="gold">Gold</SelectItem>
-                                <SelectItem value="platinum">Platinum</SelectItem>
                               </SelectContent>
                             </Select>
                           </td>
