@@ -5,7 +5,7 @@ import { z } from "zod";
 
 export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
 export const dealStatusEnum = pgEnum("deal_status", ["pending", "approved", "rejected"]);
-export const productTypeEnum = pgEnum("product_type", ["software", "hardware"]);
+export const productTypeEnum = pgEnum("product_type", ["software", "hardware", "equipment"]);
 export const rewardStatusEnum = pgEnum("reward_status", ["pending", "approved", "rejected", "delivered"]);
 export const shipmentStatusEnum = pgEnum("shipment_status", ["pending", "shipped", "delivered"]);
 
