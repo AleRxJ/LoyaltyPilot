@@ -11,6 +11,7 @@ import { logout } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { AuthUser } from "@/lib/auth";
+import logo from "@assets/LOGO-FINAL-LOYALTY_1758720440342.png";
 
 interface NavigationProps {
   user: AuthUser;
@@ -93,9 +94,12 @@ export default function Navigation({ user }: NavigationProps) {
           <div className="flex items-center space-x-4">
             <div className="flex-shrink-0">
               <Link href="/">
-                <h1 className="text-xl font-bold text-blue-600 cursor-pointer" data-testid="logo">
-                  LoyaltyPro
-                </h1>
+                <img 
+                  src={logo} 
+                  alt="LoyaltyPro" 
+                  className="h-8 w-auto cursor-pointer" 
+                  data-testid="logo"
+                />
               </Link>
             </div>
             
