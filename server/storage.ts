@@ -735,8 +735,8 @@ export class DatabaseStorage implements IStorage {
       
     const [dealResult] = await dealQueryBuilder.where(and(...dealConditions));
       
-    const [rewardResult] = await db.select({ count: count() }).from(userRewards)
-      .where(eq(userRewards.status, "approved"));
+    const [rewardResult] = await db.select({ count: count() }).from(pointsHistory)
+      .where(isNotNull(pointsHistory.rewardId));
 
     return {
       userCount: userResult?.count || 0,
