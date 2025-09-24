@@ -148,9 +148,6 @@ export default function Navigation({ user }: NavigationProps) {
                     <div className="text-sm font-medium text-gray-900" data-testid="text-user-name">
                       {user.firstName} {user.lastName}
                     </div>
-                    <div className="text-xs text-gray-500" data-testid="text-partner-level">
-                      {user.partnerLevel.charAt(0).toUpperCase() + user.partnerLevel.slice(1)} Partner
-                    </div>
                   </div>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
