@@ -160,17 +160,6 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* This Month Card */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
-                    <TrendingUp className="text-gray-700 h-6 w-6" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-gray-600 text-sm">This Month</div>
-                    <div className="text-2xl font-bold text-gray-900">+45%</div>
-                    <div className="text-gray-500 text-xs">Points growth</div>
-                  </div>
-                </div>
               </div>
             </div>
           ) : (
