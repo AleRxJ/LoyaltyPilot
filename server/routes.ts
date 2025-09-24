@@ -45,7 +45,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
-        partnerLevel: user.partnerLevel,
         country: user.country
       });
     } catch (error) {
@@ -113,7 +112,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
-      partnerLevel: user.partnerLevel,
       country: user.country
     });
   });
@@ -497,7 +495,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
-        partnerLevel: user.partnerLevel,
         country: user.country,
         isActive: user.isActive,
         createdAt: user.createdAt
@@ -519,21 +516,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { userId } = req.params;
-      const { role, partnerLevel } = req.body;
+      const { role } = req.body;
 
-      if (!role || !partnerLevel) {
-        return res.status(400).json({ message: "Role and partner level are required" });
+      if (!role) {
+        return res.status(400).json({ message: "Role is required" });
       }
 
       if (!["user", "admin"].includes(role)) {
         return res.status(400).json({ message: "Invalid role" });
       }
 
-      if (!["bronze", "silver", "gold", "platinum"].includes(partnerLevel)) {
-        return res.status(400).json({ message: "Invalid partner level" });
-      }
-
-      const updatedUser = await storage.updateUserRole(userId, role as "user" | "admin", partnerLevel as "bronze" | "silver" | "gold" | "platinum");
+      const updatedUser = await storage.updateUserRole(userId, role as "user" | "admin");
       res.json(updatedUser);
     } catch (error) {
       res.status(500).json({ message: "Failed to update user role" });
