@@ -480,11 +480,26 @@ export default function Admin() {
   });
 
   const handleGetCSVUploadParameters = async () => {
-    const response: any = await apiRequest("POST", "/api/admin/csv/upload-url");
-    return {
-      method: 'PUT' as const,
-      url: response.uploadURL,
-    };
+    try {
+      console.log("Getting CSV upload parameters...");
+      const response: any = await apiRequest("POST", "/api/admin/csv/upload-url");
+      console.log("Upload URL response:", response);
+      
+      const result = {
+        method: 'PUT' as const,
+        url: response.uploadURL,
+      };
+      console.log("Returning upload parameters:", result);
+      return result;
+    } catch (error) {
+      console.error("Error getting upload parameters:", error);
+      toast({
+        title: "Error",
+        description: "Failed to get upload URL",
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
   const handleCSVUploadComplete = (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
