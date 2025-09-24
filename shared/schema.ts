@@ -4,7 +4,6 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
-export const partnerLevelEnum = pgEnum("partner_level", ["bronze", "silver", "gold", "platinum"]);
 export const dealStatusEnum = pgEnum("deal_status", ["pending", "approved", "rejected"]);
 export const productTypeEnum = pgEnum("product_type", ["software", "hardware"]);
 export const rewardStatusEnum = pgEnum("reward_status", ["pending", "approved", "rejected", "delivered"]);
@@ -18,7 +17,6 @@ export const users = pgTable("users", {
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   role: userRoleEnum("role").notNull().default("user"),
-  partnerLevel: partnerLevelEnum("partner_level").notNull().default("bronze"),
   country: text("country").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   isApproved: boolean("is_approved").notNull().default(false),
