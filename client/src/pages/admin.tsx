@@ -489,9 +489,19 @@ export default function Admin() {
 
   const handleCSVUploadComplete = (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
     if (result.successful && result.successful.length > 0) {
-      const uploadURL = (result.successful[0] as any).uploadURL;
+      const uploadedFile = result.successful[0] as any;
+      
+      // Try different possible properties for the upload URL
+      const uploadURL = uploadedFile.uploadURL || uploadedFile.url || uploadedFile.response?.uploadURL;
+      
       if (uploadURL) {
         processCSVMutation.mutate(uploadURL);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to get upload URL from file upload",
+          variant: "destructive",
+        });
       }
     }
   };
