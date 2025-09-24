@@ -36,6 +36,13 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       document.body.classList.remove('with-header');
     }
+    
+    // Cleanup function
+    return () => {
+      if (!user) {
+        document.body.classList.remove('with-header');
+      }
+    };
   }, [user]);
 
   if (isLoading) {
@@ -55,10 +62,12 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <>
+    <div className={user ? "with-header-container" : ""}>
       {user && <Navigation user={user} />}
-      {children}
-    </>
+      <main className={user ? "pt-16" : ""}>
+        {children}
+      </main>
+    </div>
   );
 }
 

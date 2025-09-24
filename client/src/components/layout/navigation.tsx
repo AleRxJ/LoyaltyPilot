@@ -72,9 +72,8 @@ export default function Navigation({ user }: NavigationProps) {
 
   const userInitials = `${user.firstName?.charAt(0) || 'U'}${user.lastName?.charAt(0) || 'U'}`.toUpperCase();
 
-  // Debug log to check navigation rendering
-  console.log('Navigation rendering for user:', user.role, 'at location:', location, 'navItems:', navItems);
-  console.log('Navigation component is rendering with user:', user.username, 'role:', user.role);
+  // Reduce excessive logging
+  console.log('Navigation mounted for user:', user.username, 'role:', user.role);
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-50 w-full min-h-[64px]">

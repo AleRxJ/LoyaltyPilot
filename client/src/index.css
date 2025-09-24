@@ -76,6 +76,10 @@
   body.with-header {
     padding-top: 64px; /* Space for fixed header */
   }
+  
+  .with-header-container {
+    min-height: 100vh;
+  }
 }
 
 @layer utilities {
