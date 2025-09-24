@@ -193,12 +193,29 @@ export class DatabaseStorage implements IStorage {
     return result as DealWithUser[];
   }
 
+  // Calculate points based on product type and deal value
+  private calculatePointsForDeal(productType: string, dealValue: number): number {
+    const value = Number(dealValue);
+    if (isNaN(value) || value <= 0) return 0;
+
+    switch (productType) {
+      case "software":
+        return Math.floor(value / 1000); // 1 point per $1000
+      case "hardware":
+        return Math.floor(value / 5000); // 1 point per $5000
+      case "equipment":
+        return Math.floor(value / 10000); // 1 point per $10000
+      default:
+        return 0;
+    }
+  }
+
   async approveDeal(id: string, approvedBy: string): Promise<Deal | undefined> {
     const deal = await this.getDeal(id);
     if (!deal) return undefined;
 
-    // Calculate points (simple formula: 1 point per $10)
-    const pointsEarned = Math.floor(Number(deal.dealValue) / 10);
+    // Calculate points based on new formula
+    const pointsEarned = this.calculatePointsForDeal(deal.productType, Number(deal.dealValue));
 
     const [updatedDeal] = await db.update(deals)
       .set({
@@ -222,6 +239,64 @@ export class DatabaseStorage implements IStorage {
     }
 
     return updatedDeal || undefined;
+  }
+
+  // Recalculate points for all existing deals based on new formula
+  async recalculateAllDealsPoints(): Promise<{ updated: number, errors: string[] }> {
+    const allDeals = await db.select().from(deals);
+    let updated = 0;
+    const errors: string[] = [];
+
+    for (const deal of allDeals) {
+      try {
+        const newPoints = this.calculatePointsForDeal(deal.productType, Number(deal.dealValue));
+        
+        // Only update if points changed or deal is approved
+        if ((deal.pointsEarned || 0) !== newPoints && deal.status === "approved") {
+          await db.update(deals)
+            .set({ 
+              pointsEarned: newPoints,
+              updatedAt: new Date() 
+            })
+            .where(eq(deals.id, deal.id));
+
+          // Update points history - remove old entry if exists and add new one
+          if (newPoints > 0) {
+            // Remove old points history for this deal
+            await db.delete(pointsHistory)
+              .where(eq(pointsHistory.dealId, deal.id));
+            
+            // Add new points history entry
+            await this.addPointsHistory({
+              userId: deal.userId,
+              dealId: deal.id,
+              points: newPoints,
+              description: `Points recalculated for deal: ${deal.productName}`,
+            });
+          }
+          
+          updated++;
+        } else if (deal.status !== "approved" && (deal.pointsEarned || 0) > 0) {
+          // Reset points for non-approved deals
+          await db.update(deals)
+            .set({ 
+              pointsEarned: 0,
+              updatedAt: new Date() 
+            })
+            .where(eq(deals.id, deal.id));
+          
+          // Remove points history for non-approved deals
+          await db.delete(pointsHistory)
+            .where(eq(pointsHistory.dealId, deal.id));
+          
+          updated++;
+        }
+      } catch (error) {
+        errors.push(`Failed to update deal ${deal.id}: ${error}`);
+      }
+    }
+
+    return { updated, errors };
   }
 
   async rejectDeal(id: string): Promise<Deal | undefined> {

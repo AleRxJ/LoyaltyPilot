@@ -649,6 +649,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Calculate points based on product type and deal value
+  function calculatePointsForDeal(productType: string, dealValue: number): number {
+    const value = Number(dealValue);
+    if (isNaN(value) || value <= 0) return 0;
+
+    switch (productType) {
+      case "software":
+        return Math.floor(value / 1000); // 1 point per $1000
+      case "hardware":
+        return Math.floor(value / 5000); // 1 point per $5000
+      case "equipment":
+        return Math.floor(value / 10000); // 1 point per $10000
+      default:
+        return 0;
+    }
+  }
+
   app.post("/api/admin/csv/process", async (req, res) => {
     const userRole = req.session?.userRole;
     if (userRole !== "admin") {
@@ -744,7 +761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           closeDate: new Date(),
           clientInfo: `Bulk import from CSV on ${new Date().toISOString()}`,
           status: status as "pending" | "approved" | "rejected",
-          pointsEarned: status === "approved" ? Math.floor(parseFloat(value) / 100) : 0,
+          pointsEarned: status === "approved" ? calculatePointsForDeal(type, parseFloat(value)) : 0,
         });
       }
 
