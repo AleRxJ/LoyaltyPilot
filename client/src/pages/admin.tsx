@@ -319,10 +319,11 @@ export default function Admin() {
   });
 
   const handleGetUsersCSVUploadParameters = async () => {
-    const response: any = await apiRequest("POST", "/api/admin/csv/users/upload-url");
+    const response = await apiRequest("POST", "/api/admin/csv/users/upload-url");
+    const data: any = await response.json();
     return {
       method: 'PUT' as const,
-      url: response.uploadURL,
+      url: data.uploadURL,
     };
   };
 
@@ -481,10 +482,11 @@ export default function Admin() {
 
   const handleGetCSVUploadParameters = async () => {
     try {
-      const response: any = await apiRequest("POST", "/api/admin/csv/upload-url");
+      const response = await apiRequest("POST", "/api/admin/csv/upload-url");
+      const data: any = await response.json();
       
-      if (!response.uploadURL) {
-        console.error("No uploadURL in response:", response);
+      if (!data.uploadURL) {
+        console.error("No uploadURL in response:", data);
         toast({
           title: "Error", 
           description: "No upload URL received from server",
@@ -495,7 +497,7 @@ export default function Admin() {
       
       return {
         method: 'PUT' as const,
-        url: response.uploadURL,
+        url: data.uploadURL,
       };
     } catch (error) {
       console.error("Error getting upload parameters:", error);
