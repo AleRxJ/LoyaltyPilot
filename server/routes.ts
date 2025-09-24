@@ -1057,6 +1057,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Recalculate all deals points endpoint
+  app.post("/api/admin/recalculate-points", async (req, res) => {
+    const userRole = req.session?.userRole;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const result = await storage.recalculateAllDealsPoints();
+      
+      res.json({
+        message: `Successfully recalculated points for ${result.updated} deals`,
+        updated: result.updated,
+        errors: result.errors.length > 0 ? result.errors.slice(0, 10) : undefined
+      });
+    } catch (error) {
+      console.error("Error recalculating points:", error);
+      res.status(500).json({ message: "Failed to recalculate points" });
+    }
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;
