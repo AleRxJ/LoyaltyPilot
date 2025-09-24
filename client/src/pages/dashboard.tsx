@@ -114,11 +114,6 @@ export default function Dashboard() {
                 <h1 className="text-4xl lg:text-5xl font-bold mb-2 text-white leading-tight" data-testid="text-welcome">
                   Welcome back<br />{user.firstName} {user.lastName}!
                 </h1>
-                <p className="text-white text-lg" data-testid="text-partner-info">
-                  Partner Level: <span className="font-medium">
-                    {user.partnerLevel.charAt(0).toUpperCase() + user.partnerLevel.slice(1)} Partner
-                  </span>
-                </p>
               </div>
               
               {/* Right side - Stats Cards */}
