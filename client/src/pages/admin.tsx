@@ -485,6 +485,16 @@ export default function Admin() {
       const response: any = await apiRequest("POST", "/api/admin/csv/upload-url");
       console.log("Upload URL response:", response);
       
+      if (!response.uploadURL) {
+        console.error("No uploadURL in response:", response);
+        toast({
+          title: "Error", 
+          description: "No upload URL received from server",
+          variant: "destructive",
+        });
+        throw new Error("No upload URL received");
+      }
+      
       const result = {
         method: 'PUT' as const,
         url: response.uploadURL,
