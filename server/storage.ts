@@ -7,7 +7,7 @@ import {
   type DealWithUser
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, lte, sum, count } from "drizzle-orm";
+import { eq, desc, and, gte, lte, sum, count, isNotNull } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -134,8 +134,11 @@ export class DatabaseStorage implements IStorage {
 
     const [redeemedRewardsResult] = await db
       .select({ count: count() })
-      .from(userRewards)
-      .where(eq(userRewards.userId, userId));
+      .from(pointsHistory)
+      .where(and(
+        eq(pointsHistory.userId, userId),
+        isNotNull(pointsHistory.rewardId)
+      ));
 
     const totalPoints = Number(totalPointsResult?.total || 0);
     const availablePoints = await this.getUserAvailablePoints(userId);
