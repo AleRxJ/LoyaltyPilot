@@ -67,7 +67,6 @@ export interface IStorage {
   deleteUser(id: string): Promise<User | undefined>;
   getReportsData(filters: {
     country?: string;
-    partnerLevel?: string;
     startDate?: Date;
     endDate?: Date;
   }): Promise<{
@@ -552,11 +551,10 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
-  async updateUserRole(userId: string, role: "user" | "admin", partnerLevel: "bronze" | "silver" | "gold" | "platinum"): Promise<User | undefined> {
+  async updateUserRole(userId: string, role: "user" | "admin"): Promise<User | undefined> {
     const [updatedUser] = await db.update(users)
       .set({ 
-        role, 
-        partnerLevel,
+        role,
         updatedAt: new Date() 
       })
       .where(eq(users.id, userId))
@@ -621,7 +619,6 @@ export class DatabaseStorage implements IStorage {
 
   async getReportsData(filters: {
     country?: string;
-    partnerLevel?: string;
     startDate?: Date;
     endDate?: Date;
   }): Promise<{
@@ -636,9 +633,6 @@ export class DatabaseStorage implements IStorage {
     
     if (filters.country) {
       userConditions.push(eq(users.country, filters.country));
-    }
-    if (filters.partnerLevel) {
-      userConditions.push(eq(users.partnerLevel, filters.partnerLevel as any));
     }
     if (filters.startDate) {
       dealConditions.push(gte(deals.createdAt, filters.startDate));
