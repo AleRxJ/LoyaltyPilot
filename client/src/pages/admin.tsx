@@ -481,9 +481,7 @@ export default function Admin() {
 
   const handleGetCSVUploadParameters = async () => {
     try {
-      console.log("Getting CSV upload parameters...");
       const response: any = await apiRequest("POST", "/api/admin/csv/upload-url");
-      console.log("Upload URL response:", response);
       
       if (!response.uploadURL) {
         console.error("No uploadURL in response:", response);
@@ -495,12 +493,10 @@ export default function Admin() {
         throw new Error("No upload URL received");
       }
       
-      const result = {
+      return {
         method: 'PUT' as const,
         url: response.uploadURL,
       };
-      console.log("Returning upload parameters:", result);
-      return result;
     } catch (error) {
       console.error("Error getting upload parameters:", error);
       toast({

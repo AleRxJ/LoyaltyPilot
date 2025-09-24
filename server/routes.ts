@@ -621,12 +621,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      console.log("Getting upload URL for CSV...");
       const { ObjectStorageService } = await import("./objectStorage");
       const objectStorageService = new ObjectStorageService();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      console.log("Generated uploadURL:", uploadURL);
-      console.log("Response will be:", { uploadURL });
       res.json({ uploadURL });
     } catch (error) {
       console.error("Error getting upload URL:", error);
