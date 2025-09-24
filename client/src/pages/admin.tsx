@@ -1211,6 +1211,9 @@ export default function Admin() {
                           User
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Username
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Role
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1236,6 +1239,11 @@ export default function Admin() {
                                 {user.firstName} {user.lastName}
                               </div>
                               <div className="text-sm text-gray-500">{user.email}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900" data-testid={`text-username-${user.id}`}>
+                              {user.username}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
