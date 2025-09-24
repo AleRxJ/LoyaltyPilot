@@ -25,6 +25,12 @@ export default function Navigation({ user }: NavigationProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // Add safety check for user data
+  if (!user || !user.firstName || !user.lastName) {
+    console.warn('Navigation: Invalid user data received:', user);
+    return null;
+  }
+
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: () => {
@@ -64,30 +70,14 @@ export default function Navigation({ user }: NavigationProps) {
         { href: "/rewards", label: t("common.rewards"), current: location === "/rewards" },
       ];
 
-  const userInitials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+  const userInitials = `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase();
 
   // Debug log to check navigation rendering
   console.log('Navigation rendering for user:', user.role, 'at location:', location, 'navItems:', navItems);
   console.log('Navigation component is rendering with user:', user.username, 'role:', user.role);
 
   return (
-    <header 
-      className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50" 
-      style={{
-        backgroundColor: 'white', 
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 9999,
-        display: 'block !important',
-        visibility: 'visible !important',
-        opacity: '1 !important',
-        width: '100%',
-        minHeight: '64px',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
-      }}
-    >
+    <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-50 w-full min-h-[64px]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo and Navigation */}

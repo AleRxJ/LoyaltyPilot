@@ -19,10 +19,12 @@ import NotFound from "@/pages/not-found";
 import Navigation from "@/components/layout/navigation";
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { data: user, isLoading } = useQuery({
+  const { data: user, isLoading, error } = useQuery({
     queryKey: ["/api/auth/me"],
     queryFn: getCurrentUser,
     retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
   const [location] = useLocation();
@@ -52,9 +54,12 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     return <Dashboard />;
   }
 
+  // Ensure we have valid user data before rendering Navigation
+  const shouldShowNavigation = user && user.firstName && user.lastName && user.role;
+
   return (
     <>
-      {user && <Navigation user={user} />}
+      {shouldShowNavigation && <Navigation user={user} />}
       {children}
     </>
   );
