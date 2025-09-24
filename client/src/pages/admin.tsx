@@ -1181,9 +1181,6 @@ export default function Admin() {
                           Role
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Partner Level
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Country
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1320,9 +1317,6 @@ export default function Admin() {
                           Role
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Partner Level
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Country
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1347,16 +1341,6 @@ export default function Admin() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <Badge className={user.role === "admin" ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800"}>
                               {user.role}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge className={
-                              user.partnerLevel === "platinum" ? "bg-gray-100 text-gray-800" :
-                              user.partnerLevel === "gold" ? "bg-yellow-100 text-yellow-800" :
-                              user.partnerLevel === "silver" ? "bg-gray-100 text-gray-600" :
-                              "bg-orange-100 text-orange-800"
-                            }>
-                              {user.partnerLevel}
                             </Badge>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
