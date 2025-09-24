@@ -26,8 +26,8 @@ export default function Navigation({ user }: NavigationProps) {
   const { toast } = useToast();
 
   // Add safety check for user data
-  if (!user || !user.firstName || !user.lastName) {
-    console.warn('Navigation: Invalid user data received:', user);
+  if (!user) {
+    console.warn('Navigation: No user data received');
     return null;
   }
 
@@ -70,7 +70,7 @@ export default function Navigation({ user }: NavigationProps) {
         { href: "/rewards", label: t("common.rewards"), current: location === "/rewards" },
       ];
 
-  const userInitials = `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase();
+  const userInitials = `${user.firstName?.charAt(0) || 'U'}${user.lastName?.charAt(0) || 'U'}`.toUpperCase();
 
   // Debug log to check navigation rendering
   console.log('Navigation rendering for user:', user.role, 'at location:', location, 'navItems:', navItems);

@@ -54,12 +54,9 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     return <Dashboard />;
   }
 
-  // Ensure we have valid user data before rendering Navigation
-  const shouldShowNavigation = user && user.firstName && user.lastName && user.role;
-
   return (
     <>
-      {shouldShowNavigation && <Navigation user={user} />}
+      {user && <Navigation user={user} />}
       {children}
     </>
   );
