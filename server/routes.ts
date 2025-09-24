@@ -723,8 +723,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
 
-        if (!['software', 'hardware'].includes(type)) {
-          errors.push(`Row ${i + 1}: Tipo must be software or hardware`);
+        if (!['software', 'hardware', 'equipment'].includes(type)) {
+          errors.push(`Row ${i + 1}: Tipo must be software, hardware, or equipment`);
           continue;
         }
 
@@ -737,7 +737,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         dealsToInsert.push({
           userId: user.id,
-          productType: type as "software" | "hardware",
+          productType: type as "software" | "hardware" | "equipment",
           productName: `Imported Deal - ${type}`,
           dealValue: value, // Keep as string
           quantity: 1,
