@@ -50,8 +50,8 @@ export default function Deals() {
       className="min-h-screen bg-white relative"
       style={{
         backgroundImage: `url(${championBackgroundImage})`,
-        backgroundSize: 'auto 80%',
-        backgroundPosition: 'right center',
+        backgroundSize: 'auto 90%',
+        backgroundPosition: 'right bottom',
         backgroundRepeat: 'no-repeat',
         backgroundAttachment: 'fixed',
         backgroundColor: '#ffffff'
