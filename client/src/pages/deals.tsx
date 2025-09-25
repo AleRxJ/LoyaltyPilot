@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Calendar, DollarSign, Package, Users, Trophy } from "lucide-react";
 import DealModal from "@/components/modals/deal-modal";
 import type { Deal } from "@shared/schema";
-import bannerImage from "@assets/BANNER-2_1758829861914.png";
+import championImage from "@assets/image_1758834058301.png";
 
 export default function Deals() {
   const [isDealModalOpen, setIsDealModalOpen] = useState(false);
@@ -46,24 +46,22 @@ export default function Deals() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-white">
       {/* Hero Banner */}
-      <div className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-purple-800 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/90 to-transparent" />
-        
+      <div className="relative bg-white overflow-hidden">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid lg:grid-cols-2 gap-8 items-center">
-            <div className="text-white space-y-6">
-              <h1 className="text-5xl lg:text-6xl font-bold leading-tight" data-testid="text-page-title">
+            <div className="space-y-6">
+              <h1 className="text-6xl lg:text-7xl font-bold leading-tight text-blue-600" data-testid="text-page-title">
                 My Deals
               </h1>
-              <p className="text-xl text-blue-100 leading-relaxed">
+              <p className="text-xl text-gray-700 leading-relaxed">
                 Track your sales deals and their approval status
               </p>
               <Button
                 onClick={() => setIsDealModalOpen(true)}
                 size="lg"
-                className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-8 py-4 rounded-lg shadow-xl transition-all duration-300 transform hover:scale-105"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105"
                 data-testid="button-new-deal"
               >
                 <Plus className="w-5 h-5 mr-2" />
@@ -71,11 +69,11 @@ export default function Deals() {
               </Button>
             </div>
             
-            <div className="hidden lg:flex justify-end">
+            <div className="hidden lg:flex justify-end items-center">
               <img
-                src={bannerImage}
+                src={championImage}
                 alt="Champion celebrating with trophy"
-                className="w-96 h-96 object-contain drop-shadow-2xl"
+                className="w-full h-auto max-w-2xl object-contain"
               />
             </div>
           </div>
