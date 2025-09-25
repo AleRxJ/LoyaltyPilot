@@ -210,7 +210,21 @@ export default function Rewards() {
                 <Card key={reward.id} className="shadow-material" data-testid={`card-reward-${reward.id}`}>
                   <CardContent className="p-6">
                     <div className="flex items-center space-x-4 mb-4">
-                      <div className={`w-12 h-12 bg-gradient-to-br ${getCategoryColor(reward.category)} rounded-lg flex items-center justify-center`}>
+                      {reward.imageUrl ? (
+                        <img 
+                          src={reward.imageUrl} 
+                          alt={reward.name}
+                          className="w-12 h-12 rounded-lg object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (nextElement) {
+                              nextElement.style.display = 'flex';
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-12 h-12 bg-gradient-to-br ${getCategoryColor(reward.category)} rounded-lg flex items-center justify-center ${reward.imageUrl ? 'hidden' : ''}`}>
                         {getRewardIcon(reward.category)}
                       </div>
                       <div className="flex-1">
@@ -284,7 +298,21 @@ export default function Rewards() {
                 <Card key={reward.id} className="shadow-material border-green-200" data-testid={`card-available-reward-${reward.id}`}>
                   <CardContent className="p-6">
                     <div className="flex items-center space-x-4 mb-4">
-                      <div className={`w-12 h-12 bg-gradient-to-br ${getCategoryColor(reward.category)} rounded-lg flex items-center justify-center`}>
+                      {reward.imageUrl ? (
+                        <img 
+                          src={reward.imageUrl} 
+                          alt={reward.name}
+                          className="w-12 h-12 rounded-lg object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (nextElement) {
+                              nextElement.style.display = 'flex';
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-12 h-12 bg-gradient-to-br ${getCategoryColor(reward.category)} rounded-lg flex items-center justify-center ${reward.imageUrl ? 'hidden' : ''}`}>
                         {getRewardIcon(reward.category)}
                       </div>
                       <div className="flex-1">
@@ -339,7 +367,21 @@ export default function Rewards() {
                 <Card key={reward.id} className="shadow-material">
                   <CardContent className="p-6">
                     <div className="flex items-center space-x-4 mb-4">
-                      <div className={`w-12 h-12 bg-gradient-to-br ${getCategoryColor(reward.category)} rounded-lg flex items-center justify-center`}>
+                      {reward.imageUrl ? (
+                        <img 
+                          src={reward.imageUrl} 
+                          alt={reward.name}
+                          className="w-12 h-12 rounded-lg object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (nextElement) {
+                              nextElement.style.display = 'flex';
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-12 h-12 bg-gradient-to-br ${getCategoryColor(reward.category)} rounded-lg flex items-center justify-center ${reward.imageUrl ? 'hidden' : ''}`}>
                         {getRewardIcon(reward.category)}
                       </div>
                       <div className="flex-1">
