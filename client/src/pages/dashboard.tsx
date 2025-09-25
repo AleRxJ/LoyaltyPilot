@@ -12,7 +12,9 @@ import {
   BarChart3,
   Users,
   ClipboardCheck,
-  TrendingUp
+  TrendingUp,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import DealModal from "@/components/modals/deal-modal";
 import { useState, useEffect } from "react";
@@ -47,6 +49,8 @@ interface Reward {
 
 export default function Dashboard() {
   const [isDealModalOpen, setIsDealModalOpen] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
   const [, navigate] = useLocation();
 
   const { data: user } = useQuery<AuthUser>({
@@ -71,7 +75,7 @@ export default function Dashboard() {
 
   const { data: rewards, isLoading: rewardsLoading } = useQuery<Reward[]>({
     queryKey: ["/api/rewards"],
-    select: (data) => data?.slice(0, 3) || [],
+    select: (data) => data || [],
   });
 
   const getStatusColor = (status: string) => {
@@ -92,6 +96,28 @@ export default function Dashboard() {
       style: "currency",
       currency: "USD",
     }).format(Number(value));
+  };
+
+  // Carousel navigation functions
+  const itemsPerSlide = 3;
+  const totalSlides = rewards ? Math.ceil(rewards.length / itemsPerSlide) : 0;
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % totalSlides);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
+  };
+
+  const getCurrentRewards = () => {
+    if (!rewards) return [];
+    const startIndex = currentSlide * itemsPerSlide;
+    return rewards.slice(startIndex, startIndex + itemsPerSlide);
+  };
+
+  const handleImageError = (rewardId: string) => {
+    setFailedImages(prev => new Set(Array.from(prev).concat(rewardId)));
   };
 
   if (!user) return null;
@@ -177,6 +203,117 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Available Rewards Carousel - Only show for regular users */}
+      {user.role !== "admin" && (
+        <div className="mb-12">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-blue-600 mb-2" data-testid="text-available-rewards-title">
+              Available Rewards
+            </h2>
+          </div>
+          
+          <div className="relative">
+            {/* Carousel Container */}
+            <div className="flex justify-center items-center space-x-6">
+              {/* Left Arrow */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={prevSlide}
+                disabled={totalSlides <= 1}
+                className="p-2 hover:bg-gray-100 disabled:opacity-50"
+                data-testid="button-prev-slide"
+              >
+                <ChevronLeft className="h-6 w-6 text-gray-600" />
+              </Button>
+
+              {/* Rewards Cards */}
+              <div className="flex space-x-6 overflow-hidden">
+                {rewardsLoading ? (
+                  // Loading skeleton
+                  Array.from({ length: 3 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="bg-white rounded-2xl shadow-lg p-6 w-80 flex-shrink-0"
+                    >
+                      <Skeleton className="h-32 w-full rounded-lg mb-4" />
+                      <Skeleton className="h-6 w-3/4 mb-2" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </div>
+                  ))
+                ) : (
+                  getCurrentRewards().map((reward) => (
+                    <div
+                      key={reward.id}
+                      className="bg-white rounded-2xl shadow-lg p-6 w-80 flex-shrink-0 hover:shadow-xl transition-shadow cursor-pointer"
+                      data-testid={`card-featured-reward-${reward.id}`}
+                    >
+                      {/* Reward Image */}
+                      <div className="relative mb-4 h-32 rounded-lg overflow-hidden">
+                        {reward.imageUrl && !failedImages.has(reward.id) ? (
+                          <img
+                            src={reward.imageUrl}
+                            alt={reward.name}
+                            className="w-full h-full object-cover"
+                            onError={() => handleImageError(reward.id)}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center rounded-lg">
+                            <div className="text-white text-center">
+                              <Gift className="w-8 h-8 mx-auto mb-2" />
+                              <div className="text-sm font-medium">{reward.category}</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Reward Info */}
+                      <div>
+                        <h3 className="text-lg font-bold text-blue-600 mb-2" data-testid={`text-reward-name-${reward.id}`}>
+                          {reward.name}
+                        </h3>
+                        <p className="text-gray-600 text-sm" data-testid={`text-reward-points-${reward.id}`}>
+                          {reward.pointsCost} points
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Right Arrow */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={nextSlide}
+                disabled={totalSlides <= 1}
+                className="p-2 hover:bg-gray-100 disabled:opacity-50"
+                data-testid="button-next-slide"
+              >
+                <ChevronRight className="h-6 w-6 text-gray-600" />
+              </Button>
+            </div>
+
+            {/* Pagination Dots */}
+            {totalSlides > 1 && (
+              <div className="flex justify-center mt-6 space-x-2">
+                {Array.from({ length: totalSlides }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`w-3 h-3 rounded-full transition-colors ${
+                      index === currentSlide
+                        ? 'bg-blue-600'
+                        : 'bg-gray-300 hover:bg-gray-400'
+                    }`}
+                    data-testid={`button-slide-${index}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Recent Deals - Only show for regular users */}
       {user.role !== "admin" && (
@@ -280,58 +417,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Available Rewards Preview */}
-          <Card className="shadow-material">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-gray-900">Available Rewards</h3>
-                <Button variant="ghost" size="sm" className="text-primary-600" data-testid="button-view-all-rewards">
-                  View All
-                </Button>
-              </div>
-            </div>
-            <div className="p-6">
-              {rewardsLoading ? (
-                <div className="space-y-4">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="flex items-center space-x-3">
-                      <Skeleton className="h-12 w-12 rounded-lg" />
-                      <div className="flex-1">
-                        <Skeleton className="h-4 w-32 mb-1" />
-                        <Skeleton className="h-3 w-20" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : rewards && rewards.length > 0 ? (
-                <div className="space-y-4">
-                  {rewards.map((reward) => (
-                    <div
-                      key={reward.id}
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                      data-testid={`card-reward-${reward.id}`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-accent-400 to-accent-600 rounded-lg flex items-center justify-center">
-                          <Gift className="text-white h-6 w-6" />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{reward.name}</h4>
-                          <p className="text-sm text-gray-600">
-                            {reward.pointsCost.toLocaleString()} points
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-gray-500" data-testid="text-no-rewards">
-                  No rewards available
-                </div>
-              )}
-            </div>
-          </Card>
 
           {/* Admin Panel - Only show for admin users */}
           {user.role === "admin" && (
