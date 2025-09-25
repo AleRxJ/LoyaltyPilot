@@ -212,7 +212,7 @@ export default function Dashboard() {
             </h2>
           </div>
           
-          <div className="relative">
+          <div className="relative px-4 py-4">
             {/* Carousel Container */}
             <div className="flex justify-center items-center space-x-6">
               {/* Left Arrow */}
@@ -221,14 +221,14 @@ export default function Dashboard() {
                 size="sm"
                 onClick={prevSlide}
                 disabled={totalSlides <= 1}
-                className="p-2 hover:bg-gray-100 disabled:opacity-50"
+                className="p-2 hover:bg-gray-100 disabled:opacity-50 z-10"
                 data-testid="button-prev-slide"
               >
                 <ChevronLeft className="h-6 w-6 text-gray-600" />
               </Button>
 
               {/* Rewards Cards */}
-              <div className="flex space-x-6 overflow-hidden">
+              <div className="flex space-x-6 overflow-visible">
                 {rewardsLoading ? (
                   // Loading skeleton
                   Array.from({ length: 3 }).map((_, index) => (
@@ -287,7 +287,7 @@ export default function Dashboard() {
                 size="sm"
                 onClick={nextSlide}
                 disabled={totalSlides <= 1}
-                className="p-2 hover:bg-gray-100 disabled:opacity-50"
+                className="p-2 hover:bg-gray-100 disabled:opacity-50 z-10"
                 data-testid="button-next-slide"
               >
                 <ChevronRight className="h-6 w-6 text-gray-600" />
