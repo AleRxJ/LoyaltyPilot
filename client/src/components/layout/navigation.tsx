@@ -18,17 +18,35 @@ interface NavigationProps {
 }
 
 export default function Navigation({ user }: NavigationProps) {
-  console.log('Navigation component received user:', user);
   const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { t, currentLanguage, changeLanguage } = useTranslation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Add safety check for user data
-  if (!user) {
-    console.warn('Navigation: No user data received');
-    return null;
+  // Improved safety check - show loading state instead of null
+  if (!user || !user.id) {
+    return (
+      <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-[9999] w-full min-h-[64px]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-4">
+              <div className="flex-shrink-0">
+                <img 
+                  src={logo} 
+                  alt="LoyaltyPro" 
+                  className="h-8 w-auto" 
+                />
+              </div>
+              <div className="animate-pulse bg-gray-200 h-4 w-32 rounded"></div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="animate-pulse bg-gray-200 h-8 w-24 rounded"></div>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
   }
 
   const logoutMutation = useMutation({
@@ -72,11 +90,8 @@ export default function Navigation({ user }: NavigationProps) {
 
   const userInitials = `${user.firstName?.charAt(0) || 'U'}${user.lastName?.charAt(0) || 'U'}`.toUpperCase();
 
-  // Reduce excessive logging
-  console.log('Navigation mounted for user:', user.username, 'role:', user.role);
-
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-50 w-full min-h-[64px]">
+    <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-[9999] w-full min-h-[64px]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo and Navigation */}
