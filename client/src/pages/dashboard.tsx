@@ -320,11 +320,16 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Deals */}
         <div className="lg:col-span-2">
-          <Card className="shadow-material">
-            <div className="px-6 py-4 border-b border-gray-200">
+          <div className="bg-blue-900 rounded-2xl shadow-xl overflow-hidden">
+            <div className="px-6 py-5">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-gray-900">Recent Deals</h3>
-                <Button variant="ghost" size="sm" className="text-primary-600" data-testid="button-view-all-deals">
+                <h3 className="text-xl font-semibold text-white">Recent Deals</h3>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-white hover:bg-blue-800 hover:text-white" 
+                  data-testid="button-view-all-deals"
+                >
                   View All
                 </Button>
               </div>
@@ -334,60 +339,69 @@ export default function Dashboard() {
                 <div className="p-6 space-y-4">
                   {[...Array(3)].map((_, i) => (
                     <div key={i} className="flex items-center space-x-4">
-                      <Skeleton className="h-4 w-20" />
-                      <Skeleton className="h-4 w-32" />
-                      <Skeleton className="h-4 w-16" />
-                      <Skeleton className="h-4 w-16" />
-                      <Skeleton className="h-6 w-20" />
+                      <Skeleton className="h-4 w-20 bg-blue-800" />
+                      <Skeleton className="h-4 w-32 bg-blue-800" />
+                      <Skeleton className="h-4 w-16 bg-blue-800" />
+                      <Skeleton className="h-4 w-16 bg-blue-800" />
+                      <Skeleton className="h-6 w-20 bg-blue-800" />
                     </div>
                   ))}
                 </div>
               ) : recentDeals && recentDeals.length > 0 ? (
                 <table className="w-full">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-blue-950 border-b border-blue-800">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Product
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider">
+                        PRODUCT
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Value
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider">
+                        VALUE
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Points
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider">
+                        POINTS
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-white uppercase tracking-wider">
+                        STATUS
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="divide-y divide-blue-800">
                     {recentDeals.map((deal) => (
-                      <tr key={deal.id} data-testid={`row-deal-${deal.id}`}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <tr key={deal.id} data-testid={`row-deal-${deal.id}`} className="hover:bg-blue-800/60 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white font-medium">
                           {deal.productName}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                           {formatCurrency(deal.dealValue)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {deal.pointsEarned || 0}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white font-medium">
+                          {deal.pointsEarned?.toLocaleString() || 0}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge className={`${getStatusColor(deal.status)} border-0`}>
+                          <span 
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                              deal.status === 'approved' 
+                                ? 'bg-green-100 text-green-800' 
+                                : deal.status === 'pending' 
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-red-100 text-red-800'
+                            }`}
+                            data-testid={`status-${deal.status}-${deal.id}`}
+                          >
                             {deal.status.charAt(0).toUpperCase() + deal.status.slice(1)}
-                          </Badge>
+                          </span>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               ) : (
-                <div className="p-6 text-center text-gray-500" data-testid="text-no-deals">
+                <div className="p-6 text-center text-white/70" data-testid="text-no-deals">
                   No deals found. Register your first deal to get started!
                 </div>
               )}
             </div>
-          </Card>
+          </div>
         </div>
 
         {/* Quick Actions & Rewards */}
