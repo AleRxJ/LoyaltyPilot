@@ -75,7 +75,7 @@
 
   .champion-background {
     background-image: url('/attached_assets/bg_1758836460974.jpg');
-    background-size: contain;
+    background-size: auto 80%;
     background-position: right center;
     background-repeat: no-repeat;
     background-attachment: fixed;

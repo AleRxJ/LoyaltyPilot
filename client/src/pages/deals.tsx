@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Calendar, DollarSign, Package, Users, Trophy } from "lucide-react";
 import DealModal from "@/components/modals/deal-modal";
 import type { Deal } from "@shared/schema";
+import championBackgroundImage from "@assets/bg_1758836460974.jpg";
 
 export default function Deals() {
   const [isDealModalOpen, setIsDealModalOpen] = useState(false);
@@ -45,7 +46,17 @@ export default function Deals() {
   };
 
   return (
-    <div className="min-h-screen bg-white relative">
+    <div 
+      className="min-h-screen bg-white relative"
+      style={{
+        backgroundImage: `url(${championBackgroundImage})`,
+        backgroundSize: 'auto 80%',
+        backgroundPosition: 'right center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
+        backgroundColor: '#ffffff'
+      }}
+    >
       {/* Hero Banner */}
       <div className="relative z-10 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
