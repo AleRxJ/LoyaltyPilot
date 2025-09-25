@@ -164,11 +164,11 @@ export default function Rewards() {
         className="relative z-10 bg-transparent"
         style={{
           backgroundImage: `url(${rewardsBackgroundImage})`,
-          backgroundSize: 'auto 90%',
-          backgroundPosition: 'right bottom',
+          backgroundSize: 'cover',
+          backgroundPosition: 'top center',
           backgroundRepeat: 'no-repeat',
           minHeight: '500px',
-          paddingTop: '80px'
+          paddingTop: '100px'
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
