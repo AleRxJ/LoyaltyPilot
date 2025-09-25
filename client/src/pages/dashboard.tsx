@@ -317,9 +317,8 @@ export default function Dashboard() {
 
       {/* Recent Deals - Only show for regular users */}
       {user.role !== "admin" && (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Deals */}
-        <div className="lg:col-span-2">
+        <div className="flex justify-center">
+          <div className="w-full max-w-5xl">
           <div className="bg-blue-900 rounded-2xl shadow-xl overflow-hidden">
             <div className="px-6 py-5">
               <div className="flex justify-between items-center">
@@ -403,61 +402,7 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-
-        {/* Quick Actions & Rewards */}
-        <div className="space-y-6">
-          {/* Quick Actions */}
-          <Card className="shadow-material">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-              <div className="space-y-3">
-                <Button
-                  className="w-full bg-primary-600 hover:bg-primary-700"
-                  onClick={() => setIsDealModalOpen(true)}
-                  data-testid="button-register-deal"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Register New Deal
-                </Button>
-                <Button className="w-full bg-secondary-600 hover:bg-secondary-700" data-testid="button-browse-rewards">
-                  <Gift className="w-4 h-4 mr-2" />
-                  Browse Rewards
-                </Button>
-                <Button variant="outline" className="w-full" data-testid="button-view-reports">
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  View Reports
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-
-          {/* Admin Panel - Only show for admin users */}
-          {user.role === "admin" && (
-            <Card className="shadow-material">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Administrative Panel</h3>
-              </div>
-              <div className="p-6">
-                <div className="space-y-4">
-                  <Button variant="outline" className="w-full justify-start" data-testid="button-manage-users">
-                    <Users className="w-4 h-4 mr-2" />
-                    User Management
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start" data-testid="button-review-deals">
-                    <ClipboardCheck className="w-4 h-4 mr-2" />
-                    Deal Approval
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start" data-testid="button-view-analytics">
-                    <BarChart3 className="w-4 h-4 mr-2" />
-                    Analytics
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          )}
         </div>
-      </div>
       )}
 
       <DealModal
