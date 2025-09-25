@@ -61,10 +61,12 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     return <Dashboard />;
   }
 
+  const isDealsPage = location === "/deals";
+  
   return (
     <div className={user ? "with-header-container min-h-screen bg-white" : ""}>
       {user && <Navigation user={user} />}
-      <main className={user ? "pt-16" : ""}>
+      <main className={user ? `pt-16 ${isDealsPage ? 'champion-background' : ''}` : ""}>
         {children}
       </main>
     </div>

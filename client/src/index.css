@@ -72,6 +72,14 @@
     @apply font-sans antialiased bg-background text-foreground;
     font-family: 'Raleway', sans-serif;
   }
+
+  .champion-background {
+    background-image: url('/attached_assets/BANNER-2_1758834704213.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
   
   body.with-header {
     padding-top: 64px; /* Space for fixed header */
