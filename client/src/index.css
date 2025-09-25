@@ -74,11 +74,11 @@
   }
 
   .champion-background {
-    background-image: url('/attached_assets/BANNER-2_1758834704213.png');
-    background-size: cover;
-    background-position: center;
+    background-image: url('/attached_assets/BANNER-2_1758835674918.png');
+    background-size: contain;
+    background-position: right center;
     background-repeat: no-repeat;
-    background-attachment: fixed;
+    background-color: #ffffff;
   }
   
   body.with-header {

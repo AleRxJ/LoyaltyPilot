@@ -46,17 +46,14 @@ export default function Deals() {
 
   return (
     <div className="min-h-screen bg-white relative">
-      {/* Overlay for better readability */}
-      <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-      
       {/* Hero Banner */}
-      <div className="relative z-10 bg-white/95 backdrop-blur-sm">
+      <div className="relative z-10 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center space-y-6">
+          <div className="text-left space-y-6 max-w-lg">
             <h1 className="text-6xl lg:text-7xl font-bold leading-tight text-blue-600" data-testid="text-page-title">
               My Deals
             </h1>
-            <p className="text-xl text-gray-700 leading-relaxed max-w-2xl mx-auto">
+            <p className="text-xl text-gray-700 leading-relaxed">
               Track your sales deals and their approval status
             </p>
             <Button
@@ -73,7 +70,7 @@ export default function Deals() {
       </div>
 
       {/* Deals Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
