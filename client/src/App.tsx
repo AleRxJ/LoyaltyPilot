@@ -19,19 +19,31 @@ import NotFound from "@/pages/not-found";
 import Navigation from "@/components/layout/navigation";
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { data: user, isLoading, error } = useQuery({
+  const { data: user, isLoading, error, isFetching } = useQuery({
     queryKey: ["/api/auth/me"],
     queryFn: getCurrentUser,
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 1 * 60 * 1000, // 1 minute (reduced for faster updates)
+    gcTime: 2 * 60 * 1000, // 2 minutes (reduced for faster cleanup)
+    refetchOnWindowFocus: false, // Prevent unnecessary refetches
+    refetchOnReconnect: true,
   });
 
   const [location] = useLocation();
 
-  // Add/remove body class for header spacing
+  // Debug logging for AuthProvider
+  console.log('[AuthProvider] State:', { 
+    user: user?.username, 
+    role: user?.role, 
+    isLoading, 
+    isFetching, 
+    error: error?.message,
+    location 
+  });
+
+  // Always add header class when user exists or is loading
   useEffect(() => {
-    if (user) {
+    if (user || isLoading || isFetching) {
       document.body.classList.add('with-header');
     } else {
       document.body.classList.remove('with-header');
@@ -39,11 +51,9 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Cleanup function
     return () => {
-      if (!user) {
-        document.body.classList.remove('with-header');
-      }
+      document.body.classList.remove('with-header');
     };
-  }, [user]);
+  }, [user, isLoading, isFetching]);
 
   if (isLoading) {
     return (
@@ -60,6 +70,9 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   if (user && (location === "/login" || location === "/register")) {
     return <Dashboard />;
   }
+
+  // Debug what we're rendering
+  console.log('[AuthProvider] Rendering with user:', !!user, 'will show navigation:', !!user);
 
   return (
     <div className={user ? "with-header-container min-h-screen bg-white" : ""}>

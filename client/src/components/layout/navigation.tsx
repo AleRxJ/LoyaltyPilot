@@ -24,6 +24,9 @@ export default function Navigation({ user }: NavigationProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // Debug logging for header visibility issues
+  console.log('[Navigation] Rendering with user:', user?.username, 'role:', user?.role, 'location:', location);
+
   // Improved safety check - show loading state instead of null
   if (!user || !user.id) {
     return (
@@ -58,10 +61,8 @@ export default function Navigation({ user }: NavigationProps) {
         title: "Success",
         description: "Logged out successfully",
       });
-      // Immediate redirect to login page
-      setTimeout(() => {
-        setLocation("/login");
-      }, 100);
+      // Immediate redirect to login page - remove timeout
+      setLocation("/login");
     },
     onError: () => {
       // Even if logout fails, redirect to login
@@ -91,7 +92,7 @@ export default function Navigation({ user }: NavigationProps) {
   const userInitials = `${user.firstName?.charAt(0) || 'U'}${user.lastName?.charAt(0) || 'U'}`.toUpperCase();
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-[9999] w-full min-h-[64px]">
+    <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-[9999] w-full min-h-[64px]" style={{ display: 'block', visibility: 'visible' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo and Navigation */}
