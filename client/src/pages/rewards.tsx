@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import { apiRequest } from "@/lib/queryClient";
 import type { Reward, UserReward } from "@shared/schema";
+import rewardsBackgroundImage from "@assets/BANNER-3_1758838053683.jpg";
 
 interface UserStats {
   availablePoints: number;
@@ -157,22 +158,45 @@ export default function Rewards() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2" data-testid="text-page-title">
-          {t("rewards.catalog")}
-        </h1>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-gray-600 mb-4 sm:mb-0">
-            {t("rewards.redeemPoints")}
-          </p>
-          <div className="bg-primary-50 rounded-lg px-4 py-2">
-            <span className="text-sm text-primary-600 font-medium">
-              {t("rewards.availablePoints")}: {stats?.availablePoints?.toLocaleString() || 0}
-            </span>
+    <div 
+      className="min-h-screen bg-white relative"
+      style={{
+        backgroundImage: `url(${rewardsBackgroundImage})`,
+        backgroundSize: 'auto 90%',
+        backgroundPosition: 'right bottom',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
+        backgroundColor: '#ffffff'
+      }}
+    >
+      {/* Hero Banner */}
+      <div 
+        className="relative z-10 bg-transparent"
+        style={{
+          minHeight: '300px',
+          paddingTop: '80px'
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+          <div className="text-left space-y-4 max-w-lg">
+            <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-white" data-testid="text-page-title">
+              Rewards<br />Catalog
+            </h1>
+            <p className="text-lg text-white leading-relaxed">
+              Redeem your points for amazing rewards
+            </p>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 inline-block">
+              <span className="text-sm text-white font-medium">
+                Available Points: {stats?.availablePoints?.toLocaleString() || 0}
+              </span>
+            </div>
           </div>
         </div>
       </div>
+      
+      {/* Content Area */}
+      <div className="relative z-10 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7">
@@ -525,6 +549,8 @@ export default function Rewards() {
           )}
         </TabsContent>
       </Tabs>
+        </div>
+      </div>
     </div>
   );
 }
