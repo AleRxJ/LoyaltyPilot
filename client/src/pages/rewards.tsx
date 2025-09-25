@@ -158,22 +158,16 @@ export default function Rewards() {
   };
 
   return (
-    <div 
-      className="min-h-screen bg-white relative"
-      style={{
-        backgroundImage: `url(${rewardsBackgroundImage})`,
-        backgroundSize: 'auto 90%',
-        backgroundPosition: 'right bottom',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
-        backgroundColor: '#ffffff'
-      }}
-    >
+    <div className="min-h-screen bg-white">
       {/* Hero Banner */}
       <div 
         className="relative z-10 bg-transparent"
         style={{
-          minHeight: '300px',
+          backgroundImage: `url(${rewardsBackgroundImage})`,
+          backgroundSize: 'auto 90%',
+          backgroundPosition: 'right bottom',
+          backgroundRepeat: 'no-repeat',
+          minHeight: '500px',
           paddingTop: '80px'
         }}
       >
