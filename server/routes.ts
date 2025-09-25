@@ -280,6 +280,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin get all rewards endpoint
+  app.get("/api/admin/rewards", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const rewards = await storage.getRewards();
+      res.json(rewards);
+    } catch (error) {
+      console.error("Get admin rewards error:", error);
+      res.status(500).json({ message: "Failed to get rewards" });
+    }
+  });
+
+  // Admin get single reward endpoint
+  app.get("/api/admin/rewards/:id", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { id } = req.params;
+      const reward = await storage.getReward(id);
+      if (!reward) {
+        return res.status(404).json({ message: "Reward not found" });
+      }
+      res.json(reward);
+    } catch (error) {
+      console.error("Get admin reward error:", error);
+      res.status(500).json({ message: "Failed to get reward" });
+    }
+  });
+
   app.post("/api/rewards/:id/redeem", async (req, res) => {
     const userId = req.session?.userId;
     if (!userId) {

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -50,15 +51,40 @@ export default function RewardModal({ isOpen, onClose, reward }: RewardModalProp
   const form = useForm<RewardForm>({
     resolver: zodResolver(rewardSchema),
     defaultValues: {
-      name: reward?.name || "",
-      description: reward?.description || "",
-      pointsCost: reward?.pointsCost?.toString() || "",
-      category: reward?.category || "",
-      isActive: reward?.isActive ?? true,
-      stockQuantity: reward?.stockQuantity?.toString() || "",
-      imageUrl: reward?.imageUrl || "",
+      name: "",
+      description: "",
+      pointsCost: "",
+      category: "",
+      isActive: true,
+      stockQuantity: "",
+      imageUrl: "",
     },
   });
+
+  // Reset form when reward prop changes
+  useEffect(() => {
+    if (reward) {
+      form.reset({
+        name: reward.name || "",
+        description: reward.description || "",
+        pointsCost: reward.pointsCost?.toString() || "",
+        category: reward.category || "",
+        isActive: reward.isActive ?? true,
+        stockQuantity: reward.stockQuantity?.toString() || "",
+        imageUrl: reward.imageUrl || "",
+      });
+    } else {
+      form.reset({
+        name: "",
+        description: "",
+        pointsCost: "",
+        category: "",
+        isActive: true,
+        stockQuantity: "",
+        imageUrl: "",
+      });
+    }
+  }, [reward, form]);
 
   const createRewardMutation = useMutation({
     mutationFn: async (data: RewardForm) => {
@@ -81,6 +107,7 @@ export default function RewardModal({ isOpen, onClose, reward }: RewardModalProp
         description: `Reward ${isEditing ? "updated" : "created"} successfully`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/rewards"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rewards"] });
       form.reset();
       onClose();
     },
