@@ -58,8 +58,14 @@ export default function Deals() {
       }}
     >
       {/* Hero Banner */}
-      <div className="relative z-10 bg-transparent">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div 
+        className="relative z-10 bg-transparent"
+        style={{
+          minHeight: '600px',
+          paddingTop: '150px'
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           <div className="text-left space-y-6 max-w-lg">
             <h1 className="text-6xl lg:text-7xl font-bold leading-tight text-blue-600" data-testid="text-page-title">
               My Deals
