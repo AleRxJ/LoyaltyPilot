@@ -29,17 +29,8 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     refetchOnReconnect: true,
   });
 
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
-  // Debug logging for AuthProvider
-  console.log('[AuthProvider] State:', { 
-    user: user?.username, 
-    role: user?.role, 
-    isLoading, 
-    isFetching, 
-    error: error?.message,
-    location 
-  });
 
   // Always add header class when user exists or is loading
   useEffect(() => {
@@ -55,6 +46,15 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [user, isLoading, isFetching]);
 
+  // Redirect authenticated users away from login/register pages
+  useEffect(() => {
+    if (user && (location === "/login" || location === "/register")) {
+      // Use the appropriate redirect based on user role
+      const redirectPath = user.role === "admin" ? "/admin" : "/";
+      setLocation(redirectPath);
+    }
+  }, [user, location, setLocation]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -66,13 +66,6 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   if (!user && location !== "/login" && location !== "/register") {
     return <Login />;
   }
-
-  if (user && (location === "/login" || location === "/register")) {
-    return <Dashboard />;
-  }
-
-  // Debug what we're rendering
-  console.log('[AuthProvider] Rendering with user:', !!user, 'will show navigation:', !!user);
 
   return (
     <div className={user ? "with-header-container min-h-screen bg-white" : ""}>

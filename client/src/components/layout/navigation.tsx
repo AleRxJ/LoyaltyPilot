@@ -24,8 +24,6 @@ export default function Navigation({ user }: NavigationProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Debug logging for header visibility issues
-  console.log('[Navigation] Rendering with user:', user?.username, 'role:', user?.role, 'location:', location);
 
   // Improved safety check - show loading state instead of null
   if (!user || !user.id) {
