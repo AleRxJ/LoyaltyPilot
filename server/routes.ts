@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import bcrypt from "bcryptjs";
 import { insertUserSchema, updateUserSchema, insertDealSchema, insertRewardSchema } from "@shared/schema";
 import { z } from "zod";
+import * as XLSX from 'xlsx';
 
 // Extend session data interface
 declare module 'express-session' {
@@ -724,7 +725,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const XLSX = require('xlsx');
+      // Using statically imported XLSX
       
       const filters = {
         startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
