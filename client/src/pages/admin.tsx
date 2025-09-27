@@ -1645,7 +1645,7 @@ export default function Admin() {
                 </CSVUploader>
               </div>
               <div className="text-sm text-gray-600 mt-2">
-                CSV format: usuario, valor, status, tipo (where status = pending/approved/rejected, tipo = software/hardware)
+                CSV format: usuario, valor, status, tipo, acuerdo (optional) (where status = pending/approved/rejected, tipo = software/hardware)
               </div>
             </CardHeader>
             <CardContent>
@@ -1671,6 +1671,9 @@ export default function Admin() {
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Type
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          License Agreement
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Status
@@ -1709,6 +1712,9 @@ export default function Admin() {
                             <Badge variant="outline">
                               {deal.productType.charAt(0).toUpperCase() + deal.productType.slice(1)}
                             </Badge>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900" data-testid={`text-license-agreement-${deal.id}`}>
+                            {deal.licenseAgreementNumber || '-'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <Badge className={`${getStatusColor(deal.status)} border-0`}>
