@@ -76,7 +76,7 @@ export function CSVUploader({
         open={showModal}
         onRequestClose={() => setShowModal(false)}
         proudlyDisplayPoweredByUppy={false}
-        note="Upload a CSV file with columns: usuario, valor, status, tipo"
+        note="Upload a CSV file with columns: usuario, valor, status, tipo. Optional: acuerdo (License Agreement Number)"
       />
     </div>
   );

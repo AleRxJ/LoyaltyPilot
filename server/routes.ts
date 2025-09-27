@@ -964,12 +964,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const header = lines[0].toLowerCase().split(',').map(h => h.trim());
       const expectedHeaders = ['usuario', 'valor', 'status', 'tipo'];
+      const optionalHeaders = ['acuerdo']; // License Agreement Number column
       
-      // Validate headers
+      // Validate required headers
       const hasAllHeaders = expectedHeaders.every(h => header.includes(h));
       if (!hasAllHeaders) {
         return res.status(400).json({ 
-          message: `CSV must have columns: ${expectedHeaders.join(', ')}. Found: ${header.join(', ')}` 
+          message: `CSV must have columns: ${expectedHeaders.join(', ')}. Optional columns: ${optionalHeaders.join(', ')}. Found: ${header.join(', ')}` 
         });
       }
 
@@ -977,6 +978,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const valueIndex = header.indexOf('valor');
       const statusIndex = header.indexOf('status');
       const typeIndex = header.indexOf('tipo');
+      const licenseIndex = header.indexOf('acuerdo'); // Optional
 
       const dealsToInsert = [];
       const errors = [];
@@ -994,6 +996,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const value = row[valueIndex];
         const status = row[statusIndex].toLowerCase();
         const type = row[typeIndex].toLowerCase();
+        const licenseAgreementNumber = licenseIndex >= 0 ? row[licenseIndex] || '' : '';
 
         // Validate data
         if (!username) {
@@ -1031,6 +1034,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           quantity: 1,
           closeDate: new Date(),
           clientInfo: `Bulk import from CSV on ${new Date().toISOString()}`,
+          licenseAgreementNumber: licenseAgreementNumber || undefined,
           status: status as "pending" | "approved" | "rejected",
           pointsEarned: status === "approved" ? calculatePointsForDeal(type, parseFloat(value)) : 0,
         });
