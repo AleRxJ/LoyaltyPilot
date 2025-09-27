@@ -800,7 +800,10 @@ export class DatabaseStorage implements IStorage {
       pointsConditions.push(lte(pointsHistory.createdAt, filters.endDate));
     }
 
-    // Get user points in the date range
+    // Get user points in the date range - only sum POSITIVE points (earned points, not redeemed)
+    // Add condition to only include earned points (positive values), not spent points (negative values)
+    pointsConditions.push(gt(pointsHistory.points, 0));
+    
     const pointsQuery = db
       .select({
         userId: pointsHistory.userId,
@@ -910,6 +913,84 @@ export class DatabaseStorage implements IStorage {
       redeemedAt: Date;
       approvedAt: Date | null;
     }>;
+  }
+
+  async getDealsPerUserReport(filters: {
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<Array<{
+    userId: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    country: string;
+    totalDeals: number;
+    totalSales: number;
+    averageDealSize: number;
+  }>> {
+    const dealConditions = [eq(deals.status, "approved")];
+    
+    if (filters.startDate) {
+      dealConditions.push(gte(deals.createdAt, filters.startDate));
+    }
+    if (filters.endDate) {
+      dealConditions.push(lte(deals.createdAt, filters.endDate));
+    }
+
+    // Get user deals in the date range  
+    const dealsQuery = db
+      .select({
+        userId: deals.userId,
+        totalDeals: count(deals.id).as('totalDeals'),
+        totalSales: sum(deals.dealValue).as('totalSales')
+      })
+      .from(deals)
+      .where(and(...dealConditions))
+      .groupBy(deals.userId);
+
+    // Get all users with their basic info
+    const usersResult = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+        country: users.country
+      })
+      .from(users)
+      .where(eq(users.role, "user"));
+
+    const dealsResult = await dealsQuery;
+
+    // Combine all data
+    const dealsPerUser = usersResult.map(user => {
+      const userDeals = dealsResult.find(d => d.userId === user.id);
+      const totalDeals = Number(userDeals?.totalDeals || 0);
+      const totalSales = Number(userDeals?.totalSales || 0);
+      const averageDealSize = totalDeals > 0 ? totalSales / totalDeals : 0;
+
+      return {
+        userId: user.id,
+        username: user.username || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        country: user.country || '',
+        totalDeals: totalDeals,
+        totalSales: totalSales,
+        averageDealSize: Math.round(averageDealSize * 100) / 100, // Round to 2 decimal places
+      };
+    });
+
+    // Sort by total deals in descending order, then by total sales
+    return dealsPerUser.sort((a, b) => {
+      if (b.totalDeals !== a.totalDeals) {
+        return b.totalDeals - a.totalDeals;
+      }
+      return b.totalSales - a.totalSales;
+    });
   }
 
   async createNotification(notification: InsertNotification): Promise<Notification> {
