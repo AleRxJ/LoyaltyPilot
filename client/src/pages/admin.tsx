@@ -830,6 +830,69 @@ export default function Admin() {
     }
   };
 
+  const handleExportUserRanking = async () => {
+    try {
+      toast({
+        title: "Generating User Ranking",
+        description: "Creating your Excel report...",
+      });
+
+      // Build query parameters for the ranking export
+      const params = new URLSearchParams();
+      if (reportFilters.startDate) params.append("startDate", reportFilters.startDate);
+      if (reportFilters.endDate) params.append("endDate", reportFilters.endDate);
+      
+      const url = `/api/admin/reports/user-ranking/export${params.toString() ? `?${params.toString()}` : ""}`;
+      
+      // Create a temporary download link
+      const response = await fetch(url, { 
+        credentials: "include",
+        method: 'GET'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate ranking report');
+      }
+      
+      // Get the blob from the response
+      const blob = await response.blob();
+      
+      // Create download link
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      
+      // Set filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = `user-ranking-${new Date().toISOString().split('T')[0]}.xlsx`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({
+        title: "Ranking Downloaded",
+        description: `Your user ranking has been saved as ${filename}`,
+      });
+      
+    } catch (error) {
+      console.error('Error generating ranking report:', error);
+      toast({
+        title: "Export Failed",
+        description: "There was an error generating your ranking report. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "approved":
@@ -1028,10 +1091,16 @@ export default function Admin() {
                   />
                 </div>
               </div>
-              <Button onClick={handleExportReport} data-testid="button-export-report">
-                <Download className="w-4 h-4 mr-2" />
-                Export Report
-              </Button>
+              <div className="flex gap-3">
+                <Button onClick={handleExportReport} data-testid="button-export-report">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export PDF Report
+                </Button>
+                <Button onClick={handleExportUserRanking} variant="secondary" data-testid="button-export-user-ranking">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export User Ranking (Excel)
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
