@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcryptjs";
-import { insertUserSchema, insertDealSchema, insertRewardSchema } from "@shared/schema";
+import { insertUserSchema, updateUserSchema, insertDealSchema, insertRewardSchema } from "@shared/schema";
 import { z } from "zod";
 
 // Extend session data interface
@@ -571,6 +571,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedUser);
     } catch (error) {
       res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
+  // Update user information endpoint
+  app.patch("/api/admin/users/:userId", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { userId } = req.params;
+      const updateData = updateUserSchema.parse(req.body);
+
+      // Check if username or email already exists (excluding current user)
+      if (updateData.username) {
+        const existingUserByUsername = await storage.getUserByUsername(updateData.username);
+        if (existingUserByUsername && existingUserByUsername.id !== userId) {
+          return res.status(400).json({ message: "Username already exists" });
+        }
+      }
+
+      if (updateData.email) {
+        const existingUserByEmail = await storage.getUserByEmail(updateData.email);
+        if (existingUserByEmail && existingUserByEmail.id !== userId) {
+          return res.status(400).json({ message: "Email already exists" });
+        }
+      }
+
+      const updatedUser = await storage.updateUser(userId, updateData);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json(updatedUser);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Update user error:", error);
+      res.status(500).json({ message: "Failed to update user" });
     }
   });
 
