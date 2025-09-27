@@ -301,7 +301,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin get single reward endpoint
+  // Admin endpoints for reward approval - MUST BE BEFORE /:id route
+  app.get("/api/admin/rewards/pending", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const pendingRedemptions = await storage.getPendingRewardRedemptions();
+      res.json(pendingRedemptions);
+    } catch (error) {
+      console.error("Get pending redemptions error:", error);
+      res.status(500).json({ message: "Failed to get pending redemptions" });
+    }
+  });
+
+  // Admin endpoint to get all reward redemptions - MUST BE BEFORE /:id route
+  app.get("/api/admin/rewards/redemptions", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const allRedemptions = await storage.getAllRewardRedemptions();
+      res.json(allRedemptions);
+    } catch (error) {
+      console.error("Get all redemptions error:", error);
+      res.status(500).json({ message: "Failed to get all redemptions" });
+    }
+  });
+
+  // Admin get single reward endpoint - MUST BE AFTER specific routes
   app.get("/api/admin/rewards/:id", async (req, res) => {
     const userRole = req.session?.userRole;
     if (userRole !== "admin") {
@@ -353,21 +385,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin endpoints for reward approval
-  app.get("/api/admin/rewards/pending", async (req, res) => {
-    const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
-      return res.status(403).json({ message: "Admin access required" });
-    }
-
-    try {
-      const pendingRedemptions = await storage.getPendingRewardRedemptions();
-      res.json(pendingRedemptions);
-    } catch (error) {
-      console.error("Get pending redemptions error:", error);
-      res.status(500).json({ message: "Failed to get pending redemptions" });
-    }
-  });
 
   app.post("/api/admin/rewards/:redemptionId/approve", async (req, res) => {
     const userRole = req.session?.userRole;
@@ -421,21 +438,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin endpoint to get all reward redemptions
-  app.get("/api/admin/rewards/redemptions", async (req, res) => {
-    const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
-      return res.status(403).json({ message: "Admin access required" });
-    }
-
-    try {
-      const allRedemptions = await storage.getAllRewardRedemptions();
-      res.json(allRedemptions);
-    } catch (error) {
-      console.error("Get all redemptions error:", error);
-      res.status(500).json({ message: "Failed to get all redemptions" });
-    }
-  });
 
   // Admin endpoint to update reward shipment status
   app.put("/api/admin/rewards/:redemptionId/shipment", async (req, res) => {
