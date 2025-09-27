@@ -30,7 +30,8 @@ import {
   Award,
   Upload,
   UserPlus,
-  Trash2
+  Trash2,
+  Edit
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -59,13 +60,27 @@ const createUserSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
+// User edit form schema (without password)
+const editUserSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Invalid email address"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  country: z.string().min(1, "Country is required"),
+  role: z.enum(["user", "admin"]),
+  isActive: z.boolean(),
+});
+
 type CreateUserForm = z.infer<typeof createUserSchema>;
+type EditUserForm = z.infer<typeof editUserSchema>;
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState("overview");
   const [isRewardModalOpen, setIsRewardModalOpen] = useState(false);
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
+  const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [reportFilters, setReportFilters] = useState({
     country: "all",
@@ -83,6 +98,20 @@ export default function Admin() {
       username: "",
       email: "",
       password: "",
+      firstName: "",
+      lastName: "",
+      country: "",
+      role: "user",
+      isActive: true,
+    },
+  });
+
+  // User edit form
+  const editUserForm = useForm<EditUserForm>({
+    resolver: zodResolver(editUserSchema),
+    defaultValues: {
+      username: "",
+      email: "",
       firstName: "",
       lastName: "",
       country: "",
@@ -269,6 +298,50 @@ export default function Admin() {
 
   const handleCreateUser = (data: CreateUserForm) => {
     createUserMutation.mutate(data);
+  };
+
+  // Edit user mutation
+  const editUserMutation = useMutation({
+    mutationFn: async ({ userId, userData }: { userId: string; userData: EditUserForm }) => {
+      return apiRequest("PATCH", `/api/admin/users/${userId}`, userData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "Success",
+        description: "User updated successfully",
+      });
+      setIsEditUserModalOpen(false);
+      setSelectedUser(null);
+      editUserForm.reset();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    editUserForm.reset({
+      username: user.username,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      country: user.country,
+      role: user.role,
+      isActive: user.isActive,
+    });
+    setIsEditUserModalOpen(true);
+  };
+
+  const handleUpdateUser = (data: EditUserForm) => {
+    if (selectedUser) {
+      editUserMutation.mutate({ userId: selectedUser.id, userData: data });
+    }
   };
 
   // Delete user mutation
@@ -1189,6 +1262,155 @@ export default function Admin() {
                     </Form>
                   </DialogContent>
                 </Dialog>
+
+                {/* Edit User Modal */}
+                <Dialog open={isEditUserModalOpen} onOpenChange={setIsEditUserModalOpen}>
+                  <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                      <DialogTitle>Edit User</DialogTitle>
+                      <DialogDescription>
+                        Update user information for {selectedUser?.firstName} {selectedUser?.lastName}.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <Form {...editUserForm}>
+                      <form onSubmit={editUserForm.handleSubmit(handleUpdateUser)} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={editUserForm.control}
+                            name="firstName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>First Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="John" {...field} data-testid="input-edit-first-name" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={editUserForm.control}
+                            name="lastName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Last Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Doe" {...field} data-testid="input-edit-last-name" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <FormField
+                          control={editUserForm.control}
+                          name="username"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Username</FormLabel>
+                              <FormControl>
+                                <Input placeholder="johndoe" {...field} data-testid="input-edit-username" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={editUserForm.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input type="email" placeholder="john@example.com" {...field} data-testid="input-edit-email" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={editUserForm.control}
+                          name="country"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Country</FormLabel>
+                              <FormControl>
+                                <Input placeholder="United States" {...field} data-testid="input-edit-country" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={editUserForm.control}
+                            name="role"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Role</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger data-testid="select-edit-role">
+                                      <SelectValue placeholder="Select a role" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="user">User</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={editUserForm.control}
+                            name="isActive"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Status</FormLabel>
+                                <Select onValueChange={(value) => field.onChange(value === "true")} value={field.value ? "true" : "false"}>
+                                  <FormControl>
+                                    <SelectTrigger data-testid="select-edit-status">
+                                      <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="true">Active</SelectItem>
+                                    <SelectItem value="false">Inactive</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <div className="flex justify-end space-x-2 pt-4">
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={() => setIsEditUserModalOpen(false)}
+                            data-testid="button-cancel-edit"
+                          >
+                            Cancel
+                          </Button>
+                          <Button 
+                            type="submit" 
+                            disabled={editUserMutation.isPending}
+                            data-testid="button-submit-edit"
+                          >
+                            {editUserMutation.isPending ? "Updating..." : "Update User"}
+                          </Button>
+                        </div>
+                      </form>
+                    </Form>
+                  </DialogContent>
+                </Dialog>
                 </div>
               </div>
               <div className="text-sm text-gray-600 mt-2">
@@ -1279,6 +1501,15 @@ export default function Admin() {
                               ) : (
                                 <span className="text-green-600">✓</span>
                               )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditUser(user)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                data-testid={`button-edit-${user.id}`}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button
