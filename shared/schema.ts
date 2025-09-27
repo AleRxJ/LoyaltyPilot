@@ -38,6 +38,7 @@ export const deals = pgTable("deals", {
   quantity: integer("quantity").notNull(),
   closeDate: timestamp("close_date").notNull(),
   clientInfo: text("client_info"),
+  licenseAgreementNumber: text("license_agreement_number"),
   status: dealStatusEnum("status").notNull().default("pending"),
   pointsEarned: integer("points_earned").default(0),
   approvedBy: varchar("approved_by").references(() => users.id),
