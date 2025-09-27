@@ -20,6 +20,7 @@ const dealSchema = z.object({
   dealValue: z.string().min(1, "Deal value is required"),
   quantity: z.string().min(1, "Quantity is required"),
   closeDate: z.string().min(1, "Close date is required"),
+  licenseAgreementNumber: z.string().optional(),
   clientInfo: z.string().optional(),
 });
 
@@ -42,6 +43,7 @@ export default function DealModal({ isOpen, onClose }: DealModalProps) {
       dealValue: "",
       quantity: "",
       closeDate: "",
+      licenseAgreementNumber: "",
       clientInfo: "",
     },
   });
@@ -195,6 +197,24 @@ export default function DealModal({ isOpen, onClose }: DealModalProps) {
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="licenseAgreementNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>License Agreement Number (Optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="LA-2024-001234"
+                      data-testid="input-license-agreement-number"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
