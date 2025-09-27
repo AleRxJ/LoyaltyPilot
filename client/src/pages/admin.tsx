@@ -600,6 +600,70 @@ export default function Admin() {
     }
   };
 
+  const handleExportRewardRedemptions = async () => {
+    try {
+      toast({
+        title: "Generating Reward Redemptions Report",
+        description: "Creating your Excel report...",
+      });
+
+      // Build query parameters for the redemptions export
+      const params = new URLSearchParams();
+      if (reportFilters.startDate) params.append("startDate", reportFilters.startDate);
+      if (reportFilters.endDate) params.append("endDate", reportFilters.endDate);
+      
+      const url = `/api/admin/reports/reward-redemptions/export${params.toString() ? `?${params.toString()}` : ""}`;
+      
+      // Create a temporary download link
+      const response = await fetch(url, { 
+        credentials: "include",
+        method: 'GET'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate reward redemptions report');
+      }
+      
+      // Get the blob from the response
+      const blob = await response.blob();
+      
+      // Create download link
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      
+      // Set filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = `reward-redemptions-${new Date().toISOString().split('T')[0]}.xlsx`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({
+        title: "Report Downloaded",
+        description: `Your reward redemptions report has been saved as ${filename}`,
+      });
+      
+    } catch (error) {
+      console.error('Error generating reward redemptions Excel report:', error);
+      toast({
+        title: "Export Failed",
+        description: "There was an error generating your reward redemptions report. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleExportUserRanking = async () => {
     try {
@@ -866,6 +930,10 @@ export default function Admin() {
                 <Button onClick={handleExportUserRanking} data-testid="button-export-user-ranking">
                   <Download className="w-4 h-4 mr-2" />
                   Export User Ranking (Excel)
+                </Button>
+                <Button onClick={handleExportRewardRedemptions} variant="secondary" data-testid="button-export-reward-redemptions">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Reward Redemptions (Excel)
                 </Button>
               </div>
             </CardContent>
