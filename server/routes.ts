@@ -1350,6 +1350,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Deals per user report endpoint
+  app.get("/api/admin/reports/deals-per-user", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const filters = {
+        startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+        endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+      };
+
+      const data = await storage.getDealsPerUserReport(filters);
+      res.json(data);
+    } catch (error) {
+      console.error("Error getting deals per user report:", error);
+      res.status(500).json({ message: "Failed to get deals per user report" });
+    }
+  });
+
+  app.get("/api/admin/reports/deals-per-user/export", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const filters = {
+        startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+        endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+      };
+
+      const data = await storage.getDealsPerUserReport(filters);
+      
+      // Create Excel workbook
+      const workbook = XLSX.utils.book_new();
+      
+      // Prepare data for Excel
+      const excelData = data.map((user, index) => ({
+        'Ranking': index + 1,
+        'Username': user.username,
+        'Name': `${user.firstName} ${user.lastName}`.trim(),
+        'Email': user.email,
+        'Country': user.country,
+        'Total Deals': user.totalDeals,
+        'Total Sales ($)': user.totalSales.toFixed(2),
+        'Average Deal Size ($)': user.averageDealSize.toFixed(2)
+      }));
+      
+      // Create worksheet
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      
+      // Auto-size columns
+      const columnWidths = [
+        { wch: 10 }, // Ranking
+        { wch: 15 }, // Username
+        { wch: 25 }, // Name
+        { wch: 30 }, // Email
+        { wch: 15 }, // Country
+        { wch: 15 }, // Total Deals
+        { wch: 20 }, // Total Sales
+        { wch: 20 }  // Average Deal Size
+      ];
+      worksheet['!cols'] = columnWidths;
+      
+      // Add worksheet to workbook
+      const sheetName = `Deals Per User ${new Date().toISOString().split('T')[0]}`;
+      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+      
+      // Generate Excel buffer
+      const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+      
+      // Set response headers for file download
+      const filename = `deals-per-user-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Length', excelBuffer.length.toString());
+      
+      // Send the Excel file
+      res.send(excelBuffer);
+      
+    } catch (error) {
+      console.error("Error exporting deals per user report:", error);
+      res.status(500).json({ message: "Failed to export deals per user report" });
+    }
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;
