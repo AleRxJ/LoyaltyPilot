@@ -184,6 +184,18 @@ export const insertUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
 });
 
+export const updateUserSchema = createInsertSchema(users).omit({
+  id: true,
+  password: true,
+  createdAt: true,
+  updatedAt: true,
+  approvedBy: true,
+  approvedAt: true,
+  inviteToken: true,
+  resetToken: true,
+  resetTokenExpiry: true,
+}).partial();
+
 export const insertDealSchema = createInsertSchema(deals).omit({
   id: true,
   pointsEarned: true,
@@ -224,6 +236,7 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpdateUser = z.infer<typeof updateUserSchema>;
 export type Deal = typeof deals.$inferSelect;
 export type InsertDeal = z.infer<typeof insertDealSchema>;
 export type Reward = typeof rewards.$inferSelect;
