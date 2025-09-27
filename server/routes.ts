@@ -697,6 +697,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/reports/user-ranking", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const filters = {
+        startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+        endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+      };
+
+      const data = await storage.getUserRankingReport(filters);
+      res.json(data);
+    } catch (error) {
+      console.error("Error getting user ranking report:", error);
+      res.status(500).json({ message: "Failed to get user ranking report" });
+    }
+  });
+
+  app.get("/api/admin/reports/user-ranking/export", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const XLSX = require('xlsx');
+      
+      const filters = {
+        startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+        endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+      };
+
+      const data = await storage.getUserRankingReport(filters);
+      
+      // Create Excel workbook
+      const workbook = XLSX.utils.book_new();
+      
+      // Prepare data for Excel
+      const excelData = data.map((user, index) => ({
+        'Ranking': index + 1,
+        'Username': user.username,
+        'Name': `${user.firstName} ${user.lastName}`.trim(),
+        'Email': user.email,
+        'Country': user.country,
+        'Total Points': user.totalPoints,
+        'Total Deals': user.totalDeals,
+        'Total Sales ($)': user.totalSales.toFixed(2)
+      }));
+      
+      // Create worksheet
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      
+      // Auto-size columns
+      const columnWidths = [
+        { wch: 10 }, // Ranking
+        { wch: 15 }, // Username
+        { wch: 25 }, // Name
+        { wch: 30 }, // Email
+        { wch: 15 }, // Country
+        { wch: 15 }, // Total Points
+        { wch: 15 }, // Total Deals
+        { wch: 20 }  // Total Sales
+      ];
+      worksheet['!cols'] = columnWidths;
+      
+      // Add worksheet to workbook
+      const sheetName = `User Ranking ${new Date().toISOString().split('T')[0]}`;
+      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+      
+      // Generate Excel buffer
+      const excelBuffer = XLSX.write(workbook, { 
+        type: 'buffer', 
+        bookType: 'xlsx',
+        compression: true 
+      });
+      
+      // Set response headers for file download
+      const filename = `user-ranking-${new Date().toISOString().split('T')[0]}.xlsx`;
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', excelBuffer.length);
+      
+      // Send the file
+      res.send(excelBuffer);
+      
+    } catch (error) {
+      console.error("Error generating Excel report:", error);
+      res.status(500).json({ message: "Failed to generate Excel report" });
+    }
+  });
+
   // CSV upload routes
   app.post("/api/admin/csv/upload-url", async (req, res) => {
     const userRole = req.session?.userRole;

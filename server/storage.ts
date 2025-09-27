@@ -759,6 +759,91 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  async getUserRankingReport(filters: {
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<Array<{
+    userId: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    country: string;
+    totalPoints: number;
+    totalDeals: number;
+    totalSales: number;
+  }>> {
+    const dealConditions = [eq(deals.status, "approved")];
+    const pointsConditions = [];
+    
+    if (filters.startDate) {
+      dealConditions.push(gte(deals.createdAt, filters.startDate));
+      pointsConditions.push(gte(pointsHistory.createdAt, filters.startDate));
+    }
+    if (filters.endDate) {
+      dealConditions.push(lte(deals.createdAt, filters.endDate));
+      pointsConditions.push(lte(pointsHistory.createdAt, filters.endDate));
+    }
+
+    // Get user points in the date range
+    const pointsQuery = db
+      .select({
+        userId: pointsHistory.userId,
+        totalPoints: sum(pointsHistory.points).as('totalPoints')
+      })
+      .from(pointsHistory)
+      .where(pointsConditions.length > 0 ? and(...pointsConditions) : undefined)
+      .groupBy(pointsHistory.userId);
+
+    // Get user deals in the date range  
+    const dealsQuery = db
+      .select({
+        userId: deals.userId,
+        totalDeals: count(deals.id).as('totalDeals'),
+        totalSales: sum(deals.dealValue).as('totalSales')
+      })
+      .from(deals)
+      .where(and(...dealConditions))
+      .groupBy(deals.userId);
+
+    // Get all users with their basic info
+    const usersResult = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+        country: users.country
+      })
+      .from(users)
+      .where(eq(users.role, "user"));
+
+    const pointsResult = await pointsQuery;
+    const dealsResult = await dealsQuery;
+
+    // Combine all data
+    const userRanking = usersResult.map(user => {
+      const userPoints = pointsResult.find(p => p.userId === user.id);
+      const userDeals = dealsResult.find(d => d.userId === user.id);
+
+      return {
+        userId: user.id,
+        username: user.username || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        country: user.country || '',
+        totalPoints: Number(userPoints?.totalPoints || 0),
+        totalDeals: Number(userDeals?.totalDeals || 0),
+        totalSales: Number(userDeals?.totalSales || 0),
+      };
+    });
+
+    // Sort by points in descending order
+    return userRanking.sort((a, b) => b.totalPoints - a.totalPoints);
+  }
+
   async createNotification(notification: InsertNotification): Promise<Notification> {
     const [newNotification] = await db.insert(notifications).values(notification).returning();
     return newNotification;
