@@ -791,6 +791,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/reports/reward-redemptions", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const filters = {
+        startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+        endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+      };
+
+      const data = await storage.getRewardRedemptionsReport(filters);
+      res.json(data);
+    } catch (error) {
+      console.error("Error getting reward redemptions report:", error);
+      res.status(500).json({ message: "Failed to get reward redemptions report" });
+    }
+  });
+
+  app.get("/api/admin/reports/reward-redemptions/export", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const filters = {
+        startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+        endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+      };
+
+      const data = await storage.getRewardRedemptionsReport(filters);
+      
+      // Create Excel workbook
+      const workbook = XLSX.utils.book_new();
+      
+      // Prepare data for Excel
+      const excelData = data.map((redemption, index) => ({
+        'No.': index + 1,
+        'Username': redemption.userName || 'N/A',
+        'Name': `${redemption.userFirstName || ''} ${redemption.userLastName || ''}`.trim() || 'N/A',
+        'Email': redemption.userEmail || 'N/A',
+        'Reward': redemption.rewardName || 'N/A',
+        'Points Cost': redemption.pointsCost || 0,
+        'Status': redemption.status || 'N/A',
+        'Redeemed Date': redemption.redeemedAt ? new Date(redemption.redeemedAt).toLocaleDateString() : 'N/A',
+        'Approved Date': redemption.approvedAt ? new Date(redemption.approvedAt).toLocaleDateString() : 'N/A'
+      }));
+      
+      // Create worksheet
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      
+      // Auto-size columns
+      const columnWidths = [
+        { wch: 8 },  // No.
+        { wch: 15 }, // Username
+        { wch: 25 }, // Name
+        { wch: 30 }, // Email
+        { wch: 30 }, // Reward
+        { wch: 12 }, // Points Cost
+        { wch: 12 }, // Status
+        { wch: 15 }, // Redeemed Date
+        { wch: 15 }  // Approved Date
+      ];
+      worksheet['!cols'] = columnWidths;
+      
+      // Add worksheet to workbook
+      const sheetName = `Reward Redemptions ${new Date().toISOString().split('T')[0]}`;
+      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+      
+      // Generate Excel buffer
+      const excelBuffer = XLSX.write(workbook, { 
+        type: 'buffer', 
+        bookType: 'xlsx',
+        compression: true 
+      });
+      
+      // Set response headers for file download
+      const filename = `reward-redemptions-${new Date().toISOString().split('T')[0]}.xlsx`;
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', excelBuffer.length);
+      
+      // Send the file
+      res.send(excelBuffer);
+      
+    } catch (error) {
+      console.error("Error generating reward redemptions Excel report:", error);
+      res.status(500).json({ message: "Failed to generate reward redemptions Excel report" });
+    }
+  });
+
   // CSV upload routes
   app.post("/api/admin/csv/upload-url", async (req, res) => {
     const userRole = req.session?.userRole;

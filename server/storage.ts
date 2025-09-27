@@ -75,6 +75,21 @@ export interface IStorage {
     totalRevenue: number;
     redeemedRewards: number;
   }>;
+  
+  getRewardRedemptionsReport(filters: {
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<Array<{
+    userName: string;
+    userFirstName: string;
+    userLastName: string;
+    userEmail: string;
+    rewardName: string;
+    pointsCost: number;
+    status: string;
+    redeemedAt: Date;
+    approvedAt: Date | null;
+  }>>;
 
   // Notification methods
   createNotification(notification: InsertNotification): Promise<Notification>;
@@ -842,6 +857,59 @@ export class DatabaseStorage implements IStorage {
 
     // Sort by points in descending order
     return userRanking.sort((a, b) => b.totalPoints - a.totalPoints);
+  }
+
+  async getRewardRedemptionsReport(filters: {
+    startDate?: Date;
+    endDate?: Date;
+  }): Promise<Array<{
+    userName: string;
+    userFirstName: string;
+    userLastName: string;
+    userEmail: string;
+    rewardName: string;
+    pointsCost: number;
+    status: string;
+    redeemedAt: Date;
+    approvedAt: Date | null;
+  }>> {
+    const conditions = [];
+    
+    if (filters.startDate) {
+      conditions.push(gte(userRewards.redeemedAt, filters.startDate));
+    }
+    if (filters.endDate) {
+      conditions.push(lte(userRewards.redeemedAt, filters.endDate));
+    }
+
+    const result = await db.select({
+      userName: users.username,
+      userFirstName: users.firstName,
+      userLastName: users.lastName,
+      userEmail: users.email,
+      rewardName: rewards.name,
+      pointsCost: rewards.pointsCost,
+      status: userRewards.status,
+      redeemedAt: userRewards.redeemedAt,
+      approvedAt: userRewards.approvedAt,
+    })
+    .from(userRewards)
+    .leftJoin(users, eq(userRewards.userId, users.id))
+    .leftJoin(rewards, eq(userRewards.rewardId, rewards.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(userRewards.redeemedAt));
+
+    return result as Array<{
+      userName: string;
+      userFirstName: string;
+      userLastName: string;
+      userEmail: string;
+      rewardName: string;
+      pointsCost: number;
+      status: string;
+      redeemedAt: Date;
+      approvedAt: Date | null;
+    }>;
   }
 
   async createNotification(notification: InsertNotification): Promise<Notification> {
