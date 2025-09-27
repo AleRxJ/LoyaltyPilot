@@ -7,7 +7,7 @@ import {
   type DealWithUser
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, lte, sum, count, isNotNull } from "drizzle-orm";
+import { eq, desc, and, gte, lte, gt, sum, count, isNotNull } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {

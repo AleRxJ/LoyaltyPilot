@@ -665,6 +665,71 @@ export default function Admin() {
     }
   };
 
+  const handleExportDealsPerUser = async () => {
+    try {
+      toast({
+        title: "Generating Deals per User Report",
+        description: "Creating your Excel report...",
+      });
+
+      // Build query parameters for the deals per user export
+      const params = new URLSearchParams();
+      if (reportFilters.startDate) params.append("startDate", reportFilters.startDate);
+      if (reportFilters.endDate) params.append("endDate", reportFilters.endDate);
+      
+      const url = `/api/admin/reports/deals-per-user/export${params.toString() ? `?${params.toString()}` : ""}`;
+      
+      // Create a temporary download link
+      const response = await fetch(url, { 
+        credentials: "include",
+        method: 'GET'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate deals per user report');
+      }
+      
+      // Get the blob from the response
+      const blob = await response.blob();
+      
+      // Create download link
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      
+      // Set filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = `deals-per-user-${new Date().toISOString().split('T')[0]}.xlsx`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({
+        title: "Report Downloaded",
+        description: `Your deals per user report has been saved as ${filename}`,
+      });
+      
+    } catch (error) {
+      console.error('Error generating deals per user Excel report:', error);
+      toast({
+        title: "Export Failed",
+        description: "There was an error generating your deals per user report. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleExportUserRanking = async () => {
     try {
       toast({
@@ -934,6 +999,10 @@ export default function Admin() {
                 <Button onClick={handleExportRewardRedemptions} variant="secondary" data-testid="button-export-reward-redemptions">
                   <Download className="w-4 h-4 mr-2" />
                   Export Reward Redemptions (Excel)
+                </Button>
+                <Button onClick={handleExportDealsPerUser} variant="outline" data-testid="button-export-deals-per-user">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Deals per User (Excel)
                 </Button>
               </div>
             </CardContent>
