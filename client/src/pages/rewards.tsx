@@ -48,9 +48,14 @@ export default function Rewards() {
       queryClient.invalidateQueries({ queryKey: ["/api/users/stats"] });
     },
     onError: (error: any) => {
+      const errorMessage = error.message || "Failed to redeem reward";
+      const isAlreadyPending = errorMessage.includes("already have a pending redemption");
+      
       toast({
-        title: "Error",
-        description: error.message || "Failed to redeem reward",
+        title: isAlreadyPending ? "Redemption Already Pending" : "Error",
+        description: isAlreadyPending 
+          ? "You already have a pending redemption for this reward. Please wait for admin approval."
+          : errorMessage,
         variant: "destructive",
       });
     },
@@ -65,6 +70,12 @@ export default function Rewards() {
       });
       return;
     }
+    
+    // Prevent multiple clicks if already pending
+    if (redeemMutation.isPending) {
+      return;
+    }
+    
     redeemMutation.mutate(reward.id);
   };
 

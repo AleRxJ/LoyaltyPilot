@@ -345,6 +345,19 @@ export class DatabaseStorage implements IStorage {
     const reward = await this.getReward(rewardId);
     if (!reward) throw new Error("Reward not found");
 
+    // Check if user already has a pending redemption for this reward
+    const [existingRedemption] = await db.select()
+      .from(userRewards)
+      .where(and(
+        eq(userRewards.userId, userId),
+        eq(userRewards.rewardId, rewardId),
+        eq(userRewards.status, "pending")
+      ));
+
+    if (existingRedemption) {
+      throw new Error("You already have a pending redemption for this reward");
+    }
+
     const availablePoints = await this.getUserAvailablePoints(userId);
     if (availablePoints < reward.pointsCost) {
       throw new Error("Insufficient points");
