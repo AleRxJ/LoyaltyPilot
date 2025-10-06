@@ -42,9 +42,9 @@ Preferred communication style: Simple, everyday language.
 - **Route Protection**: Authentication middleware on protected endpoints
 
 ## Key Features
-- **Deal Management**: Users can submit deals for approval, admins can approve/reject
+- **Deal Management**: Users can submit deals for approval, admins can approve/reject and edit deals
 - **Points System**: Automatic points calculation based on deal values and product types
-- **Rewards Catalog**: Categorized rewards with stock management and redemption tracking
+- **Rewards Catalog**: Categorized rewards with stock management and redemption tracking. Admins can create, edit, and delete rewards
 - **User Statistics**: Real-time dashboard with points, deals, and performance metrics
 - **Admin Dashboard**: User management, deal approval workflows, and system analytics
 - **Multi-language Support**: Internationalization structure with English and Spanish support
