@@ -34,6 +34,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import RewardModal from "@/components/modals/reward-modal";
+import DealModal from "@/components/modals/deal-modal";
 import { CSVUploader } from "@/components/CSVUploader";
 import type { User, Deal, Reward } from "@shared/schema";
 import type { AuthUser } from "@/lib/auth";
@@ -79,6 +80,8 @@ export default function Admin() {
   const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
   const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isDealModalOpen, setIsDealModalOpen] = useState(false);
+  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [reportFilters, setReportFilters] = useState({
     country: "all",
@@ -265,6 +268,11 @@ export default function Admin() {
 
   const handleRejectDeal = (dealId: string) => {
     rejectDealMutation.mutate(dealId);
+  };
+
+  const handleEditDeal = (deal: Deal) => {
+    setSelectedDeal(deal);
+    setIsDealModalOpen(true);
   };
 
   const handleUpdateUserRole = (userId: string, role: string) => {
@@ -1722,27 +1730,38 @@ export default function Admin() {
                             </Badge>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            {deal.status === "pending" && (
-                              <div className="flex space-x-2">
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleApproveDeal(deal.id)}
-                                  disabled={approveDealMutation.isPending}
-                                  data-testid={`button-approve-deal-${deal.id}`}
-                                >
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleRejectDeal(deal.id)}
-                                  disabled={rejectDealMutation.isPending}
-                                  data-testid={`button-reject-deal-${deal.id}`}
-                                >
-                                  Reject
-                                </Button>
-                              </div>
-                            )}
+                            <div className="flex space-x-2">
+                              {deal.status === "pending" && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleApproveDeal(deal.id)}
+                                    disabled={approveDealMutation.isPending}
+                                    data-testid={`button-approve-deal-${deal.id}`}
+                                  >
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleRejectDeal(deal.id)}
+                                    disabled={rejectDealMutation.isPending}
+                                    data-testid={`button-reject-deal-${deal.id}`}
+                                  >
+                                    Reject
+                                  </Button>
+                                </>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditDeal(deal)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                data-testid={`button-edit-deal-${deal.id}`}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -2140,6 +2159,15 @@ export default function Admin() {
           setSelectedReward(null);
         }}
         reward={selectedReward}
+      />
+      
+      <DealModal
+        isOpen={isDealModalOpen}
+        onClose={() => {
+          setIsDealModalOpen(false);
+          setSelectedDeal(null);
+        }}
+        deal={selectedDeal}
       />
     </div>
   );
