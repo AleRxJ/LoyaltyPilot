@@ -78,6 +78,17 @@ export default function Dashboard() {
     select: (data) => data || [],
   });
 
+  const { data: leaderboard, isLoading: leaderboardLoading } = useQuery<Array<{
+    userId: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    totalPoints: number;
+  }>>({
+    queryKey: ["/api/users/leaderboard"],
+    select: (data) => data || [],
+  });
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "approved":
@@ -202,6 +213,101 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Leaderboard - Only show for regular users */}
+      {user.role !== "admin" && (
+        <div className="mb-12">
+          <Card className="shadow-material">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center">
+                    <TrendingUp className="text-white h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900" data-testid="text-leaderboard-title">
+                      Top Performers
+                    </h2>
+                    <p className="text-sm text-gray-600">Users with the most points</p>
+                  </div>
+                </div>
+              </div>
+
+              {leaderboardLoading ? (
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              ) : leaderboard && leaderboard.length > 0 ? (
+                <div className="space-y-3">
+                  {leaderboard.map((leaderUser, index) => {
+                    const isCurrentUser = leaderUser.userId === user.id;
+                    const position = index + 1;
+                    
+                    // Medal colors for top 3
+                    const getMedalColor = () => {
+                      if (position === 1) return "from-yellow-400 to-yellow-600";
+                      if (position === 2) return "from-gray-400 to-gray-600";
+                      if (position === 3) return "from-orange-400 to-orange-600";
+                      return "from-blue-400 to-blue-600";
+                    };
+
+                    return (
+                      <div
+                        key={leaderUser.userId}
+                        className={`flex items-center space-x-4 p-4 rounded-lg transition-all ${
+                          isCurrentUser 
+                            ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-400 shadow-lg transform scale-105" 
+                            : "bg-gray-50 hover:bg-gray-100"
+                        }`}
+                        data-testid={`leaderboard-item-${position}`}
+                      >
+                        {/* Position Badge */}
+                        <div className={`w-12 h-12 bg-gradient-to-br ${getMedalColor()} rounded-full flex items-center justify-center flex-shrink-0`}>
+                          <span className="text-white font-bold text-lg">
+                            {position}
+                          </span>
+                        </div>
+
+                        {/* User Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <h3 className={`font-semibold truncate ${isCurrentUser ? "text-blue-900" : "text-gray-900"}`}>
+                              {leaderUser.firstName} {leaderUser.lastName}
+                            </h3>
+                            {isCurrentUser && (
+                              <Badge className="bg-blue-600 text-white">You</Badge>
+                            )}
+                          </div>
+                          <p className={`text-sm ${isCurrentUser ? "text-blue-700" : "text-gray-600"}`}>
+                            @{leaderUser.username}
+                          </p>
+                        </div>
+
+                        {/* Points */}
+                        <div className="text-right">
+                          <div className={`text-2xl font-bold ${isCurrentUser ? "text-blue-900" : "text-gray-900"}`}>
+                            {leaderUser.totalPoints.toLocaleString()}
+                          </div>
+                          <div className={`text-sm ${isCurrentUser ? "text-blue-700" : "text-gray-600"}`}>
+                            points
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <p className="text-gray-600">No leaderboard data available yet</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Available Rewards Carousel - Only show for regular users */}
       {user.role !== "admin" && (
