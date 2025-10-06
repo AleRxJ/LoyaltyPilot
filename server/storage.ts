@@ -7,7 +7,7 @@ import {
   type DealWithUser
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, lte, gt, sum, count, isNotNull } from "drizzle-orm";
+import { eq, desc, and, gte, lte, gt, sum, count, isNotNull, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -640,8 +640,9 @@ export class DatabaseStorage implements IStorage {
         totalPoints: sum(pointsHistory.points),
       })
       .from(pointsHistory)
-      .leftJoin(users, eq(pointsHistory.userId, users.id))
+      .innerJoin(users, eq(pointsHistory.userId, users.id))
       .groupBy(pointsHistory.userId, users.username, users.firstName, users.lastName)
+      .having(sql`SUM(${pointsHistory.points}) > 0`)
       .orderBy(desc(sum(pointsHistory.points)))
       .limit(limit);
 
