@@ -40,6 +40,7 @@ export interface IStorage {
   getReward(id: string): Promise<Reward | undefined>;
   createReward(reward: InsertReward): Promise<Reward>;
   updateReward(id: string, updates: Partial<Reward>): Promise<Reward | undefined>;
+  deleteReward(id: string): Promise<Reward | undefined>;
   redeemReward(userId: string, rewardId: string): Promise<UserReward>;
   getUserRewards(userId: string): Promise<UserReward[]>;
   updateRewardShipmentStatus(rewardRedemptionId: string, shipmentStatus: "pending" | "shipped" | "delivered", adminId: string): Promise<UserReward | undefined>;
@@ -364,6 +365,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(rewards.id, id))
       .returning();
     return updatedReward || undefined;
+  }
+
+  async deleteReward(id: string): Promise<Reward | undefined> {
+    const [deletedReward] = await db.delete(rewards)
+      .where(eq(rewards.id, id))
+      .returning();
+    return deletedReward || undefined;
   }
 
   async redeemReward(userId: string, rewardId: string): Promise<UserReward> {
