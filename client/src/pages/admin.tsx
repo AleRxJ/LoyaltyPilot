@@ -538,6 +538,33 @@ export default function Admin() {
     rejectRedemptionMutation.mutate({ redemptionId, reason });
   };
 
+  // Delete reward mutation
+  const deleteRewardMutation = useMutation({
+    mutationFn: async (rewardId: string) => {
+      return apiRequest("DELETE", `/api/admin/rewards/${rewardId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/rewards"] });
+      toast({
+        title: "Success",
+        description: "Reward deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete reward",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteReward = (rewardId: string) => {
+    if (confirm("Are you sure you want to delete this reward? This action cannot be undone.")) {
+      deleteRewardMutation.mutate(rewardId);
+    }
+  };
+
   const processCSVMutation = useMutation({
     mutationFn: async (csvPath: string) => {
       return apiRequest("POST", `/api/admin/csv/process`, { csvPath });
@@ -1865,17 +1892,29 @@ export default function Admin() {
                           <Badge className={reward.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
                             {reward.isActive ? "Active" : "Inactive"}
                           </Badge>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedReward(reward);
-                              setIsRewardModalOpen(true);
-                            }}
-                            data-testid={`button-edit-reward-${reward.id}`}
-                          >
-                            Edit
-                          </Button>
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedReward(reward);
+                                setIsRewardModalOpen(true);
+                              }}
+                              data-testid={`button-edit-reward-${reward.id}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeleteReward(reward.id)}
+                              disabled={deleteRewardMutation.isPending}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              data-testid={`button-delete-reward-${reward.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
