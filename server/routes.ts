@@ -311,6 +311,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin reward delete endpoint
+  app.delete("/api/admin/rewards/:id", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { id } = req.params;
+      
+      const deletedReward = await storage.deleteReward(id);
+      if (!deletedReward) {
+        return res.status(404).json({ message: "Reward not found" });
+      }
+      
+      res.json({ message: "Reward deleted successfully", reward: deletedReward });
+    } catch (error) {
+      console.error("Delete reward error:", error);
+      res.status(500).json({ message: "Failed to delete reward" });
+    }
+  });
+
   // Admin get all rewards endpoint
   app.get("/api/admin/rewards", async (req, res) => {
     const userRole = req.session?.userRole;
