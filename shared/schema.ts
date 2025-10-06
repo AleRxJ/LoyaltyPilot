@@ -208,6 +208,18 @@ export const insertDealSchema = createInsertSchema(deals).omit({
   closeDate: z.string().transform((str) => new Date(str)),
 });
 
+export const updateDealSchema = createInsertSchema(deals).omit({
+  id: true,
+  userId: true,
+  pointsEarned: true,
+  approvedBy: true,
+  approvedAt: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  closeDate: z.string().transform((str) => new Date(str)),
+}).partial();
+
 export const insertRewardSchema = createInsertSchema(rewards).omit({
   id: true,
   createdAt: true,
@@ -240,6 +252,7 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type UpdateUser = z.infer<typeof updateUserSchema>;
 export type Deal = typeof deals.$inferSelect;
 export type InsertDeal = z.infer<typeof insertDealSchema>;
+export type UpdateDeal = z.infer<typeof updateDealSchema>;
 export type Reward = typeof rewards.$inferSelect;
 export type InsertReward = z.infer<typeof insertRewardSchema>;
 export type UserReward = typeof userRewards.$inferSelect;

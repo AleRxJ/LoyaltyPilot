@@ -1,6 +1,6 @@
 import { 
   users, deals, rewards, userRewards, pointsHistory, campaigns, notifications,
-  type User, type InsertUser, type Deal, type InsertDeal, 
+  type User, type InsertUser, type Deal, type InsertDeal, type UpdateDeal,
   type Reward, type InsertReward, type UserReward, type InsertUserReward,
   type PointsHistory, type InsertPointsHistory, type Campaign, type InsertCampaign,
   type Notification, type InsertNotification,
@@ -32,6 +32,7 @@ export interface IStorage {
   getPendingDeals(): Promise<DealWithUser[]>;
   approveDeal(id: string, approvedBy: string): Promise<Deal | undefined>;
   rejectDeal(id: string): Promise<Deal | undefined>;
+  updateDeal(id: string, updates: UpdateDeal): Promise<Deal | undefined>;
   getRecentDeals(userId: string, limit?: number): Promise<Deal[]>;
 
   // Reward methods
@@ -321,6 +322,14 @@ export class DatabaseStorage implements IStorage {
   async rejectDeal(id: string): Promise<Deal | undefined> {
     const [updatedDeal] = await db.update(deals)
       .set({ status: "rejected", updatedAt: new Date() })
+      .where(eq(deals.id, id))
+      .returning();
+    return updatedDeal || undefined;
+  }
+
+  async updateDeal(id: string, updates: UpdateDeal): Promise<Deal | undefined> {
+    const [updatedDeal] = await db.update(deals)
+      .set({ ...updates, updatedAt: new Date() })
       .where(eq(deals.id, id))
       .returning();
     return updatedDeal || undefined;
