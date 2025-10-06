@@ -222,6 +222,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/admin/deals/:id", async (req, res) => {
+    const userRole = req.session?.userRole;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { updateDealSchema } = await import("@shared/schema");
+      const updates = updateDealSchema.parse(req.body);
+      const deal = await storage.updateDeal(req.params.id, updates);
+      
+      if (!deal) {
+        return res.status(404).json({ message: "Deal not found" });
+      }
+      
+      res.json(deal);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update deal" });
+    }
+  });
+
   // Reward routes
   app.get("/api/rewards", async (req, res) => {
     try {
