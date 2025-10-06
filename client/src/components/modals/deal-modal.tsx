@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,9 +11,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import type { Deal } from "@shared/schema";
 
 const dealSchema = z.object({
-  productType: z.enum(["software", "hardware"], {
+  productType: z.enum(["software", "hardware", "equipment"], {
     required_error: "Please select a product type",
   }),
   productName: z.string().min(1, "Product name is required"),
@@ -22,6 +23,7 @@ const dealSchema = z.object({
   closeDate: z.string().min(1, "Close date is required"),
   licenseAgreementNumber: z.string().optional(),
   clientInfo: z.string().optional(),
+  status: z.enum(["pending", "approved", "rejected"]).optional(),
 });
 
 type DealForm = z.infer<typeof dealSchema>;
@@ -29,11 +31,13 @@ type DealForm = z.infer<typeof dealSchema>;
 interface DealModalProps {
   isOpen: boolean;
   onClose: () => void;
+  deal?: Deal | null;
 }
 
-export default function DealModal({ isOpen, onClose }: DealModalProps) {
+export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isEditing = !!deal;
 
   const form = useForm<DealForm>({
     resolver: zodResolver(dealSchema),
@@ -45,34 +49,72 @@ export default function DealModal({ isOpen, onClose }: DealModalProps) {
       closeDate: "",
       licenseAgreementNumber: "",
       clientInfo: "",
+      status: "pending",
     },
   });
+
+  useEffect(() => {
+    if (deal) {
+      const closeDate = deal.closeDate ? new Date(deal.closeDate).toISOString().split('T')[0] : "";
+      form.reset({
+        productType: deal.productType,
+        productName: deal.productName || "",
+        dealValue: deal.dealValue?.toString() || "",
+        quantity: deal.quantity?.toString() || "",
+        closeDate: closeDate,
+        clientInfo: deal.clientInfo || "",
+        licenseAgreementNumber: deal.licenseAgreementNumber || "",
+        status: deal.status,
+      });
+    } else {
+      form.reset({
+        productType: undefined,
+        productName: "",
+        dealValue: "",
+        quantity: "",
+        closeDate: "",
+        licenseAgreementNumber: "",
+        clientInfo: "",
+        status: "pending",
+      });
+    }
+  }, [deal, form]);
 
   const createDealMutation = useMutation({
     mutationFn: async (data: DealForm) => {
       const dealData = {
         ...data,
-        dealValue: data.dealValue, // Keep as string
+        dealValue: data.dealValue,
         quantity: parseInt(data.quantity),
-        closeDate: data.closeDate, // Send as string, will be transformed by schema
+        closeDate: data.closeDate,
       };
-      return apiRequest("POST", "/api/deals", dealData);
+      
+      if (isEditing) {
+        return apiRequest("PATCH", `/api/admin/deals/${deal?.id}`, dealData);
+      } else {
+        return apiRequest("POST", "/api/deals", dealData);
+      }
     },
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Deal registered successfully and is pending approval",
+        description: isEditing 
+          ? "Deal updated successfully" 
+          : "Deal registered successfully and is pending approval",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/deals"] });
       queryClient.invalidateQueries({ queryKey: ["/api/deals/recent"] });
       queryClient.invalidateQueries({ queryKey: ["/api/users/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/deals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/deals/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/reports"] });
       form.reset();
       onClose();
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to register deal",
+        description: error.message || `Failed to ${isEditing ? "update" : "register"} deal`,
         variant: "destructive",
       });
     },
@@ -92,7 +134,7 @@ export default function DealModal({ isOpen, onClose }: DealModalProps) {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-900">
-            Register New Deal
+            {isEditing ? "Edit Deal" : "Register New Deal"}
           </DialogTitle>
         </DialogHeader>
         
@@ -105,7 +147,7 @@ export default function DealModal({ isOpen, onClose }: DealModalProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Product Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-product-type">
                           <SelectValue placeholder="Select product type" />
@@ -114,6 +156,7 @@ export default function DealModal({ isOpen, onClose }: DealModalProps) {
                       <SelectContent>
                         <SelectItem value="software">Software</SelectItem>
                         <SelectItem value="hardware">Hardware</SelectItem>
+                        <SelectItem value="equipment">Equipment</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -198,6 +241,31 @@ export default function DealModal({ isOpen, onClose }: DealModalProps) {
               />
             </div>
 
+            {isEditing && (
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-status">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <FormField
               control={form.control}
               name="licenseAgreementNumber"
@@ -244,7 +312,10 @@ export default function DealModal({ isOpen, onClose }: DealModalProps) {
                 disabled={createDealMutation.isPending}
                 data-testid="button-submit-deal"
               >
-                {createDealMutation.isPending ? "Submitting..." : "Submit Deal"}
+                {createDealMutation.isPending 
+                  ? (isEditing ? "Updating..." : "Submitting...") 
+                  : (isEditing ? "Update Deal" : "Submit Deal")
+                }
               </Button>
             </div>
           </form>
