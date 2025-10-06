@@ -55,6 +55,7 @@ export interface IStorage {
   getUserPointsHistory(userId: string): Promise<PointsHistory[]>;
   getUserTotalPoints(userId: string): Promise<number>;
   getUserAvailablePoints(userId: string): Promise<number>;
+  getTopUsersByPoints(limit?: number): Promise<Array<{ userId: string; username: string; firstName: string; lastName: string; totalPoints: number }>>;
 
   // Campaign methods
   getCampaigns(): Promise<Campaign[]>;
@@ -627,6 +628,30 @@ export class DatabaseStorage implements IStorage {
       .from(pointsHistory)
       .where(eq(pointsHistory.userId, userId));
     return Math.max(0, Number(result?.total || 0));
+  }
+
+  async getTopUsersByPoints(limit = 5): Promise<Array<{ userId: string; username: string; firstName: string; lastName: string; totalPoints: number }>> {
+    const result = await db
+      .select({
+        userId: pointsHistory.userId,
+        username: users.username,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        totalPoints: sum(pointsHistory.points),
+      })
+      .from(pointsHistory)
+      .leftJoin(users, eq(pointsHistory.userId, users.id))
+      .groupBy(pointsHistory.userId, users.username, users.firstName, users.lastName)
+      .orderBy(desc(sum(pointsHistory.points)))
+      .limit(limit);
+
+    return result.map((row) => ({
+      userId: row.userId,
+      username: row.username || '',
+      firstName: row.firstName || '',
+      lastName: row.lastName || '',
+      totalPoints: Number(row.totalPoints || 0),
+    }));
   }
 
   async getCampaigns(): Promise<Campaign[]> {

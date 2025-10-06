@@ -137,6 +137,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/users/leaderboard", async (req, res) => {
+    const userId = req.session?.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      const topUsers = await storage.getTopUsersByPoints(limit);
+      res.json(topUsers);
+    } catch (error) {
+      console.error("Failed to get leaderboard:", error);
+      res.status(500).json({ message: "Failed to get leaderboard" });
+    }
+  });
+
   // Deal routes
   app.post("/api/deals", async (req, res) => {
     const userId = req.session?.userId;
