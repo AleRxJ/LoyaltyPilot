@@ -16,7 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Settings, DollarSign, Trophy } from "lucide-react";
+import { Settings, DollarSign, Trophy, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { PointsConfig } from "@shared/schema";
@@ -26,6 +26,8 @@ const pointsConfigFormSchema = z.object({
   hardwareRate: z.number().min(1, "Debe ser al menos 1").max(1000000, "Valor muy alto"),
   equipmentRate: z.number().min(1, "Debe ser al menos 1").max(1000000, "Valor muy alto"),
   grandPrizeThreshold: z.number().min(1, "Debe ser al menos 1").max(10000000, "Valor muy alto"),
+  redemptionStartDate: z.string().optional(),
+  redemptionEndDate: z.string().optional(),
 });
 
 type PointsConfigForm = z.infer<typeof pointsConfigFormSchema>;
@@ -45,6 +47,8 @@ export default function PointsConfigTab() {
       hardwareRate: 5000,
       equipmentRate: 10000,
       grandPrizeThreshold: 50000,
+      redemptionStartDate: "",
+      redemptionEndDate: "",
     },
   });
 
@@ -55,13 +59,27 @@ export default function PointsConfigTab() {
         hardwareRate: config.hardwareRate,
         equipmentRate: config.equipmentRate,
         grandPrizeThreshold: config.grandPrizeThreshold,
+        redemptionStartDate: config.redemptionStartDate 
+          ? new Date(config.redemptionStartDate).toISOString().split('T')[0] 
+          : "",
+        redemptionEndDate: config.redemptionEndDate 
+          ? new Date(config.redemptionEndDate).toISOString().split('T')[0] 
+          : "",
       });
     }
   }, [config, form]);
 
   const updateConfigMutation = useMutation({
     mutationFn: async (data: PointsConfigForm) => {
-      const response = await apiRequest("PATCH", "/api/admin/points-config", data);
+      const payload = {
+        softwareRate: data.softwareRate,
+        hardwareRate: data.hardwareRate,
+        equipmentRate: data.equipmentRate,
+        grandPrizeThreshold: data.grandPrizeThreshold,
+        redemptionStartDate: data.redemptionStartDate ? new Date(data.redemptionStartDate).toISOString() : null,
+        redemptionEndDate: data.redemptionEndDate ? new Date(data.redemptionEndDate).toISOString() : null,
+      };
+      const response = await apiRequest("PATCH", "/api/admin/points-config", payload);
       return response.json();
     },
     onSuccess: () => {
@@ -225,6 +243,65 @@ export default function PointsConfigTab() {
                         </FormItem>
                       )}
                     />
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="border-t pt-6">
+                <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Calendar className="h-5 w-5 text-blue-600" />
+                      Período de Redención
+                    </CardTitle>
+                    <CardDescription>
+                      Define el rango de fechas durante el cual los usuarios pueden redimir sus puntos
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-6 md:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="redemptionStartDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Fecha de Inicio</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="date"
+                                data-testid="input-redemption-start-date"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Inicio del período de redención
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="redemptionEndDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Fecha de Fin</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="date"
+                                data-testid="input-redemption-end-date"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Fin del período de redención
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </CardContent>
                 </Card>
               </div>
