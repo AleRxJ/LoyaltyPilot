@@ -129,6 +129,8 @@ export const pointsConfig = pgTable("points_config", {
   hardwareRate: integer("hardware_rate").notNull().default(5000),
   equipmentRate: integer("equipment_rate").notNull().default(10000),
   grandPrizeThreshold: integer("grand_prize_threshold").notNull().default(50000),
+  redemptionStartDate: timestamp("redemption_start_date"),
+  redemptionEndDate: timestamp("redemption_end_date"),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
   updatedBy: varchar("updated_by").references(() => users.id),
 });
