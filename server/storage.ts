@@ -1,11 +1,12 @@
 import { 
-  users, deals, rewards, userRewards, pointsHistory, campaigns, notifications, supportTickets,
+  users, deals, rewards, userRewards, pointsHistory, campaigns, notifications, supportTickets, pointsConfig,
   type User, type InsertUser, type Deal, type InsertDeal, type UpdateDeal,
   type Reward, type InsertReward, type UserReward, type InsertUserReward,
   type PointsHistory, type InsertPointsHistory, type Campaign, type InsertCampaign,
   type Notification, type InsertNotification,
   type SupportTicket, type InsertSupportTicket, type UpdateSupportTicket,
-  type DealWithUser, type SupportTicketWithUser
+  type DealWithUser, type SupportTicketWithUser,
+  type PointsConfig, type UpdatePointsConfig
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, gte, lte, gt, sum, count, isNotNull, sql } from "drizzle-orm";
@@ -105,6 +106,10 @@ export interface IStorage {
   getUserSupportTickets(userId: string): Promise<SupportTicket[]>;
   getAllSupportTickets(): Promise<SupportTicketWithUser[]>;
   updateSupportTicket(id: string, updates: UpdateSupportTicket): Promise<SupportTicket | undefined>;
+
+  // Points Config methods
+  getPointsConfig(): Promise<PointsConfig | undefined>;
+  updatePointsConfig(updates: UpdatePointsConfig, updatedBy: string): Promise<PointsConfig | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1109,6 +1114,32 @@ export class DatabaseStorage implements IStorage {
       .where(eq(supportTickets.id, id))
       .returning();
     return ticket || undefined;
+  }
+
+  async getPointsConfig(): Promise<PointsConfig | undefined> {
+    const [config] = await db.select().from(pointsConfig).limit(1);
+    return config || undefined;
+  }
+
+  async updatePointsConfig(updates: UpdatePointsConfig, updatedBy: string): Promise<PointsConfig | undefined> {
+    const existingConfig = await this.getPointsConfig();
+    
+    if (!existingConfig) {
+      const [newConfig] = await db.insert(pointsConfig)
+        .values({
+          ...updates,
+          updatedBy,
+          updatedAt: new Date(),
+        })
+        .returning();
+      return newConfig;
+    }
+    
+    const [config] = await db.update(pointsConfig)
+      .set({ ...updates, updatedBy, updatedAt: new Date() })
+      .where(eq(pointsConfig.id, existingConfig.id))
+      .returning();
+    return config || undefined;
   }
 }
 

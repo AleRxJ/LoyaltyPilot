@@ -123,6 +123,16 @@ export const supportTickets = pgTable("support_tickets", {
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
+export const pointsConfig = pgTable("points_config", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  softwareRate: integer("software_rate").notNull().default(1000),
+  hardwareRate: integer("hardware_rate").notNull().default(5000),
+  equipmentRate: integer("equipment_rate").notNull().default(10000),
+  grandPrizeThreshold: integer("grand_prize_threshold").notNull().default(50000),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+  updatedBy: varchar("updated_by").references(() => users.id),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   deals: many(deals),
@@ -291,6 +301,11 @@ export const updateSupportTicketSchema = createInsertSchema(supportTickets).omit
   updatedAt: true,
 }).partial();
 
+export const updatePointsConfigSchema = createInsertSchema(pointsConfig).omit({
+  id: true,
+  updatedAt: true,
+}).partial();
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -311,6 +326,8 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type SupportTicket = typeof supportTickets.$inferSelect;
 export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
 export type UpdateSupportTicket = z.infer<typeof updateSupportTicketSchema>;
+export type PointsConfig = typeof pointsConfig.$inferSelect;
+export type UpdatePointsConfig = z.infer<typeof updatePointsConfigSchema>;
 
 // Deal with user information for admin views
 export type DealWithUser = Deal & {
