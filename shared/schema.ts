@@ -306,6 +306,9 @@ export const updateSupportTicketSchema = createInsertSchema(supportTickets).omit
 export const updatePointsConfigSchema = createInsertSchema(pointsConfig).omit({
   id: true,
   updatedAt: true,
+}).extend({
+  redemptionStartDate: z.string().nullable().optional().transform(val => val ? new Date(val) : null),
+  redemptionEndDate: z.string().nullable().optional().transform(val => val ? new Date(val) : null),
 }).partial();
 
 // Types
