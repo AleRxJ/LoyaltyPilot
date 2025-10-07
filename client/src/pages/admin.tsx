@@ -29,7 +29,8 @@ import {
   Upload,
   UserPlus,
   Trash2,
-  Edit
+  Edit,
+  Settings
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -37,6 +38,7 @@ import RewardModal from "@/components/modals/reward-modal";
 import DealModal from "@/components/modals/deal-modal";
 import { CSVUploader } from "@/components/CSVUploader";
 import SupportTicketsTab from "@/components/admin/SupportTicketsTab";
+import PointsConfigTab from "@/components/admin/PointsConfigTab";
 import type { User, Deal, Reward } from "@shared/schema";
 import type { AuthUser } from "@/lib/auth";
 import type { UploadResult } from '@uppy/core';
@@ -887,7 +889,7 @@ export default function Admin() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
           <TabsTrigger value="users" data-testid="tab-users">Users</TabsTrigger>
           <TabsTrigger value="pending" data-testid="tab-pending">Pending Users</TabsTrigger>
@@ -896,6 +898,7 @@ export default function Admin() {
           <TabsTrigger value="reward-approvals" data-testid="tab-reward-approvals">Reward Approvals</TabsTrigger>
           <TabsTrigger value="reward-history" data-testid="tab-reward-history">Reward History</TabsTrigger>
           <TabsTrigger value="support" data-testid="tab-support">Support</TabsTrigger>
+          <TabsTrigger value="points-config" data-testid="tab-points-config">Points Config</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -2195,6 +2198,11 @@ export default function Admin() {
         {/* Support Tab */}
         <TabsContent value="support" className="mt-6">
           <SupportTicketsTab />
+        </TabsContent>
+
+        {/* Points Config Tab */}
+        <TabsContent value="points-config" className="mt-6">
+          <PointsConfigTab />
         </TabsContent>
       </Tabs>
 
