@@ -228,18 +228,24 @@ export class DatabaseStorage implements IStorage {
     return result as DealWithUser[];
   }
 
-  // Calculate points based on product type and deal value
-  private calculatePointsForDeal(productType: string, dealValue: number): number {
+  // Calculate points based on product type and deal value using dynamic configuration
+  private async calculatePointsForDeal(productType: string, dealValue: number): Promise<number> {
     const value = Number(dealValue);
     if (isNaN(value) || value <= 0) return 0;
 
+    const config = await this.getPointsConfig();
+    
+    const softwareRate = config?.softwareRate || 1000;
+    const hardwareRate = config?.hardwareRate || 5000;
+    const equipmentRate = config?.equipmentRate || 10000;
+
     switch (productType) {
       case "software":
-        return Math.floor(value / 1000); // 1 point per $1000
+        return Math.floor(value / softwareRate);
       case "hardware":
-        return Math.floor(value / 5000); // 1 point per $5000
+        return Math.floor(value / hardwareRate);
       case "equipment":
-        return Math.floor(value / 10000); // 1 point per $10000
+        return Math.floor(value / equipmentRate);
       default:
         return 0;
     }
@@ -249,8 +255,8 @@ export class DatabaseStorage implements IStorage {
     const deal = await this.getDeal(id);
     if (!deal) return undefined;
 
-    // Calculate points based on new formula
-    const pointsEarned = this.calculatePointsForDeal(deal.productType, Number(deal.dealValue));
+    // Calculate points based on dynamic configuration
+    const pointsEarned = await this.calculatePointsForDeal(deal.productType, Number(deal.dealValue));
 
     const [updatedDeal] = await db.update(deals)
       .set({
@@ -284,7 +290,7 @@ export class DatabaseStorage implements IStorage {
 
     for (const deal of allDeals) {
       try {
-        const newPoints = this.calculatePointsForDeal(deal.productType, Number(deal.dealValue));
+        const newPoints = await this.calculatePointsForDeal(deal.productType, Number(deal.dealValue));
         
         // Only update if points changed or deal is approved
         if ((deal.pointsEarned || 0) !== newPoints && deal.status === "approved") {
