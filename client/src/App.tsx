@@ -17,6 +17,7 @@ import NotFound from "@/pages/not-found";
 
 // Layout
 import Navigation from "@/components/layout/navigation";
+import SupportButton from "@/components/SupportButton";
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data: user, isLoading, error, isFetching } = useQuery({
@@ -73,6 +74,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
       <main className={user ? "pt-0" : ""}>
         {children}
       </main>
+      {user && <SupportButton />}
     </div>
   );
 }

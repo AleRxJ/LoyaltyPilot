@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcryptjs";
-import { insertUserSchema, updateUserSchema, insertDealSchema, insertRewardSchema } from "@shared/schema";
+import { insertUserSchema, updateUserSchema, insertDealSchema, insertRewardSchema, insertSupportTicketSchema, updateSupportTicketSchema } from "@shared/schema";
 import { z } from "zod";
 import * as XLSX from 'xlsx';
 
@@ -1502,6 +1502,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error exporting deals per user report:", error);
       res.status(500).json({ message: "Failed to export deals per user report" });
+    }
+  });
+
+  // Support Ticket routes
+  app.post("/api/support-tickets", async (req, res) => {
+    const userId = req.session?.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const ticketData = insertSupportTicketSchema.parse({
+        ...req.body,
+        userId,
+      });
+      
+      const ticket = await storage.createSupportTicket(ticketData);
+      res.status(201).json(ticket);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Create support ticket error:", error);
+      res.status(500).json({ message: "Failed to create support ticket" });
+    }
+  });
+
+  app.get("/api/support-tickets", async (req, res) => {
+    const userId = req.session?.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const tickets = await storage.getUserSupportTickets(userId);
+      res.json(tickets);
+    } catch (error) {
+      console.error("Get user support tickets error:", error);
+      res.status(500).json({ message: "Failed to get support tickets" });
+    }
+  });
+
+  app.get("/api/support-tickets/:id", async (req, res) => {
+    const userId = req.session?.userId;
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const { id } = req.params;
+      const ticket = await storage.getSupportTicket(id);
+      
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      if (ticket.userId !== userId && req.session?.userRole !== "admin") {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      res.json(ticket);
+    } catch (error) {
+      console.error("Get support ticket error:", error);
+      res.status(500).json({ message: "Failed to get support ticket" });
+    }
+  });
+
+  app.get("/api/admin/support-tickets", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const tickets = await storage.getAllSupportTickets();
+      res.json(tickets);
+    } catch (error) {
+      console.error("Get all support tickets error:", error);
+      res.status(500).json({ message: "Failed to get support tickets" });
+    }
+  });
+
+  app.patch("/api/admin/support-tickets/:id", async (req, res) => {
+    const userRole = req.session?.userRole;
+    const userId = req.session?.userId;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { id } = req.params;
+      const updates = updateSupportTicketSchema.parse(req.body);
+      
+      if (updates.adminResponse && !updates.respondedBy) {
+        updates.respondedBy = userId;
+        updates.respondedAt = new Date();
+      }
+      
+      const ticket = await storage.updateSupportTicket(id, updates);
+      
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      res.json(ticket);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Update support ticket error:", error);
+      res.status(500).json({ message: "Failed to update support ticket" });
     }
   });
 

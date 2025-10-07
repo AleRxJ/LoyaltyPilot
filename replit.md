@@ -34,6 +34,7 @@ Preferred communication style: Simple, everyday language.
   - Rewards catalog with category-based organization
   - Points history tracking for audit trails
   - User rewards redemption tracking
+  - Support tickets with status tracking and admin responses
 
 ## Authentication & Authorization
 - **Session Management**: Server-side sessions with secure cookie handling
@@ -48,6 +49,36 @@ Preferred communication style: Simple, everyday language.
 - **User Statistics**: Real-time dashboard with points, deals, and performance metrics
 - **Admin Dashboard**: User management, deal approval workflows, and system analytics
 - **Multi-language Support**: Internationalization structure with English and Spanish support
+- **Support System**: Floating support button with ticket submission, FAQ section, and admin ticket management
+
+## Support System (Added October 2025)
+
+The application includes a comprehensive support ticket system that allows users to submit questions and requests, and admins to manage and respond to them.
+
+### User Features
+- **Floating Support Button**: Always visible in the bottom-right corner for authenticated users
+- **Ticket Submission**: Users can create support tickets with subject, message, and priority level
+- **FAQ Section**: Quick access to 8 frequently asked questions covering common topics like deal registration, points, rewards, and shipment tracking
+- **Ticket History**: Users can view their own submitted tickets
+
+### Admin Features
+- **Support Tab**: Dedicated admin panel tab for managing all support tickets
+- **Ticket Dashboard**: Statistics showing counts by status (open, in-progress, resolved, closed)
+- **Response System**: Admins can respond to tickets and update their status
+- **Quick Actions**: One-click status updates (start working, mark as resolved)
+- **User Information**: Each ticket displays full user details including name and email
+
+### Technical Implementation
+- **Database Table**: `support_tickets` with fields for subject, message, status, priority, admin response, and timestamps
+- **Status Enum**: `support_ticket_status` with values: open, in_progress, resolved, closed
+- **API Endpoints**:
+  - POST `/api/support-tickets` - Create ticket (user)
+  - GET `/api/support-tickets` - Get user's tickets (user)
+  - GET `/api/admin/support-tickets` - Get all tickets (admin)
+  - PATCH `/api/admin/support-tickets/:id` - Update ticket (admin)
+- **Components**:
+  - `SupportButton.tsx` - Floating button with dialogs for ticket submission and FAQ
+  - `SupportTicketsTab.tsx` - Admin panel component for ticket management
 
 ## External Dependencies
 

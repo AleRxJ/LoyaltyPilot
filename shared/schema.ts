@@ -8,6 +8,7 @@ export const dealStatusEnum = pgEnum("deal_status", ["pending", "approved", "rej
 export const productTypeEnum = pgEnum("product_type", ["software", "hardware", "equipment"]);
 export const rewardStatusEnum = pgEnum("reward_status", ["pending", "approved", "rejected", "delivered"]);
 export const shipmentStatusEnum = pgEnum("shipment_status", ["pending", "shipped", "delivered"]);
+export const supportTicketStatusEnum = pgEnum("support_ticket_status", ["open", "in_progress", "resolved", "closed"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -107,12 +108,28 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+export const supportTickets = pgTable("support_tickets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  status: supportTicketStatusEnum("status").notNull().default("open"),
+  priority: text("priority").notNull().default("medium"),
+  assignedTo: varchar("assigned_to").references(() => users.id),
+  adminResponse: text("admin_response"),
+  respondedAt: timestamp("responded_at"),
+  respondedBy: varchar("responded_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   deals: many(deals),
   userRewards: many(userRewards),
   pointsHistory: many(pointsHistory),
   notifications: many(notifications),
+  supportTickets: many(supportTickets),
 }));
 
 export const dealsRelations = relations(deals, ({ one }) => ({
@@ -174,6 +191,21 @@ export const pointsHistoryRelations = relations(pointsHistory, ({ one }) => ({
 export const notificationsRelations = relations(notifications, ({ one }) => ({
   user: one(users, {
     fields: [notifications.userId],
+    references: [users.id],
+  }),
+}));
+
+export const supportTicketsRelations = relations(supportTickets, ({ one }) => ({
+  user: one(users, {
+    fields: [supportTickets.userId],
+    references: [users.id],
+  }),
+  assignedAdmin: one(users, {
+    fields: [supportTickets.assignedTo],
+    references: [users.id],
+  }),
+  responder: one(users, {
+    fields: [supportTickets.respondedBy],
     references: [users.id],
   }),
 }));
@@ -246,6 +278,19 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
   createdAt: true,
 });
 
+export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateSupportTicketSchema = createInsertSchema(supportTickets).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -263,10 +308,21 @@ export type Campaign = typeof campaigns.$inferSelect;
 export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type SupportTicket = typeof supportTickets.$inferSelect;
+export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
+export type UpdateSupportTicket = z.infer<typeof updateSupportTicketSchema>;
 
 // Deal with user information for admin views
 export type DealWithUser = Deal & {
   userFirstName: string;
   userLastName: string;
   userName: string;
+};
+
+// Support ticket with user information for admin views
+export type SupportTicketWithUser = SupportTicket & {
+  userFirstName: string;
+  userLastName: string;
+  userName: string;
+  userEmail: string;
 };
