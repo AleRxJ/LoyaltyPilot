@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcryptjs";
-import { insertUserSchema, updateUserSchema, insertDealSchema, insertRewardSchema, insertSupportTicketSchema, updateSupportTicketSchema } from "@shared/schema";
+import { insertUserSchema, updateUserSchema, insertDealSchema, insertRewardSchema, insertSupportTicketSchema, updateSupportTicketSchema, updatePointsConfigSchema } from "@shared/schema";
 import { z } from "zod";
 import * as XLSX from 'xlsx';
 
@@ -1613,6 +1613,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Update support ticket error:", error);
       res.status(500).json({ message: "Failed to update support ticket" });
+    }
+  });
+
+  // Points Configuration routes
+  app.get("/api/admin/points-config", async (req, res) => {
+    const userRole = req.session?.userRole;
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const config = await storage.getPointsConfig();
+      
+      if (!config) {
+        const defaultConfig = {
+          id: "",
+          softwareRate: 1000,
+          hardwareRate: 5000,
+          equipmentRate: 10000,
+          grandPrizeThreshold: 50000,
+          updatedAt: new Date(),
+          updatedBy: null
+        };
+        return res.json(defaultConfig);
+      }
+      
+      res.json(config);
+    } catch (error) {
+      console.error("Get points config error:", error);
+      res.status(500).json({ message: "Failed to get points configuration" });
+    }
+  });
+
+  app.patch("/api/admin/points-config", async (req, res) => {
+    const userRole = req.session?.userRole;
+    const userId = req.session?.userId;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const updates = updatePointsConfigSchema.parse(req.body);
+      const config = await storage.updatePointsConfig(updates, userId);
+      
+      if (!config) {
+        return res.status(500).json({ message: "Failed to update points configuration" });
+      }
+
+      res.json(config);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Update points config error:", error);
+      res.status(500).json({ message: "Failed to update points configuration" });
     }
   });
 
