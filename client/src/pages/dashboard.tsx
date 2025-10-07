@@ -214,6 +214,76 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Contest Rules - Only show for regular users */}
+      {user.role !== "admin" && (
+        <div className="mb-12">
+          <Card className="shadow-material bg-gradient-to-br from-blue-50 to-indigo-50">
+            <CardContent className="p-8">
+              {/* Welcome Text */}
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-blue-900 mb-3" data-testid="text-contest-title">
+                  Welcome to the Rewards Program!
+                </h2>
+                <p className="text-lg text-gray-700 max-w-3xl mx-auto">
+                  Register your deals and earn points based on their value. The more deals you close, the more rewards you can unlock!
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Points Calculation Box */}
+                <div className="bg-white rounded-xl p-6 shadow-md">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <Coins className="text-white h-6 w-6" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900" data-testid="text-points-calculation-title">
+                      Points Calculation
+                    </h3>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                      <span className="font-semibold text-gray-800">Software</span>
+                      <span className="text-blue-600 font-bold">$1,000 = 1 point</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                      <span className="font-semibold text-gray-800">Hardware</span>
+                      <span className="text-purple-600 font-bold">$5,000 = 1 point</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                      <span className="font-semibold text-gray-800">Equipment</span>
+                      <span className="text-orange-600 font-bold">$10,000 = 1 point</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Grand Prize Box */}
+                <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl p-6 shadow-md text-white">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                      <Gift className="text-white h-6 w-6" />
+                    </div>
+                    <h3 className="text-xl font-bold" data-testid="text-grand-prize-title">
+                      Grand Prize
+                    </h3>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
+                      <div className="text-4xl font-bold mb-2">50,000 Points</div>
+                      <p className="text-sm opacity-90">
+                        Reach this milestone to unlock our exclusive grand prize!
+                      </p>
+                    </div>
+                    <p className="text-sm opacity-90 leading-relaxed">
+                      Keep registering deals and watch your points grow. Every deal gets you closer to the ultimate reward!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Leaderboard - Only show for regular users */}
       {user.role !== "admin" && (
         <div className="mb-12">
