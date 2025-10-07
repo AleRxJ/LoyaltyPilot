@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Gift, CreditCard, Plane, Laptop, Smartphone, Award } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Gift, CreditCard, Plane, Laptop, Smartphone, Award, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import { apiRequest } from "@/lib/queryClient";
-import type { Reward, UserReward } from "@shared/schema";
+import type { Reward, UserReward, PointsConfig } from "@shared/schema";
 import rewardsBackgroundImage from "@assets/BANNER-3_1758838053683.jpg";
 
 interface UserStats {
@@ -33,6 +34,10 @@ export default function Rewards() {
   const { data: userRewards, isLoading: userRewardsLoading } = useQuery<UserReward[]>({
     queryKey: ["/api/user-rewards"],
     select: (data) => data || [],
+  });
+
+  const { data: pointsConfig } = useQuery<PointsConfig>({
+    queryKey: ["/api/points-config"],
   });
 
   const redeemMutation = useMutation({
@@ -202,6 +207,27 @@ export default function Rewards() {
       {/* Content Area */}
       <div className="relative z-10 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+      {/* Redemption Period Alert */}
+      {pointsConfig?.redemptionStartDate && pointsConfig?.redemptionEndDate && (
+        <Alert className="mb-6 bg-blue-50 border-blue-200" data-testid="alert-redemption-period">
+          <Calendar className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-900">
+            <span className="font-semibold">Período de Redención:</span>{" "}
+            {new Date(pointsConfig.redemptionStartDate).toLocaleDateString("es-ES", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}{" "}
+            -{" "}
+            {new Date(pointsConfig.redemptionEndDate).toLocaleDateString("es-ES", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7">

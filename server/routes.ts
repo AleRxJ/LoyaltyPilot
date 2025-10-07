@@ -1617,6 +1617,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Points Configuration routes
+  // Public route for users to view redemption period
+  app.get("/api/points-config", async (req, res) => {
+    try {
+      const config = await storage.getPointsConfig();
+      
+      if (!config) {
+        const defaultConfig = {
+          redemptionStartDate: null,
+          redemptionEndDate: null,
+          grandPrizeThreshold: 50000,
+        };
+        return res.json(defaultConfig);
+      }
+      
+      // Return only public-facing info
+      res.json({
+        redemptionStartDate: config.redemptionStartDate,
+        redemptionEndDate: config.redemptionEndDate,
+        grandPrizeThreshold: config.grandPrizeThreshold,
+      });
+    } catch (error) {
+      console.error("Get points config error:", error);
+      res.status(500).json({ message: "Failed to get points configuration" });
+    }
+  });
+
   app.get("/api/admin/points-config", async (req, res) => {
     const userRole = req.session?.userRole;
     if (userRole !== "admin") {
