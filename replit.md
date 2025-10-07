@@ -80,6 +80,44 @@ The application includes a comprehensive support ticket system that allows users
   - `SupportButton.tsx` - Floating button with dialogs for ticket submission and FAQ
   - `SupportTicketsTab.tsx` - Admin panel component for ticket management
 
+## Points Configuration System (Added October 2025)
+
+The platform includes a dynamic points configuration system that allows admins to modify point assignment rules and set redemption periods without code changes.
+
+### Admin Configuration
+- **Points Config Tab**: Dedicated admin panel tab (9th tab) for managing all points-related settings
+- **Editable Rules**: Admins can modify point assignment rates for each product type:
+  - Software: Dollars per 1 point (default: $1000)
+  - Hardware: Dollars per 1 point (default: $5000)
+  - Equipment: Dollars per 1 point (default: $10000)
+- **Grand Prize Threshold**: Configurable point threshold for grand prize eligibility (default: 50,000 points)
+- **Redemption Period**: Admins can set start and end dates for when users can redeem rewards
+  - Start Date: Beginning of redemption period
+  - End Date: End of redemption period
+  - Dates are optional and only displayed to users when both are configured
+
+### User Experience
+- **Dynamic Point Calculation**: All new deals automatically use the current configured rates
+- **Redemption Period Display**: Users see the active redemption period as an alert on the Rewards page
+  - Format: "Período de Redención: [fecha inicio] - [fecha fin]"
+  - Dates formatted in Spanish locale (e.g., "1 de octubre de 2025 - 31 de diciembre de 2025")
+  - Alert only shows when both dates are configured
+
+### Technical Implementation
+- **Database Table**: `points_config` with fields:
+  - `software_rate`, `hardware_rate`, `equipment_rate`: Integer rates for point calculation
+  - `grand_prize_threshold`: Integer threshold for grand prize
+  - `redemption_start_date`, `redemption_end_date`: Nullable timestamps for redemption period
+  - `updated_at`, `updated_by`: Audit trail fields
+- **API Endpoints**:
+  - GET `/api/points-config` - Public endpoint returning redemption dates and grand prize threshold
+  - GET `/api/admin/points-config` - Admin endpoint returning full configuration
+  - PATCH `/api/admin/points-config` - Admin endpoint for updating configuration
+- **Components**:
+  - `PointsConfigTab.tsx` - Admin panel component with forms for all configuration options
+  - Date pickers for redemption period with HTML5 date inputs
+  - Alert component in `rewards.tsx` displaying redemption period to users
+
 ## External Dependencies
 
 - **Database**: Neon PostgreSQL serverless database for production data storage
