@@ -2,7 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { Server } from "socket.io";
+import { initializeSocket } from "./socket";
 
 
 const app = express();
@@ -56,16 +56,8 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  const io = new Server(server, {
-    cors: { origin: "*" },
-  });
-
-  io.on("connection", (socket) => {
-    console.log("🟢 Socket connected:", socket.id);
-    socket.on("disconnect", () =>
-      console.log("🔴 Socket disconnected:", socket.id),
-    );
-  });
+  // Inicializar Socket.IO
+  initializeSocket(server);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
