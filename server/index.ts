@@ -5,9 +5,6 @@ import { setupVite, serveStatic, log } from "./vite";
 import { Server } from "socket.io";
 
 
-
-
-
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
