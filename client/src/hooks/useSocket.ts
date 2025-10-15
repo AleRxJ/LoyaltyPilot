@@ -1,30 +1,30 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
 export function useSocket() {
-  const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
     // Conectar a Socket.IO
-    socketRef.current = io(window.location.origin, {
+    const newSocket = io(window.location.origin, {
       transports: ['websocket', 'polling'],
     });
 
-    socketRef.current.on('connect', () => {
-      console.log('🟢 Socket conectado:', socketRef.current?.id);
+    newSocket.on('connect', () => {
+      console.log('🟢 Socket conectado:', newSocket.id);
     });
 
-    socketRef.current.on('disconnect', () => {
+    newSocket.on('disconnect', () => {
       console.log('🔴 Socket desconectado');
     });
 
+    setSocket(newSocket);
+
     // Cleanup al desmontar
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
+      newSocket.disconnect();
     };
   }, []);
 
-  return socketRef.current;
+  return socket;
 }

@@ -118,9 +118,52 @@ The platform includes a dynamic points configuration system that allows admins t
   - Date pickers for redemption period with HTML5 date inputs
   - Alert component in `rewards.tsx` displaying redemption period to users
 
+## Real-Time Notification System (Added October 2025)
+
+The platform includes a comprehensive real-time notification system using Socket.IO for instant user updates.
+
+### User Features
+- **Notification Bell**: Icon in navigation bar shows unread notification count
+- **Real-Time Updates**: Notifications appear instantly without page refresh
+- **Notification Popover**: Click bell to view notification history
+- **Mark as Read**: Click individual notifications or mark all as read
+- **Browser Notifications**: Optional native browser notifications (requires permission)
+
+### Notification Types
+- **Deal Approved**: Success notification with points earned
+- **Deal Rejected**: Warning notification
+- **Reward Redeemed**: Info notification for pending approval
+- **Reward Approved**: Success notification
+- **Reward Rejected**: Warning notification with points refund info
+- **Shipment Updated**: Info notification for shipping status (shipped/delivered)
+- **Support Response**: Info notification when admin responds to ticket
+
+### Technical Implementation
+- **Backend**: Socket.IO server integrated with Express
+- **Database Table**: `notifications` with fields for userId, title, message, type, isRead, createdAt
+- **Socket Events**: `notification:{userId}` for user-specific notifications
+- **API Endpoints**:
+  - GET `/api/notifications` - Get user notifications
+  - PATCH `/api/notifications/:id/read` - Mark notification as read
+  - PATCH `/api/notifications/read-all` - Mark all as read
+- **Frontend Components**:
+  - `useSocket` hook - Manages Socket.IO connection
+  - `NotificationBell.tsx` - Bell icon with popover UI
+  - Integrated in `navigation.tsx`
+- **Notification Helper**: `server/notifications.ts` - Centralizes notification creation and Socket.IO emission
+
+### How It Works
+1. Admin/system performs action (approve deal, ship reward, etc.)
+2. Backend creates notification in database
+3. Backend emits Socket.IO event to specific user
+4. Frontend receives event and updates UI in real-time
+5. User sees notification badge update instantly
+6. User clicks to view and mark as read
+
 ## External Dependencies
 
 - **Database**: Neon PostgreSQL serverless database for production data storage
+- **Real-Time**: Socket.IO for WebSocket-based real-time notifications
 - **UI Components**: Radix UI primitives for accessible component foundations
 - **Validation**: Zod for runtime type validation and schema definition
 - **Styling**: Tailwind CSS for utility-first styling approach
