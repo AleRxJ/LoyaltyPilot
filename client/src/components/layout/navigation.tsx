@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { AuthUser } from "@/lib/auth";
 import logo from "@assets/LOGO-FINAL-LOYALTY_1758720440342.png";
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface NavigationProps {
   user: AuthUser;
@@ -142,12 +143,7 @@ export default function Navigation({ user }: NavigationProps) {
             </Select>
 
             {/* Notifications */}
-            <Button variant="ghost" size="sm" className="relative" data-testid="button-notifications">
-              <Bell className="h-5 w-5" />
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-accent-500 text-white text-xs">
-                3
-              </Badge>
-            </Button>
+            <NotificationBell userId={user.id} />
 
             {/* User Menu */}
             <DropdownMenu>
