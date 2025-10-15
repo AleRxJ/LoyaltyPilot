@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { insertUserSchema, updateUserSchema, insertDealSchema, insertRewardSchema, insertSupportTicketSchema, updateSupportTicketSchema, updatePointsConfigSchema } from "@shared/schema";
 import { z } from "zod";
 import * as XLSX from 'xlsx';
+import { NotificationHelpers } from "./notifications";
 
 // Extend session data interface
 declare module 'express-session' {
@@ -1604,6 +1605,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!ticket) {
         return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      // Enviar notificación en tiempo real cuando el admin responde
+      if (updates.adminResponse) {
+        await NotificationHelpers.supportTicketResponse(
+          ticket.userId,
+          ticket.subject
+        );
       }
 
       res.json(ticket);

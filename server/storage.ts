@@ -45,6 +45,7 @@ import { and, desc, eq, count, sum, gte, gt, lte, isNotNull, sql } from "drizzle
 // Utilities
 // ───────────────────────────────────────────────
 import { randomUUID } from "crypto";
+import { NotificationHelpers } from "./notifications";
 
 export interface IStorage {
   // User methods
@@ -384,6 +385,13 @@ export class DatabaseStorage implements IStorage {
         points: pointsEarned,
         description: `Points earned for deal: ${deal.productName}`,
       });
+
+      // Enviar notificación en tiempo real
+      await NotificationHelpers.dealApproved(
+        updatedDeal.userId,
+        id,
+        pointsEarned
+      );
     }
 
     return updatedDeal || undefined;
@@ -466,6 +474,12 @@ export class DatabaseStorage implements IStorage {
       .set({ status: "rejected", updatedAt: new Date() })
       .where(eq(deals.id, id))
       .returning();
+
+    // Enviar notificación en tiempo real
+    if (updatedDeal) {
+      await NotificationHelpers.dealRejected(updatedDeal.userId, id);
+    }
+
     return updatedDeal || undefined;
   }
 
@@ -560,6 +574,13 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
 
+    // Enviar notificación en tiempo real
+    await NotificationHelpers.rewardRedeemed(
+      userId,
+      reward.name,
+      reward.pointsCost
+    );
+
     // Don't deduct points yet - wait for approval
     return userReward;
   }
@@ -601,6 +622,9 @@ export class DatabaseStorage implements IStorage {
       description: `Points redeemed for: ${reward.name}`,
     });
 
+    // Enviar notificación en tiempo real
+    await NotificationHelpers.rewardApproved(redemption.userId, reward.name);
+
     return updatedRedemption || undefined;
   }
 
@@ -609,6 +633,14 @@ export class DatabaseStorage implements IStorage {
     adminId: string,
     reason?: string,
   ): Promise<UserReward | undefined> {
+    // Get the redemption to access reward info
+    const [redemption] = await db
+      .select()
+      .from(userRewards)
+      .where(eq(userRewards.id, rewardRedemptionId));
+    
+    const reward = redemption ? await this.getReward(redemption.rewardId) : null;
+
     const [updatedRedemption] = await db
       .update(userRewards)
       .set({
@@ -619,6 +651,15 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(userRewards.id, rewardRedemptionId))
       .returning();
+
+    // Enviar notificación en tiempo real (puntos no fueron deducidos, así que no hay reembolso)
+    if (updatedRedemption && reward) {
+      await NotificationHelpers.rewardRejected(
+        updatedRedemption.userId,
+        reward.name,
+        reward.pointsCost
+      );
+    }
 
     return updatedRedemption || undefined;
   }
@@ -791,30 +832,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(userRewards.id, rewardRedemptionId))
       .returning();
 
-    // Create notification for user
+    // Enviar notificación en tiempo real
     if (updatedRedemption && currentRedemption.rewardName) {
-      let notificationTitle = "";
-      let notificationMessage = "";
-      let notificationType = "info";
-
-      if (shipmentStatus === "shipped") {
-        notificationTitle = "Reward Shipped! 📦";
-        notificationMessage = `Your reward "${currentRedemption.rewardName}" has been shipped and is on its way to you!`;
-        notificationType = "success";
-      } else if (shipmentStatus === "delivered") {
-        notificationTitle = "Reward Delivered! 🎉";
-        notificationMessage = `Your reward "${currentRedemption.rewardName}" has been successfully delivered. Enjoy your reward!`;
-        notificationType = "success";
-      }
-
-      if (notificationTitle) {
-        await this.createNotification({
-          userId: currentRedemption.userId,
-          title: notificationTitle,
-          message: notificationMessage,
-          type: notificationType,
-        });
-      }
+      await NotificationHelpers.shipmentUpdated(
+        currentRedemption.userId,
+        currentRedemption.rewardName,
+        shipmentStatus
+      );
     }
 
     return updatedRedemption || undefined;
