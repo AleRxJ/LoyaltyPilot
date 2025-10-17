@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loyalty Program Platform - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#E3F2FD',
+                            100: '#BBDEFB',
+                            500: '#1976D2',
+                            600: '#1565C0',
+                            700: '#0D47A1'
+                        },
+                        secondary: {
+                            50: '#E8F5E8',
+                            500: '#388E3C',
+                            600: '#2E7D32'
+                        },
+                        accent: {
+                            500: '#FF5722',
+                            600: '#E64A19'
+                        }
+                    },
+                    boxShadow: {
+                        'material': '0 2px 4px rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.1)',
+                        'material-lg': '0 4px 8px rgba(0,0,0,0.12), 0 16px 24px rgba(0,0,0,0.14)'
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="font-inter bg-gray-50 min-h-screen">
+    <!-- @COMPONENT: NavigationHeader [logo, user menu, language selector] -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-xl font-bold text-primary-600">LoyaltyPro</h1>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-10 flex items-baseline space-x-4">
+                            <a href="#" class="text-primary-600 bg-primary-50 px-3 py-2 rounded-md text-sm font-medium">Dashboard</a>
+                            <a href="#" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">My Deals</a>
+                            <a href="#" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">Rewards</a>
+                            <a href="#" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">Reports</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- Language Selector -->
+                    <select class="text-sm border border-gray-300 rounded-md px-3 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <option value="en">English</option>
+                        <option value="es">Español</option>
+                        <option value="pt">Português</option>
+                    </select>
+                    <!-- Notifications -->
+                    <button class="text-gray-500 hover:text-primary-600 relative">
+                        <i class="fas fa-bell text-lg"></i>
+                        <span class="absolute -top-1 -right-1 bg-accent-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center" data-bind="notificationCount">3</span>
+                    </button>
+                    <!-- User Menu -->
+                    <div class="relative">
+                        <button class="flex items-center space-x-2 text-gray-700 hover:text-primary-600">
+                            <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-primary-600 text-sm"></i>
+                            </div>
+                            <span class="hidden md:block text-sm font-medium" data-bind="user.name">John Smith</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <!-- @END_COMPONENT: NavigationHeader -->
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- @COMPONENT: DashboardHeader [welcome message, key stats] -->
+        <div class="mb-8">
+            <div class="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl p-6 text-white shadow-material">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                    <div>
+                        <h1 class="text-2xl font-bold mb-2">Welcome back, <span data-bind="user.name">John Smith</span>!</h1>
+                        <p class="text-primary-100">Partner Level: <span class="font-medium" data-bind="user.partnerLevel">Gold Partner</span></p>
+                    </div>
+                    <div class="mt-4 md:mt-0 flex space-x-6">
+                        <div class="text-center">
+                            <div class="text-3xl font-bold" data-bind="user.totalPoints">24,850</div>
+                            <div class="text-primary-200 text-sm">Total Points</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold" data-bind="user.activeDeals">12</div>
+                            <div class="text-primary-200 text-sm">Active Deals</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: DashboardHeader -->
+
+        <!-- @COMPONENT: StatsCards [points, deals, rewards, earnings] -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg p-6 shadow-material">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-secondary-50">
+                        <i class="fas fa-coins text-secondary-500 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Available Points</p>
+                        <p class="text-2xl font-semibold text-gray-900" data-bind="user.availablePoints">18,420</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="text-sm text-secondary-600">+2,340 this month</div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg p-6 shadow-material">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-primary-50">
+                        <i class="fas fa-handshake text-primary-500 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Pending Deals</p>
+                        <p class="text-2xl font-semibold text-gray-900" data-bind="user.pendingDeals">7</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="text-sm text-orange-600">5 awaiting approval</div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg p-6 shadow-material">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-accent-50">
+                        <i class="fas fa-gift text-accent-500 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Redeemed Rewards</p>
+                        <p class="text-2xl font-semibold text-gray-900" data-bind="user.redeemedRewards">23</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="text-sm text-gray-600">$4,680 value</div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg p-6 shadow-material">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-50">
+                        <i class="fas fa-dollar-sign text-green-500 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Monthly Earnings</p>
+                        <p class="text-2xl font-semibold text-gray-900">$12,340</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="text-sm text-green-600">+15% from last month</div>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: StatsCards -->
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- @COMPONENT: RecentDeals [table of recent deals with status] -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-material">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-900">Recent Deals</h3>
+                            <button class="text-primary-600 hover:text-primary-700 text-sm font-medium">View All</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deal ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <!-- @MAP: recentDeals.map(deal => ( -->
+                                <tr data-mock="true">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#D2024-001</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Enterprise Software License</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">$25,000</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2,500</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Approved</span>
+                                    </td>
+                                </tr>
+                                <tr data-mock="true">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#D2024-002</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Hardware Bundle</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">$8,500</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">850</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
+                                    </td>
+                                </tr>
+                                <tr data-mock="true">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#D2024-003</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Cloud Services Contract</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">$15,200</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">1,520</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Approved</span>
+                                    </td>
+                                </tr>
+                                <tr data-mock="true">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#D2024-004</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">Security Software Suite</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">$12,800</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">1,280</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
+                                    </td>
+                                </tr>
+                                <!-- @END_MAP )) -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: RecentDeals -->
+
+            <!-- @COMPONENT: QuickActions [buttons for common actions] -->
+            <div class="space-y-6">
+                <div class="bg-white rounded-lg shadow-material p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <button class="w-full bg-primary-600 hover:bg-primary-700 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                            <i class="fas fa-plus"></i>
+                            <span>Register New Deal</span>
+                        </button>
+                        <button class="w-full bg-secondary-600 hover:bg-secondary-700 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                            <i class="fas fa-gift"></i>
+                            <span>Browse Rewards</span>
+                        </button>
+                        <button class="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>View Reports</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- @COMPONENT: RewardsPreview [available rewards showcase] -->
+                <div class="bg-white rounded-lg shadow-material p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Available Rewards</h3>
+                        <button class="text-primary-600 hover:text-primary-700 text-sm font-medium">View All</button>
+                    </div>
+                    <div class="space-y-4">
+                        <!-- @MAP: availableRewards.map(reward => ( -->
+                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow" data-mock="true">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-12 h-12 bg-gradient-to-br from-accent-400 to-accent-600 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-gift-card text-white"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-gray-900">$100 Amazon Gift Card</h4>
+                                    <p class="text-sm text-gray-600">10,000 points</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow" data-mock="true">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-laptop text-white"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-gray-900">Premium Laptop</h4>
+                                    <p class="text-sm text-gray-600">50,000 points</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow" data-mock="true">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-plane text-white"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-gray-900">Travel Voucher</h4>
+                                    <p class="text-sm text-gray-600">25,000 points</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- @END_MAP )) -->
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: RewardsPreview -->
+            </div>
+            <!-- @END_COMPONENT: QuickActions -->
+        </div>
+
+        <!-- @COMPONENT: AdminPanel [admin-only features with role check] -->
+        <div class="mt-8 bg-white rounded-lg shadow-material" data-role="admin-only" style="display: none;">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Administrative Panel</h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center">
+                        <div class="bg-primary-50 rounded-full p-4 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                            <i class="fas fa-users text-primary-600 text-xl"></i>
+                        </div>
+                        <h4 class="font-semibold text-gray-900 mb-1">User Management</h4>
+                        <p class="text-sm text-gray-600 mb-3">Manage user accounts and permissions</p>
+                        <button class="bg-primary-600 hover:bg-primary-700 text-white py-2 px-4 rounded-lg text-sm font-medium">
+                            Manage Users
+                        </button>
+                    </div>
+                    <div class="text-center">
+                        <div class="bg-secondary-50 rounded-full p-4 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                            <i class="fas fa-clipboard-check text-secondary-600 text-xl"></i>
+                        </div>
+                        <h4 class="font-semibold text-gray-900 mb-1">Deal Approval</h4>
+                        <p class="text-sm text-gray-600 mb-3">Review and approve pending deals</p>
+                        <button class="bg-secondary-600 hover:bg-secondary-700 text-white py-2 px-4 rounded-lg text-sm font-medium">
+                            Review Deals
+                        </button>
+                    </div>
+                    <div class="text-center">
+                        <div class="bg-accent-50 rounded-full p-4 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                            <i class="fas fa-chart-line text-accent-600 text-xl"></i>
+                        </div>
+                        <h4 class="font-semibold text-gray-900 mb-1">Analytics</h4>
+                        <p class="text-sm text-gray-600 mb-3">View detailed reports and analytics</p>
+                        <button class="bg-accent-600 hover:bg-accent-700 text-white py-2 px-4 rounded-lg text-sm font-medium">
+                            View Analytics
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: AdminPanel -->
+    </div>
+
+    <!-- @COMPONENT: NewDealModal [modal for registering new deals] -->
+    <div id="newDealModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-material-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-semibold text-gray-900">Register New Deal</h3>
+                        <button class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                <form class="p-6 space-y-6" data-event="submit:handleDealSubmission">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Product Type</label>
+                            <select class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                                <option value="">Select product type</option>
+                                <option value="software">Software</option>
+                                <option value="hardware">Hardware</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Deal Value ($)</label>
+                            <input type="number" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" placeholder="25000" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Product Name</label>
+                        <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" placeholder="Enterprise Software License" />
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Quantity/Licenses</label>
+                            <input type="number" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" placeholder="100" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Close Date</label>
+                            <input type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Client Information</label>
+                        <textarea class="w-full border border-gray-300 rounded-lg px-3 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" placeholder="Client name and additional details..."></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium">
+                            Submit Deal
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: NewDealModal -->
+
+    <!-- @COMPONENT: ReportingInterface [modal for generating reports] -->
+    <div id="reportsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-material-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-semibold text-gray-900">Generate Reports</h3>
+                        <button class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="md:col-span-1">
+                            <h4 class="font-semibold text-gray-900 mb-4">Report Filters</h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                                    <select class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                        <option value="">All Countries</option>
+                                        <option value="US">United States</option>
+                                        <option value="CA">Canada</option>
+                                        <option value="MX">Mexico</option>
+                                        <option value="BR">Brazil</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Partner Level</label>
+                                    <select class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                        <option value="">All Levels</option>
+                                        <option value="bronze">Bronze</option>
+                                        <option value="silver">Silver</option>
+                                        <option value="gold">Gold</option>
+                                        <option value="platinum">Platinum</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                                    <div class="space-y-2">
+                                        <input type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                                        <input type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                                    </div>
+                                </div>
+                                <button class="w-full bg-primary-600 hover:bg-primary-700 text-white py-2 px-4 rounded-lg font-medium">
+                                    Generate Report
+                                </button>
+                            </div>
+                        </div>
+                        <div class="md:col-span-2">
+                            <h4 class="font-semibold text-gray-900 mb-4">Report Types</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors">
+                                    <div class="flex items-center space-x-3">
+                                        <i class="fas fa-users text-primary-600"></i>
+                                        <div>
+                                            <h5 class="font-medium">User Registration</h5>
+                                            <p class="text-sm text-gray-600">Active users by region</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors">
+                                    <div class="flex items-center space-x-3">
+                                        <i class="fas fa-handshake text-secondary-600"></i>
+                                        <div>
+                                            <h5 class="font-medium">Sales Performance</h5>
+                                            <p class="text-sm text-gray-600">Deals and revenue</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors">
+                                    <div class="flex items-center space-x-3">
+                                        <i class="fas fa-gift text-accent-600"></i>
+                                        <div>
+                                            <h5 class="font-medium">Rewards Redeemed</h5>
+                                            <p class="text-sm text-gray-600">Popular rewards</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors">
+                                    <div class="flex items-center space-x-3">
+                                        <i class="fas fa-coins text-green-600"></i>
+                                        <div>
+                                            <h5 class="font-medium">Points Analysis</h5>
+                                            <p class="text-sm text-gray-600">Points earned/redeemed</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: ReportingInterface -->
+
+    <script>
+        (function() {
+            // TODO: Implement role-based access control
+            // TODO: Implement real-time notifications
+            // TODO: Implement form validation and submission
+            // TODO: Implement modal toggling functionality
+            // TODO: Implement data binding for dynamic content
+            
+            // Basic modal functionality for demonstration
+            const showModal = (modalId) => {
+                document.getElementById(modalId).classList.remove('hidden');
+            };
+            
+            const hideModal = (modalId) => {
+                document.getElementById(modalId).classList.add('hidden');
+            };
+            
+            // Hide modals when clicking outside
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('fixed')) {
+                    e.target.classList.add('hidden');
+                }
+            });
+            
+            // Simulate admin role check
+            const userRole = 'admin'; // TODO: Get from session/authentication
+            if (userRole === 'admin') {
+                document.querySelector('[data-role="admin-only"]').style.display = 'block';
+            }
+        })();
+    </script>
+</body>
+</html>
