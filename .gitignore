@@ -4,3 +4,13 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+package-lock.json
+yarn.lock
+.env
+.env.local
+.env.*.local
+.idea
+.vscode
+*.log
+coverage
+.cache
