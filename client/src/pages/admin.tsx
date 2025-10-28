@@ -39,6 +39,7 @@ import DealModal from "@/components/modals/deal-modal";
 import { CSVUploader } from "@/components/CSVUploader";
 import SupportTicketsTab from "@/components/admin/SupportTicketsTab";
 import PointsConfigTab from "@/components/admin/PointsConfigTab";
+import UserInvitationsTab from "@/components/admin/UserInvitationsTab";
 import type { User, Deal, Reward } from "@shared/schema";
 import type { AuthUser } from "@/lib/auth";
 import type { UploadResult } from '@uppy/core';
@@ -889,8 +890,9 @@ export default function Admin() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-9">
+        <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
+          <TabsTrigger value="invitations" data-testid="tab-invitations">Invitations</TabsTrigger>
           <TabsTrigger value="users" data-testid="tab-users">Users</TabsTrigger>
           <TabsTrigger value="pending" data-testid="tab-pending">Pending Users</TabsTrigger>
           <TabsTrigger value="deals" data-testid="tab-deals">Deals</TabsTrigger>
@@ -1111,6 +1113,11 @@ export default function Admin() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* User Invitations Tab */}
+        <TabsContent value="invitations" className="mt-6">
+          <UserInvitationsTab />
         </TabsContent>
 
         {/* Users Tab */}

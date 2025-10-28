@@ -52,6 +52,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByInviteToken(inviteToken: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   getUserStats(userId: string): Promise<{
@@ -219,6 +220,14 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
+  }
+
+  async getUserByInviteToken(inviteToken: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.inviteToken, inviteToken));
     return user || undefined;
   }
 
@@ -939,10 +948,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPendingUsers(): Promise<User[]> {
+    // Only show users who completed registration (have username/password) but are not approved yet
+    // Users who only have invite token (haven't registered yet) should NOT appear here
     return db
       .select()
       .from(users)
-      .where(and(eq(users.isActive, true), eq(users.isApproved, false)))
+      .where(
+        and(
+          eq(users.isActive, true), 
+          eq(users.isApproved, false),
+          isNotNull(users.username) // Only users who completed registration
+        )
+      )
       .orderBy(desc(users.createdAt));
   }
 

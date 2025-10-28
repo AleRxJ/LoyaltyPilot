@@ -6,6 +6,8 @@ import { insertUserSchema, updateUserSchema, insertDealSchema, insertRewardSchem
 import { z } from "zod";
 import * as XLSX from 'xlsx';
 import { NotificationHelpers } from "./notifications";
+import { nanoid } from "nanoid";
+import { sendInviteEmail, sendApprovalEmail } from "./email.js";
 
 // Extend session data interface
 declare module 'express-session' {
@@ -710,6 +712,302 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User Invitation Endpoints
+  // Invite single user
+  app.post("/api/admin/users/invite", async (req, res) => {
+    const userRole = req.session?.userRole;
+    const userId = req.session?.userId;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { email, firstName, lastName, country } = req.body;
+      
+      if (!email || !firstName || !lastName || !country) {
+        return res.status(400).json({ 
+          message: "Email, first name, last name, and country are required" 
+        });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ 
+          message: "A user with this email already exists" 
+        });
+      }
+
+      // Generate invite token
+      const inviteToken = nanoid(32);
+
+      // Create a temporary username (will be set during registration)
+      const tempUsername = `user_${nanoid(8)}`;
+      
+      // Create user with pending status
+      const hashedPassword = await bcrypt.hash(nanoid(16), 10); // temporary password
+      
+      const newUser = await storage.createUser({
+        username: tempUsername,
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        country,
+        role: "user",
+        isActive: true,
+        isApproved: false,
+        inviteToken,
+      });
+
+      // Get admin info for email
+      const adminUser = await storage.getUser(userId!);
+      const adminName = adminUser 
+        ? `${adminUser.firstName} ${adminUser.lastName}` 
+        : "Administrator";
+
+      // Send invite email
+      const emailSent = await sendInviteEmail({
+        email,
+        firstName,
+        lastName,
+        inviteToken,
+        invitedBy: adminName,
+      });
+
+      if (!emailSent) {
+        console.warn("Failed to send invite email, but user was created");
+      }
+
+      res.status(201).json({ 
+        message: "Invitation sent successfully",
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          inviteToken: newUser.inviteToken,
+        }
+      });
+    } catch (error) {
+      console.error("Invite user error:", error);
+      res.status(500).json({ message: "Failed to send invitation" });
+    }
+  });
+
+  // Invite multiple users via CSV
+  app.post("/api/admin/users/invite-bulk", async (req, res) => {
+    const userRole = req.session?.userRole;
+    const userId = req.session?.userId;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { users } = req.body;
+      
+      if (!Array.isArray(users) || users.length === 0) {
+        return res.status(400).json({ 
+          message: "Users array is required and must not be empty" 
+        });
+      }
+
+      // Get admin info for emails
+      const adminUser = await storage.getUser(userId!);
+      const adminName = adminUser 
+        ? `${adminUser.firstName} ${adminUser.lastName}` 
+        : "Administrator";
+
+      const results = {
+        success: [] as any[],
+        failed: [] as any[],
+      };
+
+      for (const userData of users) {
+        try {
+          const { email, firstName, lastName, country } = userData;
+          
+          if (!email || !firstName || !lastName || !country) {
+            results.failed.push({
+              email: email || 'unknown',
+              reason: 'Missing required fields',
+            });
+            continue;
+          }
+
+          // Check if user already exists
+          const existingUser = await storage.getUserByEmail(email);
+          if (existingUser) {
+            results.failed.push({
+              email,
+              reason: 'User already exists',
+            });
+            continue;
+          }
+
+          // Generate invite token
+          const inviteToken = nanoid(32);
+          const tempUsername = `user_${nanoid(8)}`;
+          const hashedPassword = await bcrypt.hash(nanoid(16), 10);
+          
+          // Create user
+          const newUser = await storage.createUser({
+            username: tempUsername,
+            email,
+            password: hashedPassword,
+            firstName,
+            lastName,
+            country,
+            role: "user",
+            isActive: true,
+            isApproved: false,
+            inviteToken,
+          });
+
+          // Send invite email
+          const emailSent = await sendInviteEmail({
+            email,
+            firstName,
+            lastName,
+            inviteToken,
+            invitedBy: adminName,
+          });
+
+          results.success.push({
+            email,
+            firstName,
+            lastName,
+            emailSent,
+          });
+        } catch (error) {
+          results.failed.push({
+            email: userData.email || 'unknown',
+            reason: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+
+      res.json({
+        message: `Processed ${users.length} invitations`,
+        summary: {
+          total: users.length,
+          successful: results.success.length,
+          failed: results.failed.length,
+        },
+        results,
+      });
+    } catch (error) {
+      console.error("Bulk invite error:", error);
+      res.status(500).json({ message: "Failed to process bulk invitations" });
+    }
+  });
+
+  // Complete registration with invite token
+  app.post("/api/auth/register-with-token", async (req, res) => {
+    try {
+      const { inviteToken, username, password } = req.body;
+      
+      if (!inviteToken || !username || !password) {
+        return res.status(400).json({ 
+          message: "Invite token, username, and password are required" 
+        });
+      }
+
+      // Find user by invite token
+      const user = await storage.getUserByInviteToken(inviteToken);
+      
+      if (!user) {
+        return res.status(404).json({ 
+          message: "Invalid or expired invitation" 
+        });
+      }
+
+      if (user.isApproved) {
+        return res.status(400).json({ 
+          message: "This invitation has already been used" 
+        });
+      }
+
+      // Check if username is already taken
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser && existingUser.id !== user.id) {
+        return res.status(400).json({ 
+          message: "Username already exists" 
+        });
+      }
+
+      // Update user with new credentials and auto-approve (invited users are pre-approved)
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      const updatedUser = await storage.updateUser(user.id, {
+        username,
+        password: hashedPassword,
+        isApproved: true, // Auto-approve invited users
+        approvedAt: new Date(),
+        approvedBy: 'system', // System approval for invited users
+        inviteToken: null, // Clear the token after use
+      });
+
+      // Send approval email (account is ready to use)
+      await sendApprovalEmail(user.email, user.firstName, user.lastName);
+
+      res.status(200).json({ 
+        message: "Registration completed successfully. You can now log in!",
+        user: {
+          id: updatedUser!.id,
+          username: updatedUser!.username,
+          email: updatedUser!.email,
+          firstName: updatedUser!.firstName,
+          lastName: updatedUser!.lastName,
+        }
+      });
+    } catch (error) {
+      console.error("Register with token error:", error);
+      res.status(500).json({ message: "Failed to complete registration" });
+    }
+  });
+
+  // Verify invite token (for checking if valid before showing form)
+  app.get("/api/auth/verify-invite/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      const user = await storage.getUserByInviteToken(token);
+      
+      if (!user) {
+        return res.status(404).json({ 
+          valid: false,
+          message: "Invalid or expired invitation" 
+        });
+      }
+
+      if (user.isApproved) {
+        return res.status(400).json({ 
+          valid: false,
+          message: "This invitation has already been used" 
+        });
+      }
+
+      res.json({ 
+        valid: true,
+        user: {
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          country: user.country,
+        }
+      });
+    } catch (error) {
+      console.error("Verify invite token error:", error);
+      res.status(500).json({ 
+        valid: false,
+        message: "Failed to verify invitation" 
+      });
+    }
+  });
+
   app.get("/api/admin/deals", async (req, res) => {
     const userRole = req.session?.userRole;
     if (userRole !== "admin") {
@@ -1346,6 +1644,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
+      // Send approval email
+      await sendApprovalEmail(
+        approvedUser.email,
+        approvedUser.firstName,
+        approvedUser.lastName
+      );
 
       res.json({ 
         message: "User approved successfully", 

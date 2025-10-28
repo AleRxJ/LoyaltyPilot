@@ -13,6 +13,7 @@ import Dashboard from "@/pages/dashboard";
 import Deals from "@/pages/deals";
 import Rewards from "@/pages/rewards";
 import Admin from "@/pages/admin";
+import RegisterWithInvite from "@/pages/register-invite";
 import NotFound from "@/pages/not-found";
 
 // Layout
@@ -64,6 +65,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // Allow access to register page without authentication
   if (!user && location !== "/login" && location !== "/register") {
     return <Login />;
   }
@@ -83,6 +85,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/register" component={RegisterWithInvite} />
       <Route path="/" component={Dashboard} />
       <Route path="/deals" component={Deals} />
       <Route path="/rewards" component={Rewards} />
