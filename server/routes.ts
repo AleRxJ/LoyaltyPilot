@@ -125,6 +125,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Update user profile (self-service)
+  app.patch("/api/user/profile", async (req, res) => {
+    console.log("🔵 PATCH /api/user/profile called");
+    console.log("📦 Body:", req.body);
+    console.log("👤 Session userId:", req.session?.userId);
+    
+    const userId = req.session?.userId;
+    if (!userId) {
+      console.log("❌ Not authenticated");
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const { firstName, lastName, email, country, currentPassword, newPassword } = req.body;
+      
+      // Validar que al menos un campo esté presente
+      if (!firstName && !lastName && !email && !country && !newPassword) {
+        return res.status(400).json({ 
+          message: "At least one field must be provided to update" 
+        });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Preparar datos para actualizar
+      const updates: any = {};
+
+      if (firstName) updates.firstName = firstName;
+      if (lastName) updates.lastName = lastName;
+      if (country) updates.country = country;
+
+      // Validar y actualizar email si cambió
+      if (email && email !== user.email) {
+        // Verificar que el nuevo email no esté en uso
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser && existingUser.id !== userId) {
+          return res.status(400).json({ 
+            message: "Email already in use by another account" 
+          });
+        }
+        updates.email = email;
+      }
+
+      // Cambio de contraseña
+      if (newPassword) {
+        if (!currentPassword) {
+          return res.status(400).json({ 
+            message: "Current password is required to change password" 
+          });
+        }
+
+        // Verificar contraseña actual
+        const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+        if (!isValidPassword) {
+          return res.status(401).json({ 
+            message: "Current password is incorrect" 
+          });
+        }
+
+        // Validar longitud de nueva contraseña
+        if (newPassword.length < 6) {
+          return res.status(400).json({ 
+            message: "New password must be at least 6 characters" 
+          });
+        }
+
+        updates.password = await bcrypt.hash(newPassword, 10);
+      }
+
+      // Actualizar timestamp
+      updates.updatedAt = new Date();
+
+      // Actualizar usuario
+      const updatedUser = await storage.updateUser(userId, updates);
+
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update profile" });
+      }
+
+      res.json({ 
+        message: "Profile updated successfully",
+        user: {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+          role: updatedUser.role,
+          country: updatedUser.country
+        }
+      });
+    } catch (error) {
+      console.error("Update profile error:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
   // User routes
   app.get("/api/users/stats", async (req, res) => {
     const userId = req.session?.userId;

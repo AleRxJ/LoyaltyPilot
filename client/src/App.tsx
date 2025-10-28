@@ -14,6 +14,7 @@ import Deals from "@/pages/deals";
 import Rewards from "@/pages/rewards";
 import Admin from "@/pages/admin";
 import RegisterWithInvite from "@/pages/register-invite";
+import ProfilePage from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 
 // Layout
@@ -89,6 +90,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/deals" component={Deals} />
       <Route path="/rewards" component={Rewards} />
+      <Route path="/profile" component={ProfilePage} />
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
