@@ -7,7 +7,14 @@ import { z } from "zod";
 import * as XLSX from 'xlsx';
 import { NotificationHelpers } from "./notifications";
 import { nanoid } from "nanoid";
-import { sendInviteEmail, sendApprovalEmail } from "./email.js";
+import { 
+  sendInviteEmail, 
+  sendApprovalEmail, 
+  sendDealApprovedEmail, 
+  sendRedemptionApprovedEmail,
+  sendRedemptionRequestToAdmin,
+  sendSupportTicketToAdmin
+} from "./email.js";
 
 // Extend session data interface
 declare module 'express-session' {
@@ -317,8 +324,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!deal) {
         return res.status(404).json({ message: "Deal not found" });
       }
+      
+      // Obtener información del usuario para enviar email
+      const dealUser = await storage.getUser(deal.userId);
+      if (dealUser && deal.pointsEarned && deal.pointsEarned > 0) {
+        await sendDealApprovedEmail(
+          dealUser.email,
+          dealUser.firstName,
+          dealUser.lastName,
+          {
+            productName: deal.productName,
+            dealValue: deal.dealValue,
+            pointsEarned: deal.pointsEarned
+          }
+        );
+      }
+      
       res.json(deal);
     } catch (error) {
+      console.error("Error approving deal:", error);
       res.status(500).json({ message: "Failed to approve deal" });
     }
   });
@@ -528,6 +552,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const userReward = await storage.redeemReward(userId, req.params.id);
+      
+      // Obtener información del usuario y recompensa para notificar al admin
+      const user = await storage.getUser(userId);
+      const reward = await storage.getReward(req.params.id);
+      
+      if (user && reward) {
+        // Obtener email del primer admin para enviar notificación
+        const allUsers = await storage.getAllUsers();
+        const admins = allUsers.filter(u => u.role === 'admin');
+        if (admins && admins.length > 0) {
+          await sendRedemptionRequestToAdmin(
+            admins[0].email,
+            {
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email
+            },
+            {
+              rewardName: reward.name,
+              pointsCost: reward.pointsCost,
+              redemptionId: userReward.id
+            }
+          );
+        }
+      }
+      
       res.json(userReward);
     } catch (error) {
       if (error instanceof Error) {
@@ -567,6 +617,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!updatedRedemption) {
         return res.status(404).json({ message: "Redemption not found" });
+      }
+      
+      // Obtener información del usuario y recompensa para enviar email
+      const user = await storage.getUser(updatedRedemption.userId);
+      const reward = await storage.getReward(updatedRedemption.rewardId);
+      
+      if (user && reward) {
+        await sendRedemptionApprovedEmail(
+          user.email,
+          user.firstName,
+          user.lastName,
+          {
+            rewardName: reward.name,
+            pointsCost: reward.pointsCost,
+            status: updatedRedemption.status
+          }
+        );
       }
       
       res.json(updatedRedemption);
@@ -1104,6 +1171,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         valid: false,
         message: "Failed to verify invitation" 
+      });
+    }
+  });
+
+  // Passwordless login with invite token (one-time use)
+  app.get("/api/auth/passwordless-login/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      console.log("🔐 Passwordless login attempt with token:", token);
+
+      // Find user by invite token
+      const user = await storage.getUserByInviteToken(token);
+      
+      if (!user) {
+        console.log("❌ Invalid token");
+        return res.status(404).json({ 
+          success: false,
+          message: "Invalid or expired invitation link" 
+        });
+      }
+
+      // Check if already used (already approved means token was used)
+      if (user.isApproved && !user.inviteToken) {
+        console.log("❌ Token already used");
+        return res.status(400).json({ 
+          success: false,
+          message: "This invitation link has already been used" 
+        });
+      }
+
+      // Generate automatic username if not exists
+      let username = user.username;
+      if (!username || username.startsWith('user_')) {
+        // Generate username from email
+        const emailPrefix = user.email.split('@')[0];
+        const randomSuffix = nanoid(4);
+        username = `${emailPrefix}_${randomSuffix}`;
+        
+        // Ensure username is unique
+        let existingUser = await storage.getUserByUsername(username);
+        while (existingUser) {
+          username = `${emailPrefix}_${nanoid(6)}`;
+          existingUser = await storage.getUserByUsername(username);
+        }
+      }
+
+      // Generate automatic password (user won't see it)
+      const autoPassword = nanoid(32); // Strong random password
+      const hashedPassword = await bcrypt.hash(autoPassword, 10);
+
+      // Update user: set username, password, approve, and clear invite token
+      const updatedUser = await storage.updateUser(user.id, {
+        username,
+        password: hashedPassword,
+        isApproved: true,
+        approvedAt: new Date(),
+        approvedBy: 'passwordless',
+        inviteToken: null, // Clear token (one-time use)
+      });
+
+      if (!updatedUser) {
+        console.log("❌ Failed to update user");
+        return res.status(500).json({ 
+          success: false,
+          message: "Failed to activate account" 
+        });
+      }
+
+      // Create session (auto-login)
+      if (req.session) {
+        req.session.userId = updatedUser.id;
+        req.session.userRole = updatedUser.role;
+      }
+
+      // Send activation email
+      await sendApprovalEmail(user.email, user.firstName, user.lastName);
+
+      console.log("✅ Passwordless login successful for:", updatedUser.email);
+
+      res.json({ 
+        success: true,
+        message: "Welcome! Your account has been activated.",
+        user: {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+          role: updatedUser.role,
+          country: updatedUser.country,
+        }
+      });
+    } catch (error) {
+      console.error("❌ Passwordless login error:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to process login" 
       });
     }
   });
@@ -1981,6 +2146,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const ticket = await storage.createSupportTicket(ticketData);
+      
+      // Obtener información del usuario para enviar email al admin
+      const user = await storage.getUser(userId);
+      if (user) {
+        // Obtener email del primer admin para enviar notificación
+        const allUsers = await storage.getAllUsers();
+        const admins = allUsers.filter(u => u.role === 'admin');
+        if (admins && admins.length > 0) {
+          await sendSupportTicketToAdmin(
+            admins[0].email,
+            {
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email
+            },
+            {
+              subject: ticket.subject,
+              message: ticket.message,
+              ticketId: ticket.id
+            }
+          );
+        }
+      }
+      
       res.status(201).json(ticket);
     } catch (error) {
       if (error instanceof z.ZodError) {

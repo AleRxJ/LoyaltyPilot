@@ -14,6 +14,7 @@ import Deals from "@/pages/deals";
 import Rewards from "@/pages/rewards";
 import Admin from "@/pages/admin";
 import RegisterWithInvite from "@/pages/register-invite";
+import PasswordlessLogin from "@/pages/passwordless-login";
 import ProfilePage from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 
@@ -51,7 +52,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Redirect authenticated users away from login/register pages
   useEffect(() => {
-    if (user && (location === "/login" || location === "/register")) {
+    if (user && (location === "/login" || location === "/register" || location.startsWith("/passwordless-login"))) {
       // Use the appropriate redirect based on user role
       const redirectPath = user.role === "admin" ? "/admin" : "/";
       setLocation(redirectPath);
@@ -66,8 +67,8 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Allow access to register page without authentication
-  if (!user && location !== "/login" && location !== "/register") {
+  // Allow access to register and passwordless-login pages without authentication
+  if (!user && location !== "/login" && location !== "/register" && !location.startsWith("/passwordless-login")) {
     return <Login />;
   }
 
@@ -87,6 +88,7 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/register" component={RegisterWithInvite} />
+      <Route path="/passwordless-login" component={PasswordlessLogin} />
       <Route path="/" component={Dashboard} />
       <Route path="/deals" component={Deals} />
       <Route path="/rewards" component={Rewards} />
