@@ -890,17 +890,16 @@ export default function Admin() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-10">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
           <TabsTrigger value="invitations" data-testid="tab-invitations">Invitations</TabsTrigger>
           <TabsTrigger value="users" data-testid="tab-users">Users</TabsTrigger>
-          <TabsTrigger value="pending" data-testid="tab-pending">Pending Users</TabsTrigger>
           <TabsTrigger value="deals" data-testid="tab-deals">Deals</TabsTrigger>
           <TabsTrigger value="rewards" data-testid="tab-rewards">Rewards</TabsTrigger>
-          <TabsTrigger value="reward-approvals" data-testid="tab-reward-approvals">Reward Approvals</TabsTrigger>
-          <TabsTrigger value="reward-history" data-testid="tab-reward-history">Reward History</TabsTrigger>
-          <TabsTrigger value="support" data-testid="tab-support">Support</TabsTrigger>
-          <TabsTrigger value="points-config" data-testid="tab-points-config">Points Config</TabsTrigger>
+          <TabsTrigger value="settings" data-testid="tab-settings">
+            <Settings className="w-4 h-4 mr-2" />
+            Settings
+          </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -1120,28 +1119,47 @@ export default function Admin() {
           <UserInvitationsTab />
         </TabsContent>
 
-        {/* Users Tab */}
+        {/* Users Tab - Consolidated with sub-tabs */}
         <TabsContent value="users" className="mt-6">
           <Card className="shadow-material">
             <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>User Management</CardTitle>
-                <div className="flex space-x-2">
-                  <CSVUploader
-                    onGetUploadParameters={handleGetUsersCSVUploadParameters}
-                    onComplete={handleUsersCSVUploadComplete}
-                    buttonClassName="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Import Users CSV
-                  </CSVUploader>
-                  <Dialog open={isCreateUserModalOpen} onOpenChange={setIsCreateUserModalOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="button-create-user">
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Create User
-                      </Button>
-                    </DialogTrigger>
+              <CardTitle className="flex items-center">
+                <Users className="w-5 h-5 mr-2" />
+                User Management
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="active" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="active" data-testid="subtab-active-users">
+                    Active Users
+                  </TabsTrigger>
+                  <TabsTrigger value="pending" data-testid="subtab-pending-users">
+                    Pending Approvals
+                    {pendingUsers && pendingUsers.length > 0 && (
+                      <Badge className="ml-2 bg-yellow-500">{pendingUsers.length}</Badge>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Active Users Sub-Tab */}
+                <TabsContent value="active">
+                  <div className="flex justify-end space-x-2 mb-4">
+                    <CSVUploader
+                      onGetUploadParameters={handleGetUsersCSVUploadParameters}
+                      onComplete={handleUsersCSVUploadComplete}
+                      buttonClassName="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Import Users CSV
+                    </CSVUploader>
+                    <Dialog open={isCreateUserModalOpen} onOpenChange={setIsCreateUserModalOpen}>
+                      <DialogTrigger asChild>
+                        <Button className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="button-create-user">
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Create User
+                        </Button>
+                      </DialogTrigger>
                   <DialogContent className="sm:max-w-[600px]">
                     <DialogHeader>
                       <DialogTitle>Create New User</DialogTitle>
@@ -1431,13 +1449,12 @@ export default function Admin() {
                     </Form>
                   </DialogContent>
                 </Dialog>
-                </div>
               </div>
-              <div className="text-sm text-gray-600 mt-2">
+
+              <div className="text-sm text-gray-600 mb-4">
                 CSV format: First Name, Last Name, Username, Email, Password, Country, Role
               </div>
-            </CardHeader>
-            <CardContent>
+
               {usersLoading ? (
                 <div className="space-y-4">
                   {[...Array(5)].map((_, i) => (
@@ -1577,101 +1594,97 @@ export default function Admin() {
                   No users found
                 </p>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                </TabsContent>
 
-        {/* Pending Approval Tab */}
-        <TabsContent value="pending" className="mt-6">
-          <Card className="shadow-material">
-            <CardHeader>
-              <CardTitle>Pending User Approvals</CardTitle>
-              <div className="text-sm text-gray-600 mt-2">
-                New user registrations awaiting administrator approval
-              </div>
-            </CardHeader>
-            <CardContent>
-              {pendingUsersLoading ? (
-                <div className="space-y-4">
-                  {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="h-20 w-full" />
-                  ))}
-                </div>
-              ) : pendingUsers && pendingUsers.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          User
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Role
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Country
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Registration Date
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Action
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {pendingUsers.map((user: any) => (
-                        <tr key={user.id} data-testid={`row-pending-user-${user.id}`}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {user.firstName} {user.lastName}
-                              </div>
-                              <div className="text-sm text-gray-500">{user.email}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge className={user.role === "admin" ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800"}>
-                              {user.role}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {user.country}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {formatDate(user.createdAt.toString())}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-2">
-                              <Button
-                                onClick={() => handleApproveUser(user.id)}
-                                disabled={approveUserMutation.isPending || rejectUserMutation.isPending}
-                                className="bg-green-600 hover:bg-green-700 text-white"
-                                data-testid={`button-approve-${user.id}`}
-                              >
-                                {approveUserMutation.isPending ? "Approving..." : "Approve"}
-                              </Button>
-                              <Button
-                                onClick={() => handleRejectUser(user.id)}
-                                disabled={approveUserMutation.isPending || rejectUserMutation.isPending}
-                                variant="outline"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-300"
-                                data-testid={`button-reject-${user.id}`}
-                              >
-                                {rejectUserMutation.isPending ? "Rejecting..." : "Reject"}
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
+                {/* Pending Approvals Sub-Tab */}
+                <TabsContent value="pending">
+                  <div className="text-sm text-gray-600 mb-4">
+                    New user registrations awaiting administrator approval
+                  </div>
+
+                  {pendingUsersLoading ? (
+                    <div className="space-y-4">
+                      {[...Array(3)].map((_, i) => (
+                        <Skeleton key={i} className="h-20 w-full" />
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-gray-500 text-center py-8" data-testid="text-no-pending-users">
-                  No pending user approvals
-                </p>
-              )}
+                    </div>
+                  ) : pendingUsers && pendingUsers.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              User
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Role
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Country
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Registration Date
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Action
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {pendingUsers.map((user: any) => (
+                            <tr key={user.id} data-testid={`row-pending-user-${user.id}`}>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {user.firstName} {user.lastName}
+                                  </div>
+                                  <div className="text-sm text-gray-500">{user.email}</div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <Badge className={user.role === "admin" ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800"}>
+                                  {user.role}
+                                </Badge>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {user.country}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {formatDate(user.createdAt.toString())}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div className="flex space-x-2">
+                                  <Button
+                                    onClick={() => handleApproveUser(user.id)}
+                                    disabled={approveUserMutation.isPending || rejectUserMutation.isPending}
+                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                    data-testid={`button-approve-${user.id}`}
+                                  >
+                                    {approveUserMutation.isPending ? "Approving..." : "Approve"}
+                                  </Button>
+                                  <Button
+                                    onClick={() => handleRejectUser(user.id)}
+                                    disabled={approveUserMutation.isPending || rejectUserMutation.isPending}
+                                    variant="outline"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-300"
+                                    data-testid={`button-reject-${user.id}`}
+                                  >
+                                    {rejectUserMutation.isPending ? "Rejecting..." : "Reject"}
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-center py-8" data-testid="text-no-pending-users">
+                      No pending user approvals
+                    </p>
+                  )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </TabsContent>
@@ -1848,368 +1861,404 @@ export default function Admin() {
           </Card>
         </TabsContent>
 
-        {/* Rewards Tab */}
+        {/* Rewards Tab - Consolidated with sub-tabs */}
         <TabsContent value="rewards" className="mt-6">
           <Card className="shadow-material">
             <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>Reward Management</CardTitle>
-                <Button
-                  onClick={() => {
-                    setSelectedReward(null);
-                    setIsRewardModalOpen(true);
-                  }}
-                  data-testid="button-add-reward"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Reward
-                </Button>
-              </div>
+              <CardTitle className="flex items-center">
+                <Gift className="w-5 h-5 mr-2" />
+                Reward Management
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              {rewardsLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[...Array(6)].map((_, i) => (
-                    <Skeleton key={i} className="h-32 w-full" />
-                  ))}
-                </div>
-              ) : rewards && rewards.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {rewards.map((reward) => (
-                    <Card key={reward.id} className="border" data-testid={`card-admin-reward-${reward.id}`}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center space-x-3 mb-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-accent-400 to-accent-600 rounded-lg flex items-center justify-center">
-                            <Gift className="text-white h-5 w-5" />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{reward.name}</h4>
-                            <p className="text-sm text-gray-600">
-                              {reward.pointsCost.toLocaleString()} points
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <Badge variant="outline" className="mb-3">
-                          {reward.category}
-                        </Badge>
-                        
-                        {reward.description && (
-                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                            {reward.description}
-                          </p>
-                        )}
-                        
-                        <div className="flex justify-between items-center">
-                          <Badge className={reward.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                            {reward.isActive ? "Active" : "Inactive"}
-                          </Badge>
-                          <div className="flex space-x-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedReward(reward);
-                                setIsRewardModalOpen(true);
-                              }}
-                              data-testid={`button-edit-reward-${reward.id}`}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDeleteReward(reward.id)}
-                              disabled={deleteRewardMutation.isPending}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              data-testid={`button-delete-reward-${reward.id}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Gift className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2" data-testid="text-no-rewards-admin">
-                    No rewards configured
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    Add rewards for users to redeem with their points.
-                  </p>
-                  <Button
-                    onClick={() => {
-                      setSelectedReward(null);
-                      setIsRewardModalOpen(true);
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add First Reward
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+              <Tabs defaultValue="catalog" className="w-full">
+                <TabsList className="grid w-full grid-cols-3 mb-6">
+                  <TabsTrigger value="catalog" data-testid="subtab-reward-catalog">
+                    Reward Catalog
+                  </TabsTrigger>
+                  <TabsTrigger value="approvals" data-testid="subtab-reward-approvals">
+                    Pending Approvals
+                    {pendingRedemptions && pendingRedemptions.length > 0 && (
+                      <Badge className="ml-2 bg-yellow-500">{pendingRedemptions.length}</Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="history" data-testid="subtab-reward-history">
+                    Redemption History
+                  </TabsTrigger>
+                </TabsList>
 
-        {/* Reward Approvals Tab */}
-        <TabsContent value="reward-approvals" className="mt-6">
-          <Card className="shadow-material">
-            <CardHeader>
-              <CardTitle>Pending Reward Redemptions</CardTitle>
-              <div className="text-sm text-gray-600 mt-2">
-                User reward redemptions awaiting administrator approval
-              </div>
-            </CardHeader>
-            <CardContent>
-              {pendingRedemptionsLoading ? (
-                <div className="space-y-4">
-                  {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="h-20 w-full" />
-                  ))}
-                </div>
-              ) : pendingRedemptions && pendingRedemptions.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          User
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Reward
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Requested Date
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {pendingRedemptions.map((redemption: any) => (
-                        <tr key={redemption.id} data-testid={`row-pending-redemption-${redemption.id}`}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {redemption.userFirstName} {redemption.userLastName}
-                              </div>
-                              <div className="text-sm text-gray-500">@{redemption.userName}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">
-                              {redemption.rewardName}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {formatDate(redemption.redeemedAt.toString())}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge className="bg-yellow-100 text-yellow-800">
-                              {redemption.status}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-2">
-                              <Button
-                                onClick={() => handleApproveRedemption(redemption.id)}
-                                disabled={approveRedemptionMutation.isPending}
-                                className="bg-green-600 hover:bg-green-700 text-white"
-                                size="sm"
-                                data-testid={`button-approve-redemption-${redemption.id}`}
-                              >
-                                {approveRedemptionMutation.isPending ? "Approving..." : "Approve"}
-                              </Button>
-                              <Button
-                                onClick={() => handleRejectRedemption(redemption.id, "Rejected by administrator")}
-                                disabled={rejectRedemptionMutation.isPending}
-                                variant="outline"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                size="sm"
-                                data-testid={`button-reject-redemption-${redemption.id}`}
-                              >
-                                {rejectRedemptionMutation.isPending ? "Rejecting..." : "Reject"}
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
+                {/* Reward Catalog Sub-Tab */}
+                <TabsContent value="catalog">
+                  <div className="flex justify-end mb-4">
+                    <Button
+                      onClick={() => {
+                        setSelectedReward(null);
+                        setIsRewardModalOpen(true);
+                      }}
+                      data-testid="button-add-reward"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Reward
+                    </Button>
+                  </div>
+
+                  {rewardsLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {[...Array(6)].map((_, i) => (
+                        <Skeleton key={i} className="h-32 w-full" />
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-gray-500 text-center py-8" data-testid="text-no-pending-redemptions">
-                  No pending reward redemptions
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Reward History Tab */}
-        <TabsContent value="reward-history" className="mt-6">
-          <Card className="shadow-material">
-            <CardHeader>
-              <CardTitle>All Reward Redemptions</CardTitle>
-              <div className="text-sm text-gray-600 mt-2">
-                Complete history of all user reward redemptions
-              </div>
-            </CardHeader>
-            <CardContent>
-              {allRedemptionsLoading ? (
-                <div className="space-y-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Skeleton key={i} className="h-20 w-full" />
-                  ))}
-                </div>
-              ) : allRedemptions && allRedemptions.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          User
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Reward
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Points Cost
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Requested Date
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Approved By
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Approved Date
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Shipment Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {allRedemptions.map((redemption: any) => (
-                        <tr key={redemption.id} data-testid={`row-redemption-${redemption.id}`}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {redemption.userFirstName} {redemption.userLastName}
+                    </div>
+                  ) : rewards && rewards.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {rewards.map((reward) => (
+                        <Card key={reward.id} className="border" data-testid={`card-admin-reward-${reward.id}`}>
+                          <CardContent className="p-4">
+                            <div className="flex items-center space-x-3 mb-3">
+                              <div className="w-10 h-10 bg-gradient-to-br from-accent-400 to-accent-600 rounded-lg flex items-center justify-center">
+                                <Gift className="text-white h-5 w-5" />
                               </div>
-                              <div className="text-sm text-gray-500">@{redemption.userName}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">
-                              {redemption.rewardName}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {redemption.pointsCost?.toLocaleString()} points
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {formatDate(redemption.redeemedAt.toString())}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge className={`${
-                              redemption.status === 'approved' ? 'bg-green-100 text-green-800' :
-                              redemption.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
-                            }`}>
-                              {redemption.status === 'approved' ? 'Approved' :
-                               redemption.status === 'pending' ? 'Pending' : 'Rejected'}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {redemption.approvedBy ? 'Admin' : '-'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {redemption.approvedAt ? formatDate(redemption.approvedAt.toString()) : '-'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge className={`${
-                              redemption.shipmentStatus === 'delivered' ? 'bg-green-100 text-green-800' :
-                              redemption.shipmentStatus === 'shipped' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {redemption.shipmentStatus === 'delivered' ? 'Delivered' :
-                               redemption.shipmentStatus === 'shipped' ? 'Shipped' : 'Pending'}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            {redemption.status === 'approved' && (
-                              <div className="flex space-x-2">
-                                {redemption.shipmentStatus === 'pending' && (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => updateShipmentStatusMutation.mutate({ 
-                                      redemptionId: redemption.id, 
-                                      shipmentStatus: 'shipped' 
-                                    })}
-                                    disabled={updateShipmentStatusMutation.isPending}
-                                    className="bg-blue-600 hover:bg-blue-700"
-                                    data-testid={`button-ship-${redemption.id}`}
-                                  >
-                                    {updateShipmentStatusMutation.isPending ? "Updating..." : "Mark Shipped"}
-                                  </Button>
-                                )}
-                                {redemption.shipmentStatus === 'shipped' && (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => updateShipmentStatusMutation.mutate({ 
-                                      redemptionId: redemption.id, 
-                                      shipmentStatus: 'delivered' 
-                                    })}
-                                    disabled={updateShipmentStatusMutation.isPending}
-                                    className="bg-green-600 hover:bg-green-700"
-                                    data-testid={`button-deliver-${redemption.id}`}
-                                  >
-                                    {updateShipmentStatusMutation.isPending ? "Updating..." : "Mark Delivered"}
-                                  </Button>
-                                )}
-                                {redemption.shipmentStatus === 'delivered' && (
-                                  <span className="text-green-600 font-medium">✓ Delivered</span>
-                                )}
+                              <div className="flex-1">
+                                <h4 className="font-medium text-gray-900">{reward.name}</h4>
+                                <p className="text-sm text-gray-600">
+                                  {reward.pointsCost.toLocaleString()} points
+                                </p>
                               </div>
+                            </div>
+                            
+                            <Badge variant="outline" className="mb-3">
+                              {reward.category}
+                            </Badge>
+                            
+                            {reward.description && (
+                              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                                {reward.description}
+                              </p>
                             )}
-                          </td>
-                        </tr>
+                            
+                            <div className="flex justify-between items-center">
+                              <Badge className={reward.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                                {reward.isActive ? "Active" : "Inactive"}
+                              </Badge>
+                              <div className="flex space-x-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedReward(reward);
+                                    setIsRewardModalOpen(true);
+                                  }}
+                                  data-testid={`button-edit-reward-${reward.id}`}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDeleteReward(reward.id)}
+                                  disabled={deleteRewardMutation.isPending}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  data-testid={`button-delete-reward-${reward.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-gray-500 text-center py-8" data-testid="text-no-redemptions">
-                  No reward redemptions found
-                </p>
-              )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Gift className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2" data-testid="text-no-rewards-admin">
+                        No rewards configured
+                      </h3>
+                      <p className="text-gray-600 mb-4">
+                        Add rewards for users to redeem with their points.
+                      </p>
+                      <Button
+                        onClick={() => {
+                          setSelectedReward(null);
+                          setIsRewardModalOpen(true);
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add First Reward
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Pending Approvals Sub-Tab */}
+                <TabsContent value="approvals">
+                  <div className="text-sm text-gray-600 mb-4">
+                    User reward redemptions awaiting administrator approval
+                  </div>
+
+                  {pendingRedemptionsLoading ? (
+                    <div className="space-y-4">
+                      {[...Array(3)].map((_, i) => (
+                        <Skeleton key={i} className="h-20 w-full" />
+                      ))}
+                    </div>
+                  ) : pendingRedemptions && pendingRedemptions.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              User
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Reward
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Requested Date
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {pendingRedemptions.map((redemption: any) => (
+                            <tr key={redemption.id} data-testid={`row-pending-redemption-${redemption.id}`}>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {redemption.userFirstName} {redemption.userLastName}
+                                  </div>
+                                  <div className="text-sm text-gray-500">@{redemption.userName}</div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {redemption.rewardName}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {formatDate(redemption.redeemedAt.toString())}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <Badge className="bg-yellow-100 text-yellow-800">
+                                  {redemption.status}
+                                </Badge>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div className="flex space-x-2">
+                                  <Button
+                                    onClick={() => handleApproveRedemption(redemption.id)}
+                                    disabled={approveRedemptionMutation.isPending}
+                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                    size="sm"
+                                    data-testid={`button-approve-redemption-${redemption.id}`}
+                                  >
+                                    {approveRedemptionMutation.isPending ? "Approving..." : "Approve"}
+                                  </Button>
+                                  <Button
+                                    onClick={() => handleRejectRedemption(redemption.id, "Rejected by administrator")}
+                                    disabled={rejectRedemptionMutation.isPending}
+                                    variant="outline"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    size="sm"
+                                    data-testid={`button-reject-redemption-${redemption.id}`}
+                                  >
+                                    {rejectRedemptionMutation.isPending ? "Rejecting..." : "Reject"}
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-center py-8" data-testid="text-no-pending-redemptions">
+                      No pending reward redemptions
+                    </p>
+                  )}
+                </TabsContent>
+
+                {/* Redemption History Sub-Tab */}
+                <TabsContent value="history">
+                  <div className="text-sm text-gray-600 mb-4">
+                    Complete history of all user reward redemptions
+                  </div>
+
+                  {allRedemptionsLoading ? (
+                    <div className="space-y-4">
+                      {[...Array(5)].map((_, i) => (
+                        <Skeleton key={i} className="h-20 w-full" />
+                      ))}
+                    </div>
+                  ) : allRedemptions && allRedemptions.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              User
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Reward
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Points Cost
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Requested Date
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Approved By
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Approved Date
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Shipment Status
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {allRedemptions.map((redemption: any) => (
+                            <tr key={redemption.id} data-testid={`row-redemption-${redemption.id}`}>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {redemption.userFirstName} {redemption.userLastName}
+                                  </div>
+                                  <div className="text-sm text-gray-500">@{redemption.userName}</div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {redemption.rewardName}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {redemption.pointsCost?.toLocaleString()} points
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {formatDate(redemption.redeemedAt.toString())}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <Badge className={`${
+                                  redemption.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                  redemption.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {redemption.status === 'approved' ? 'Approved' :
+                                   redemption.status === 'pending' ? 'Pending' : 'Rejected'}
+                                </Badge>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {redemption.approvedBy ? 'Admin' : '-'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {redemption.approvedAt ? formatDate(redemption.approvedAt.toString()) : '-'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <Badge className={`${
+                                  redemption.shipmentStatus === 'delivered' ? 'bg-green-100 text-green-800' :
+                                  redemption.shipmentStatus === 'shipped' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {redemption.shipmentStatus === 'delivered' ? 'Delivered' :
+                                   redemption.shipmentStatus === 'shipped' ? 'Shipped' : 'Pending'}
+                                </Badge>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                {redemption.status === 'approved' && (
+                                  <div className="flex space-x-2">
+                                    {redemption.shipmentStatus === 'pending' && (
+                                      <Button
+                                        size="sm"
+                                        onClick={() => updateShipmentStatusMutation.mutate({ 
+                                          redemptionId: redemption.id, 
+                                          shipmentStatus: 'shipped' 
+                                        })}
+                                        disabled={updateShipmentStatusMutation.isPending}
+                                        className="bg-blue-600 hover:bg-blue-700"
+                                        data-testid={`button-ship-${redemption.id}`}
+                                      >
+                                        {updateShipmentStatusMutation.isPending ? "Updating..." : "Mark Shipped"}
+                                      </Button>
+                                    )}
+                                    {redemption.shipmentStatus === 'shipped' && (
+                                      <Button
+                                        size="sm"
+                                        onClick={() => updateShipmentStatusMutation.mutate({ 
+                                          redemptionId: redemption.id, 
+                                          shipmentStatus: 'delivered' 
+                                        })}
+                                        disabled={updateShipmentStatusMutation.isPending}
+                                        className="bg-green-600 hover:bg-green-700"
+                                        data-testid={`button-deliver-${redemption.id}`}
+                                      >
+                                        {updateShipmentStatusMutation.isPending ? "Updating..." : "Mark Delivered"}
+                                      </Button>
+                                    )}
+                                    {redemption.shipmentStatus === 'delivered' && (
+                                      <span className="text-green-600 font-medium">✓ Delivered</span>
+                                    )}
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-center py-8" data-testid="text-no-redemptions">
+                      No reward redemptions found
+                    </p>
+                  )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Support Tab */}
-        <TabsContent value="support" className="mt-6">
-          <SupportTicketsTab />
-        </TabsContent>
+        {/* Settings Tab - with sub-tabs for Support and Points Config */}
+        <TabsContent value="settings" className="mt-6">
+          <Card className="shadow-material">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Settings className="w-5 h-5 mr-2" />
+                System Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="support" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="support" data-testid="subtab-support">
+                    Support Tickets
+                  </TabsTrigger>
+                  <TabsTrigger value="points-config" data-testid="subtab-points-config">
+                    Points Configuration
+                  </TabsTrigger>
+                </TabsList>
 
-        {/* Points Config Tab */}
-        <TabsContent value="points-config" className="mt-6">
-          <PointsConfigTab />
+                {/* Support Tickets Sub-Tab */}
+                <TabsContent value="support">
+                  <SupportTicketsTab />
+                </TabsContent>
+
+                {/* Points Config Sub-Tab */}
+                <TabsContent value="points-config">
+                  <PointsConfigTab />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
