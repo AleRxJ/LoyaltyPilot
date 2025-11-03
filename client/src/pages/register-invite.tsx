@@ -11,7 +11,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -39,12 +38,6 @@ export default function RegisterWithInvite() {
   const [token, setToken] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-
-  // Fetch available regions
-  const { data: regions = [] } = useQuery({
-    queryKey: ['/api/admin/regions'],
-    enabled: isValid, // Solo cargar si la invitación es válida
-  });
 
   const {
     register,
@@ -257,16 +250,17 @@ export default function RegisterWithInvite() {
             <div>
               <Label htmlFor="region">Región *</Label>
               <Select
+                value={selectedRegion}
                 onValueChange={(value) => {
                   setSelectedRegion(value);
-                  setValue("region", value);
+                  setValue("region", value, { shouldValidate: true });
                   setSelectedCategory(""); // Reset category when region changes
-                  setValue("category", "");
-                  setValue("subcategory", "");
+                  setValue("category", "", { shouldValidate: false });
+                  setValue("subcategory", "", { shouldValidate: false });
                 }}
                 disabled={isSubmitting}
               >
-                <SelectTrigger>
+                <SelectTrigger className={errors.region ? "border-red-500" : ""}>
                   <SelectValue placeholder="Selecciona tu región" />
                 </SelectTrigger>
                 <SelectContent>
@@ -285,14 +279,15 @@ export default function RegisterWithInvite() {
               <div>
                 <Label htmlFor="category">Categoría *</Label>
                 <Select
+                  value={selectedCategory}
                   onValueChange={(value) => {
                     setSelectedCategory(value);
-                    setValue("category", value);
-                    setValue("subcategory", "");
+                    setValue("category", value, { shouldValidate: true });
+                    setValue("subcategory", "", { shouldValidate: false });
                   }}
                   disabled={isSubmitting}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={errors.category ? "border-red-500" : ""}>
                     <SelectValue placeholder="Selecciona tu categoría" />
                   </SelectTrigger>
                   <SelectContent>
@@ -315,7 +310,7 @@ export default function RegisterWithInvite() {
                   <div>
                     <Label htmlFor="subcategory">Subcategoría *</Label>
                     <Select
-                      onValueChange={(value) => setValue("subcategory", value)}
+                      onValueChange={(value) => setValue("subcategory", value, { shouldValidate: true })}
                       disabled={isSubmitting}
                     >
                       <SelectTrigger>
@@ -333,7 +328,7 @@ export default function RegisterWithInvite() {
                   <div>
                     <Label htmlFor="subcategory">Nivel de Partner *</Label>
                     <Select
-                      onValueChange={(value) => setValue("subcategory", value)}
+                      onValueChange={(value) => setValue("subcategory", value, { shouldValidate: true })}
                       disabled={isSubmitting}
                     >
                       <SelectTrigger>

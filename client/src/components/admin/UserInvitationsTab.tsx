@@ -13,6 +13,7 @@ import { UserPlus, Upload, Mail, CheckCircle, Clock, Download } from "lucide-rea
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import * as XLSX from "xlsx";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface InviteFormData {
   email: string;
@@ -22,6 +23,7 @@ interface InviteFormData {
 }
 
 export default function UserInvitationsTab() {
+  const { t } = useTranslation();
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isBulkInviteDialogOpen, setIsBulkInviteDialogOpen] = useState(false);
   const [inviteForm, setInviteForm] = useState<InviteFormData>({
@@ -243,9 +245,9 @@ export default function UserInvitationsTab() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Gestión de Usuarios</h2>
+          <h2 className="text-2xl font-bold">{t('admin.userManagement')}</h2>
           <p className="text-muted-foreground">
-            Invita nuevos usuarios y gestiona las solicitudes de registro
+            {t('admin.inviteAndManageUsers')}
           </p>
         </div>
         <div className="flex gap-2">

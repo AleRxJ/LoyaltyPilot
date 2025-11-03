@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Settings, DollarSign, Trophy, Calendar, Target, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 import { apiRequest } from "@/lib/queryClient";
 import type { PointsConfig } from "@shared/schema";
 
@@ -37,6 +38,7 @@ type PointsConfigForm = z.infer<typeof pointsConfigFormSchema>;
 
 export default function PointsConfigTab() {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const { data: config, isLoading } = useQuery<PointsConfig>({
@@ -124,10 +126,10 @@ export default function PointsConfigTab() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight" data-testid="text-points-config-title">
-          Configuración de Puntos
+          {t('admin.settings')}
         </h2>
         <p className="text-muted-foreground" data-testid="text-points-config-description">
-          Configura las reglas de asignación de puntos y el umbral del gran premio
+          {t('admin.configurePointsRules')}
         </p>
       </div>
 
@@ -135,10 +137,10 @@ export default function PointsConfigTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
-            Reglas de Asignación de Puntos
+            {t('admin.pointsAssignmentRules')}
           </CardTitle>
           <CardDescription>
-            Define cuántos dólares se necesitan para obtener 1 punto según el tipo de producto
+            {t('admin.configurePointsRules')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -152,7 +154,7 @@ export default function PointsConfigTab() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-blue-500" />
-                        Software
+                        {t('admin.pointsConfig.software')}
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -163,7 +165,7 @@ export default function PointsConfigTab() {
                           onChange={(e) => field.onChange(Number(e.target.value))}
                         />
                       </FormControl>
-                      <FormDescription>Dólares por 1 punto</FormDescription>
+                      <FormDescription>{t('admin.dollarsPerPoint')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -176,7 +178,7 @@ export default function PointsConfigTab() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-purple-500" />
-                        Hardware
+                        {t('admin.pointsConfig.hardware')}
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -187,7 +189,7 @@ export default function PointsConfigTab() {
                           onChange={(e) => field.onChange(Number(e.target.value))}
                         />
                       </FormControl>
-                      <FormDescription>Dólares por 1 punto</FormDescription>
+                      <FormDescription>{t('admin.dollarsPerPoint')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -200,7 +202,7 @@ export default function PointsConfigTab() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-green-500" />
-                        Equipment
+                        {t('admin.pointsConfig.equipment')}
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -211,7 +213,7 @@ export default function PointsConfigTab() {
                           onChange={(e) => field.onChange(Number(e.target.value))}
                         />
                       </FormControl>
-                      <FormDescription>Dólares por 1 punto</FormDescription>
+                      <FormDescription>{t('admin.dollarsPerPoint')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -223,10 +225,10 @@ export default function PointsConfigTab() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <Target className="h-5 w-5 text-emerald-600" />
-                      Reglas de Acumulación de Goals
+                      {t('admin.goalAccumulationRules')}
                     </CardTitle>
                     <CardDescription>
-                      Configuración predeterminada para la conversión de ventas a goals (1 Goal = Entrada a sorteo mensual)
+                      {t('admin.goalAccumulationDesc')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -238,7 +240,7 @@ export default function PointsConfigTab() {
                           <FormItem>
                             <FormLabel className="flex items-center gap-2">
                               <DollarSign className="h-4 w-4 text-emerald-500" />
-                              Cliente Nuevo
+                              {t('admin.newCustomer')}
                             </FormLabel>
                             <FormControl>
                               <Input
@@ -249,7 +251,7 @@ export default function PointsConfigTab() {
                                 onChange={(e) => field.onChange(Number(e.target.value))}
                               />
                             </FormControl>
-                            <FormDescription>Dólares necesarios por 1 Goal (Cliente Nuevo)</FormDescription>
+                            <FormDescription>{t('admin.newCustomer')} - {t('admin.dollarsPerPoint')}</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -262,7 +264,7 @@ export default function PointsConfigTab() {
                           <FormItem>
                             <FormLabel className="flex items-center gap-2">
                               <DollarSign className="h-4 w-4 text-teal-500" />
-                              Renovación
+                              {t('admin.renewal')}
                             </FormLabel>
                             <FormControl>
                               <Input
@@ -273,18 +275,12 @@ export default function PointsConfigTab() {
                                 onChange={(e) => field.onChange(Number(e.target.value))}
                               />
                             </FormControl>
-                            <FormDescription>Dólares necesarios por 1 Goal (Renovación)</FormDescription>
+                            <FormDescription>{t('admin.renewal')} - {t('admin.dollarsPerPoint')}</FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
-                    <Alert className="mt-4">
-                      <Info className="h-4 w-4" />
-                      <AlertDescription>
-                        Estas son las tasas predeterminadas del sistema. Cada región puede tener tasas personalizadas que anulan estos valores.
-                      </AlertDescription>
-                    </Alert>
                   </CardContent>
                 </Card>
               </div>
@@ -294,10 +290,10 @@ export default function PointsConfigTab() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <Trophy className="h-5 w-5 text-yellow-600" />
-                      Gran Premio
+                      {t('admin.grandPrize')}
                     </CardTitle>
                     <CardDescription>
-                      Puntos necesarios para alcanzar el gran premio
+                      {t('admin.grandPrizeDesc')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -306,7 +302,7 @@ export default function PointsConfigTab() {
                       name="grandPrizeThreshold"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Umbral de Puntos</FormLabel>
+                          <FormLabel>{t('admin.grandPrizeThreshold')}</FormLabel>
                           <FormControl>
                             <Input
                               type="number"
@@ -317,7 +313,7 @@ export default function PointsConfigTab() {
                             />
                           </FormControl>
                           <FormDescription>
-                            Los usuarios que alcancen este número de puntos ganarán el gran premio
+                            {t('admin.totalPointsNeeded')}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -332,10 +328,10 @@ export default function PointsConfigTab() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <Calendar className="h-5 w-5 text-blue-600" />
-                      Período de Redención
+                      {t('admin.redemptionPeriod')}
                     </CardTitle>
                     <CardDescription>
-                      Define el rango de fechas durante el cual los usuarios pueden redimir sus puntos
+                      {t('admin.redemptionPeriodDesc')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -345,7 +341,7 @@ export default function PointsConfigTab() {
                         name="redemptionStartDate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Fecha de Inicio</FormLabel>
+                            <FormLabel>{t('admin.startDate')}</FormLabel>
                             <FormControl>
                               <Input
                                 type="date"
@@ -354,7 +350,7 @@ export default function PointsConfigTab() {
                               />
                             </FormControl>
                             <FormDescription>
-                              Inicio del período de redención
+                              {t('admin.startDate')}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -366,7 +362,7 @@ export default function PointsConfigTab() {
                         name="redemptionEndDate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Fecha de Fin</FormLabel>
+                            <FormLabel>{t('admin.endDate')}</FormLabel>
                             <FormControl>
                               <Input
                                 type="date"
@@ -375,7 +371,7 @@ export default function PointsConfigTab() {
                               />
                             </FormControl>
                             <FormDescription>
-                              Fin del período de redención
+                              {t('admin.endDate')}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -394,14 +390,14 @@ export default function PointsConfigTab() {
                   disabled={updateConfigMutation.isPending}
                   data-testid="button-reset"
                 >
-                  Restablecer
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   type="submit"
                   disabled={updateConfigMutation.isPending}
                   data-testid="button-save-config"
                 >
-                  {updateConfigMutation.isPending ? "Guardando..." : "Guardar Configuración"}
+                  {updateConfigMutation.isPending ? t('admin.saving') : t('admin.saveChanges')}
                 </Button>
               </div>
             </form>

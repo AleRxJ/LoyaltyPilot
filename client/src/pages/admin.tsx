@@ -46,6 +46,7 @@ import RegionsManagementTab from "@/components/admin/RegionsManagementTab";
 import type { User, Deal, Reward } from "@shared/schema";
 import type { AuthUser } from "@/lib/auth";
 import type { UploadResult } from '@uppy/core';
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ReportsData {
   userCount: number;
@@ -81,6 +82,7 @@ type CreateUserForm = z.infer<typeof createUserSchema>;
 type EditUserForm = z.infer<typeof editUserSchema>;
 
 export default function Admin() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("overview");
   const [isRewardModalOpen, setIsRewardModalOpen] = useState(false);
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
@@ -885,27 +887,27 @@ export default function Admin() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-2" data-testid="text-admin-title">
-          Administrative Panel
+          {t('admin.panel')}
         </h1>
         <p className="text-gray-600">
-          Manage users, approve deals, and generate reports
+          {t('admin.manageUsersDealsReports')}
         </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
-          <TabsTrigger value="invitations" data-testid="tab-invitations">Invitations</TabsTrigger>
-          <TabsTrigger value="users" data-testid="tab-users">Users</TabsTrigger>
-          <TabsTrigger value="deals" data-testid="tab-deals">Deals</TabsTrigger>
-          <TabsTrigger value="rewards" data-testid="tab-rewards">Rewards</TabsTrigger>
+          <TabsTrigger value="overview" data-testid="tab-overview">{t('admin.overview')}</TabsTrigger>
+          <TabsTrigger value="invitations" data-testid="tab-invitations">{t('admin.invitations')}</TabsTrigger>
+          <TabsTrigger value="users" data-testid="tab-users">{t('admin.users')}</TabsTrigger>
+          <TabsTrigger value="deals" data-testid="tab-deals">{t('admin.deals')}</TabsTrigger>
+          <TabsTrigger value="rewards" data-testid="tab-rewards">{t('admin.rewards')}</TabsTrigger>
           <TabsTrigger value="regions" data-testid="tab-regions">
             <Globe className="w-4 h-4 mr-2" />
-            Regiones
+            {t('admin.regions')}
           </TabsTrigger>
           <TabsTrigger value="settings" data-testid="tab-settings">
             <Settings className="w-4 h-4 mr-2" />
-            Settings
+            {t('admin.settings')}
           </TabsTrigger>
         </TabsList>
 
@@ -919,7 +921,7 @@ export default function Admin() {
                     <Users className="text-primary-600 h-6 w-6" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Users</p>
+                    <p className="text-sm font-medium text-gray-600">{t('admin.totalUsers')}</p>
                     {reportsLoading ? (
                       <Skeleton className="h-8 w-16 mt-1" />
                     ) : (
@@ -939,7 +941,7 @@ export default function Admin() {
                     <ClipboardCheck className="text-secondary-600 h-6 w-6" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Deals</p>
+                    <p className="text-sm font-medium text-gray-600">{t('admin.totalDeals')}</p>
                     {reportsLoading ? (
                       <Skeleton className="h-8 w-16 mt-1" />
                     ) : (
@@ -959,7 +961,7 @@ export default function Admin() {
                     <BarChart3 className="text-green-600 h-6 w-6" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                    <p className="text-sm font-medium text-gray-600">{t('admin.totalRevenue')}</p>
                     {reportsLoading ? (
                       <Skeleton className="h-8 w-20 mt-1" />
                     ) : (
@@ -979,7 +981,7 @@ export default function Admin() {
                     <Gift className="text-accent-600 h-6 w-6" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Redeemed Rewards</p>
+                    <p className="text-sm font-medium text-gray-600">{t('admin.redeemedRewards')}</p>
                     {reportsLoading ? (
                       <Skeleton className="h-8 w-16 mt-1" />
                     ) : (
@@ -1001,21 +1003,21 @@ export default function Admin() {
           {/* Reports Section */}
           <Card className="shadow-material">
             <CardHeader>
-              <CardTitle>Generate Reports</CardTitle>
+              <CardTitle>{t('admin.generateReports')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div>
-                  <Label htmlFor="country">Country</Label>
+                  <Label htmlFor="country">{t('admin.country')}</Label>
                   <Select
                     value={reportFilters.country}
                     onValueChange={(value) => setReportFilters(prev => ({ ...prev, country: value }))}
                   >
                     <SelectTrigger data-testid="select-report-country">
-                      <SelectValue placeholder="All Countries" />
+                      <SelectValue placeholder={t('admin.allCountries')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Countries</SelectItem>
+                      <SelectItem value="all">{t('admin.allCountries')}</SelectItem>
                       <SelectItem value="US">United States</SelectItem>
                       <SelectItem value="CA">Canada</SelectItem>
                       <SelectItem value="MX">Mexico</SelectItem>
@@ -1024,7 +1026,7 @@ export default function Admin() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="startDate">Start Date</Label>
+                  <Label htmlFor="startDate">{t('admin.startDate')}</Label>
                   <Input
                     id="startDate"
                     type="date"
@@ -1034,7 +1036,7 @@ export default function Admin() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="endDate">End Date</Label>
+                  <Label htmlFor="endDate">{t('admin.endDate')}</Label>
                   <Input
                     id="endDate"
                     type="date"
@@ -1047,15 +1049,15 @@ export default function Admin() {
               <div className="flex gap-3">
                 <Button onClick={handleExportUserRanking} data-testid="button-export-user-ranking">
                   <Download className="w-4 h-4 mr-2" />
-                  Export User Ranking (Excel)
+                  {t('admin.exportUserRanking')}
                 </Button>
                 <Button onClick={handleExportRewardRedemptions} variant="secondary" data-testid="button-export-reward-redemptions">
                   <Download className="w-4 h-4 mr-2" />
-                  Export Reward Redemptions (Excel)
+                  {t('admin.exportRewardRedemptions')}
                 </Button>
                 <Button onClick={handleExportDealsPerUser} variant="outline" data-testid="button-export-deals-per-user">
                   <Download className="w-4 h-4 mr-2" />
-                  Export Deals per User (Excel)
+                  {t('admin.exportDealsPerUser')}
                 </Button>
               </div>
             </CardContent>
@@ -1065,14 +1067,14 @@ export default function Admin() {
           <Card className="shadow-material mt-6">
             <CardHeader>
               <div className="flex justify-between items-center">
-                <CardTitle>Pending Deals</CardTitle>
+                <CardTitle>{t('admin.pendingDeals')}</CardTitle>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setActiveTab("deals")}
                   data-testid="button-view-all-pending"
                 >
-                  View All
+                  {t('admin.viewAll')}
                 </Button>
               </div>
             </CardHeader>
@@ -1092,7 +1094,7 @@ export default function Admin() {
                         <p className="text-sm text-gray-600">
                           {deal.userFirstName && deal.userLastName 
                             ? `${deal.userFirstName} ${deal.userLastName}`
-                            : deal.userName || 'Unknown User'} • {formatCurrency(deal.dealValue)} • {formatDate(deal.createdAt.toString())}
+                            : deal.userName || t('admin.unknownUser')} • {formatCurrency(deal.dealValue)} • {formatDate(deal.createdAt.toString())}
                         </p>
                       </div>
                       <div className="flex space-x-2">
@@ -1119,7 +1121,7 @@ export default function Admin() {
                 </div>
               ) : (
                 <p className="text-gray-500 text-center py-8" data-testid="text-no-pending-deals">
-                  No pending deals to review
+                  {t('admin.noPendingDeals')}
                 </p>
               )}
             </CardContent>
@@ -1137,17 +1139,17 @@ export default function Admin() {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Users className="w-5 h-5 mr-2" />
-                User Management
+                {t('admin.userManagement')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="active" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-6">
                   <TabsTrigger value="active" data-testid="subtab-active-users">
-                    Active Users
+                    {t('admin.activeUsers')}
                   </TabsTrigger>
                   <TabsTrigger value="pending" data-testid="subtab-pending-users">
-                    Pending Approvals
+                    {t('admin.pendingApprovals')}
                     {pendingUsers && pendingUsers.length > 0 && (
                       <Badge className="ml-2 bg-yellow-500">{pendingUsers.length}</Badge>
                     )}
@@ -1163,18 +1165,18 @@ export default function Admin() {
                       buttonClassName="bg-green-600 hover:bg-green-700 text-white"
                     >
                       <Upload className="w-4 h-4 mr-2" />
-                      Import Users CSV
+                      {t('admin.importUsersCSV')}
                     </CSVUploader>
                     <Dialog open={isCreateUserModalOpen} onOpenChange={setIsCreateUserModalOpen}>
                       <DialogTrigger asChild>
                         <Button className="bg-blue-600 hover:bg-blue-700 text-white" data-testid="button-create-user">
                           <UserPlus className="w-4 h-4 mr-2" />
-                          Create User
+                          {t('admin.createUser')}
                         </Button>
                       </DialogTrigger>
                   <DialogContent className="sm:max-w-[600px]">
                     <DialogHeader>
-                      <DialogTitle>Create New User</DialogTitle>
+                      <DialogTitle>{t('admin.createNewUser')}</DialogTitle>
                       <DialogDescription>
                         Add a new user to the loyalty program platform.
                       </DialogDescription>
@@ -1879,23 +1881,23 @@ export default function Admin() {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Gift className="w-5 h-5 mr-2" />
-                Reward Management
+                {t('admin.rewardManagement')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="catalog" className="w-full">
                 <TabsList className="grid w-full grid-cols-3 mb-6">
                   <TabsTrigger value="catalog" data-testid="subtab-reward-catalog">
-                    Reward Catalog
+                    {t('admin.rewardCatalog')}
                   </TabsTrigger>
                   <TabsTrigger value="approvals" data-testid="subtab-reward-approvals">
-                    Pending Approvals
+                    {t('admin.pendingApprovals')}
                     {pendingRedemptions && pendingRedemptions.length > 0 && (
                       <Badge className="ml-2 bg-yellow-500">{pendingRedemptions.length}</Badge>
                     )}
                   </TabsTrigger>
                   <TabsTrigger value="history" data-testid="subtab-reward-history">
-                    Redemption History
+                    {t('admin.redemptionHistory')}
                   </TabsTrigger>
                 </TabsList>
 
@@ -1910,7 +1912,7 @@ export default function Admin() {
                       data-testid="button-add-reward"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Add Reward
+                      {t('rewards.addReward') || 'Add Reward'}
                     </Button>
                   </div>
 
@@ -1932,7 +1934,7 @@ export default function Admin() {
                               <div className="flex-1">
                                 <h4 className="font-medium text-gray-900">{reward.name}</h4>
                                 <p className="text-sm text-gray-600">
-                                  {reward.pointsCost.toLocaleString()} points
+                                  {reward.pointsCost.toLocaleString()} {t('rewards.points')}
                                 </p>
                               </div>
                             </div>
@@ -1949,7 +1951,7 @@ export default function Admin() {
                             
                             <div className="flex justify-between items-center">
                               <Badge className={reward.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                                {reward.isActive ? "Active" : "Inactive"}
+                                {reward.isActive ? t('rewards.active') : t('rewards.inactive')}
                               </Badge>
                               <div className="flex space-x-2">
                                 <Button
@@ -1983,10 +1985,10 @@ export default function Admin() {
                     <div className="text-center py-12">
                       <Gift className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                       <h3 className="text-lg font-semibold text-gray-900 mb-2" data-testid="text-no-rewards-admin">
-                        No rewards configured
+                        {t('rewards.noRewardsConfigured')}
                       </h3>
                       <p className="text-gray-600 mb-4">
-                        Add rewards for users to redeem with their points.
+                        {t('rewards.addRewardsForUsers')}
                       </p>
                       <Button
                         onClick={() => {
@@ -1995,7 +1997,7 @@ export default function Admin() {
                         }}
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        Add First Reward
+                        {t('rewards.addFirstReward')}
                       </Button>
                     </div>
                   )}
@@ -2004,7 +2006,7 @@ export default function Admin() {
                 {/* Pending Approvals Sub-Tab */}
                 <TabsContent value="approvals">
                   <div className="text-sm text-gray-600 mb-4">
-                    User reward redemptions awaiting administrator approval
+                    {t('rewards.userRedemptionsAwaiting')}
                   </div>
 
                   {pendingRedemptionsLoading ? (
@@ -2019,19 +2021,19 @@ export default function Admin() {
                         <thead className="bg-gray-50">
                           <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              User
+                              {t('admin.user')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Reward
+                              {t('admin.reward')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Requested Date
+                              {t('rewards.requestedDate')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Status
+                              {t('common.status')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Actions
+                              {t('common.actions')}
                             </th>
                           </tr>
                         </thead>
@@ -2068,7 +2070,7 @@ export default function Admin() {
                                     size="sm"
                                     data-testid={`button-approve-redemption-${redemption.id}`}
                                   >
-                                    {approveRedemptionMutation.isPending ? "Approving..." : "Approve"}
+                                    {approveRedemptionMutation.isPending ? t('admin.approving') : t('admin.approveRedemption')}
                                   </Button>
                                   <Button
                                     onClick={() => handleRejectRedemption(redemption.id, "Rejected by administrator")}
@@ -2078,7 +2080,7 @@ export default function Admin() {
                                     size="sm"
                                     data-testid={`button-reject-redemption-${redemption.id}`}
                                   >
-                                    {rejectRedemptionMutation.isPending ? "Rejecting..." : "Reject"}
+                                    {rejectRedemptionMutation.isPending ? t('admin.rejecting') : t('admin.rejectRedemption')}
                                   </Button>
                                 </div>
                               </td>
@@ -2089,7 +2091,7 @@ export default function Admin() {
                     </div>
                   ) : (
                     <p className="text-gray-500 text-center py-8" data-testid="text-no-pending-redemptions">
-                      No pending reward redemptions
+                      {t('admin.noRedemptionsToApprove')}
                     </p>
                   )}
                 </TabsContent>
@@ -2097,7 +2099,7 @@ export default function Admin() {
                 {/* Redemption History Sub-Tab */}
                 <TabsContent value="history">
                   <div className="text-sm text-gray-600 mb-4">
-                    Complete history of all user reward redemptions
+                    {t('rewards.completeRedemptionHistory')}
                   </div>
 
                   {allRedemptionsLoading ? (
@@ -2112,31 +2114,31 @@ export default function Admin() {
                         <thead className="bg-gray-50">
                           <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              User
+                              {t('admin.user')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Reward
+                              {t('admin.reward')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Points Cost
+                              {t('admin.pointsCost')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Requested Date
+                              {t('rewards.requestedDate')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Status
+                              {t('common.status')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Approved By
+                              {t('rewards.approvedBy')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Approved Date
+                              {t('rewards.approvedDate')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Shipment Status
+                              {t('admin.shipmentStatus')}
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Actions
+                              {t('common.actions')}
                             </th>
                           </tr>
                         </thead>
@@ -2157,7 +2159,7 @@ export default function Admin() {
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {redemption.pointsCost?.toLocaleString()} points
+                                {redemption.pointsCost?.toLocaleString()} {t('rewards.points')}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {formatDate(redemption.redeemedAt.toString())}
@@ -2167,8 +2169,8 @@ export default function Admin() {
                                   redemption.status === 'approved' ? 'bg-green-100 text-green-800' :
                                   redemption.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
                                 }`}>
-                                  {redemption.status === 'approved' ? 'Approved' :
-                                   redemption.status === 'pending' ? 'Pending' : 'Rejected'}
+                                  {redemption.status === 'approved' ? t('rewards.approved') :
+                                   redemption.status === 'pending' ? t('rewards.pending') : t('rewards.rejected')}
                                 </Badge>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -2182,8 +2184,8 @@ export default function Admin() {
                                   redemption.shipmentStatus === 'delivered' ? 'bg-green-100 text-green-800' :
                                   redemption.shipmentStatus === 'shipped' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                                 }`}>
-                                  {redemption.shipmentStatus === 'delivered' ? 'Delivered' :
-                                   redemption.shipmentStatus === 'shipped' ? 'Shipped' : 'Pending'}
+                                  {redemption.shipmentStatus === 'delivered' ? t('rewards.delivered') :
+                                   redemption.shipmentStatus === 'shipped' ? t('rewards.shipped') : t('rewards.pending')}
                                 </Badge>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -2200,7 +2202,7 @@ export default function Admin() {
                                         className="bg-blue-600 hover:bg-blue-700"
                                         data-testid={`button-ship-${redemption.id}`}
                                       >
-                                        {updateShipmentStatusMutation.isPending ? "Updating..." : "Mark Shipped"}
+                                        {updateShipmentStatusMutation.isPending ? t('admin.updating') : t('admin.markShipped')}
                                       </Button>
                                     )}
                                     {redemption.shipmentStatus === 'shipped' && (
@@ -2214,7 +2216,7 @@ export default function Admin() {
                                         className="bg-green-600 hover:bg-green-700"
                                         data-testid={`button-deliver-${redemption.id}`}
                                       >
-                                        {updateShipmentStatusMutation.isPending ? "Updating..." : "Mark Delivered"}
+                                        {updateShipmentStatusMutation.isPending ? t('admin.updating') : t('admin.markDelivered')}
                                       </Button>
                                     )}
                                     {redemption.shipmentStatus === 'delivered' && (

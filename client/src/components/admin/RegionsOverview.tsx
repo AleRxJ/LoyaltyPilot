@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Globe, Target, TrendingUp, Users, Calendar, Infinity, Flag, MapPin, Award, Medal, Trophy } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface RegionConfig {
   id: string;
@@ -34,6 +35,7 @@ interface RegionStats {
 }
 
 export default function RegionsOverview() {
+  const { t } = useTranslation();
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
 
   const { data: regions, isLoading: regionsLoading } = useQuery<RegionConfig[]>({
@@ -116,7 +118,7 @@ export default function RegionsOverview() {
     <div className="space-y-6">
       {/* Region Cards */}
       <div>
-        <h2 className="text-2xl font-bold mb-4">Regiones Configuradas</h2>
+        <h2 className="text-2xl font-bold mb-4">{t('admin.regionsConfigured')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {groupedRegions && Object.entries(groupedRegions).map(([regionName, configs]) => (
             <Card
@@ -142,14 +144,14 @@ export default function RegionsOverview() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground flex items-center gap-1">
                       <Users className="h-4 w-4" />
-                      Configuraciones
+                      {t('admin.configurations')}
                     </span>
                     <span className="font-semibold">{configs.length}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground flex items-center gap-1">
                       <Target className="h-4 w-4" />
-                      Categorías
+                      {t('admin.categories')}
                     </span>
                     <span className="font-semibold">
                       {Array.from(new Set(configs.map(c => c.category))).join(", ")}
@@ -158,10 +160,10 @@ export default function RegionsOverview() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground flex items-center gap-1">
                       <TrendingUp className="h-4 w-4" />
-                      Meta Promedio
+                      {t('admin.averageGoal')}
                     </span>
                     <span className="font-semibold">
-                      {Math.round(configs.reduce((sum, c) => sum + (c.monthlyGoalTarget || 0), 0) / configs.length)} goles
+                      {Math.round(configs.reduce((sum, c) => sum + (c.monthlyGoalTarget || 0), 0) / configs.length)} {t('admin.goals')}
                     </span>
                   </div>
                 </div>
@@ -177,24 +179,24 @@ export default function RegionsOverview() {
           <CardHeader>
             <CardTitle className="flex items-center gap-3">
               {getRegionIcon(selectedRegion)}
-              Configuraciones de {selectedRegion}
+              {t('admin.configurationsOf')} {selectedRegion}
             </CardTitle>
             <CardDescription>
-              Detalles de las {groupedRegions[selectedRegion].length} configuraciones en esta región
+              {t('admin.detailsOf')} {groupedRegions[selectedRegion].length} {t('admin.configurationsInRegion')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Categoría</TableHead>
-                  <TableHead>Subcategoría</TableHead>
-                  <TableHead>Cliente Nuevo</TableHead>
-                  <TableHead>Renovación</TableHead>
-                  <TableHead>Meta Mensual</TableHead>
-                  <TableHead>Vigencia</TableHead>
-                  <TableHead>Estado</TableHead>
+                  <TableHead>{t('admin.tableHeaders.name')}</TableHead>
+                  <TableHead>{t('admin.tableHeaders.category')}</TableHead>
+                  <TableHead>{t('admin.tableHeaders.subcategory')}</TableHead>
+                  <TableHead>{t('admin.tableHeaders.newCustomer')}</TableHead>
+                  <TableHead>{t('admin.tableHeaders.renewal')}</TableHead>
+                  <TableHead>{t('admin.tableHeaders.monthlyGoal')}</TableHead>
+                  <TableHead>{t('admin.tableHeaders.validity')}</TableHead>
+                  <TableHead>{t('admin.tableHeaders.state')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -215,13 +217,13 @@ export default function RegionsOverview() {
                       )}
                     </TableCell>
                     <TableCell className="text-sm">
-                      ${config.newCustomerGoalRate.toLocaleString()} = 1 gol
+                      ${config.newCustomerGoalRate.toLocaleString()} = 1 {t('admin.goal')}
                     </TableCell>
                     <TableCell className="text-sm">
-                      ${config.renewalGoalRate.toLocaleString()} = 1 gol
+                      ${config.renewalGoalRate.toLocaleString()} = 1 {t('admin.goal')}
                     </TableCell>
                     <TableCell>
-                      <span className="font-semibold">{config.monthlyGoalTarget} goles</span>
+                      <span className="font-semibold">{config.monthlyGoalTarget} {t('admin.goals')}</span>
                     </TableCell>
                     <TableCell>
                       {config.expirationDate ? (
@@ -236,15 +238,15 @@ export default function RegionsOverview() {
                       ) : (
                         <div className="flex items-center gap-1 text-sm text-green-600">
                           <Infinity className="w-4 h-4" />
-                          <span>Permanente</span>
+                          <span>{t('admin.permanent')}</span>
                         </div>
                       )}
                     </TableCell>
                     <TableCell>
                       {config.isActive ? (
-                        <Badge className="bg-green-500">Activa</Badge>
+                        <Badge className="bg-green-500">{t('admin.active')}</Badge>
                       ) : (
-                        <Badge variant="secondary">Inactiva</Badge>
+                        <Badge variant="secondary">{t('admin.inactive')}</Badge>
                       )}
                     </TableCell>
                   </TableRow>
@@ -260,9 +262,9 @@ export default function RegionsOverview() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Globe className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No hay regiones configuradas</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('admin.noRegionsConfigured')}</h3>
             <p className="text-muted-foreground text-center mb-4">
-              Ejecuta el seed para poblar las regiones predefinidas
+              {t('admin.seedRegions')}
             </p>
           </CardContent>
         </Card>

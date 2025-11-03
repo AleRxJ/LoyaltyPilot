@@ -32,6 +32,7 @@ import {
 import { Globe, Plus, Edit, Save, X, CheckCircle, Database, Calendar, Infinity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface RegionConfig {
   id: string;
@@ -47,6 +48,7 @@ interface RegionConfig {
 }
 
 export default function RegionsManagementTab() {
+  const { t } = useTranslation();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingRegion, setEditingRegion] = useState<RegionConfig | null>(null);
   const [filterRegion, setFilterRegion] = useState<string>("all");
@@ -250,7 +252,7 @@ export default function RegionsManagementTab() {
   });
 
   const handleSeedRegions = () => {
-    if (confirm("¿Estás seguro de que quieres poblar las regiones? Esto solo debe hacerse una vez.")) {
+    if (confirm(t('admin.populateRegionsConfirm'))) {
       seedRegionsMutation.mutate();
     }
   };
@@ -260,9 +262,9 @@ export default function RegionsManagementTab() {
       {/* Header with actions */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Administración de Regiones</h2>
+          <h2 className="text-2xl font-bold">{t('admin.regionManagement')}</h2>
           <p className="text-muted-foreground">
-            Gestiona las configuraciones regionales del programa de lealtad
+            {t('admin.manageRegionalConfigs')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -273,12 +275,12 @@ export default function RegionsManagementTab() {
               variant="outline"
             >
               <Database className="w-4 h-4 mr-2" />
-              {seedRegionsMutation.isPending ? "Poblando..." : "Poblar Regiones"}
+              {seedRegionsMutation.isPending ? t('admin.seeding') : t('admin.populateRegions')}
             </Button>
           )}
           <Button onClick={() => setIsCreateModalOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
-            Nueva Región
+            {t('admin.newRegion')}
           </Button>
         </div>
       </div>
@@ -286,18 +288,18 @@ export default function RegionsManagementTab() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filtros</CardTitle>
+          <CardTitle>{t('admin.filters')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label>Región</Label>
+              <Label>{t('admin.region')}</Label>
               <Select value={filterRegion} onValueChange={setFilterRegion}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas las regiones</SelectItem>
+                  <SelectItem value="all">{t('admin.allRegions')}</SelectItem>
                   <SelectItem value="NOLA">NOLA</SelectItem>
                   <SelectItem value="SOLA">SOLA</SelectItem>
                   <SelectItem value="BRASIL">BRASIL</SelectItem>
@@ -306,13 +308,13 @@ export default function RegionsManagementTab() {
               </Select>
             </div>
             <div>
-              <Label>Categoría</Label>
+              <Label>{t('admin.category')}</Label>
               <Select value={filterCategory} onValueChange={setFilterCategory}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas las categorías</SelectItem>
+                  <SelectItem value="all">{t('admin.allCategories')}</SelectItem>
                   <SelectItem value="ENTERPRISE">ENTERPRISE</SelectItem>
                   <SelectItem value="SMB">SMB</SelectItem>
                   <SelectItem value="MSSP">MSSP</SelectItem>
@@ -326,40 +328,40 @@ export default function RegionsManagementTab() {
       {/* Regions Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Configuraciones de Regiones</CardTitle>
+          <CardTitle>{t('admin.regionalConfigurations')}</CardTitle>
           <CardDescription>
-            {filteredRegions?.length || 0} regiones encontradas
+            {filteredRegions?.length || 0} {t('admin.regionsFound')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8">Cargando...</div>
+            <div className="text-center py-8">{t('common.loading')}</div>
           ) : !regions || regions.length === 0 ? (
             <div className="text-center py-12">
               <Globe className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No hay regiones configuradas</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('admin.noRegionsConfigured')}</h3>
               <p className="text-muted-foreground mb-4">
-                Ejecuta el seed para poblar las regiones predefinidas
+                {t('admin.executeToPopulate')}
               </p>
               <Button onClick={handleSeedRegions} disabled={seedRegionsMutation.isPending}>
                 <Database className="w-4 h-4 mr-2" />
-                Poblar Regiones
+                {t('admin.populateRegions')}
               </Button>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Región</TableHead>
-                  <TableHead>Categoría</TableHead>
-                  <TableHead>Subcategoría</TableHead>
-                  <TableHead>Cliente Nuevo</TableHead>
-                  <TableHead>Renovación</TableHead>
-                  <TableHead>Meta Mensual</TableHead>
-                  <TableHead>Vigencia</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Acciones</TableHead>
+                  <TableHead>{t('admin.tableHeaders.name')}</TableHead>
+                  <TableHead>{t('admin.tableHeaders.region')}</TableHead>
+                  <TableHead>{t('admin.tableHeaders.category')}</TableHead>
+                  <TableHead>{t('admin.tableHeaders.subcategory')}</TableHead>
+                  <TableHead>{t('admin.tableHeaders.newCustomer')}</TableHead>
+                  <TableHead>{t('admin.tableHeaders.renewal')}</TableHead>
+                  <TableHead>{t('admin.tableHeaders.monthlyGoal')}</TableHead>
+                  <TableHead>{t('admin.tableHeaders.validity')}</TableHead>
+                  <TableHead>{t('admin.tableHeaders.state')}</TableHead>
+                  <TableHead>{t('admin.tableHeaders.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -380,13 +382,13 @@ export default function RegionsManagementTab() {
                       )}
                     </TableCell>
                     <TableCell className="text-sm">
-                      ${region.newCustomerGoalRate.toLocaleString()} = 1 gol
+                      ${region.newCustomerGoalRate.toLocaleString()} = 1 {t('admin.goal')}
                     </TableCell>
                     <TableCell className="text-sm">
-                      ${region.renewalGoalRate.toLocaleString()} = 1 gol
+                      ${region.renewalGoalRate.toLocaleString()} = 1 {t('admin.goal')}
                     </TableCell>
                     <TableCell>
-                      <span className="font-semibold">{region.monthlyGoalTarget} goles</span>
+                      <span className="font-semibold">{region.monthlyGoalTarget} {t('admin.goals')}</span>
                     </TableCell>
                     <TableCell>
                       {region.expirationDate ? (
@@ -401,7 +403,7 @@ export default function RegionsManagementTab() {
                       ) : (
                         <div className="flex items-center gap-1 text-sm text-green-600">
                           <Infinity className="w-4 h-4" />
-                          <span>Permanente</span>
+                          <span>{t('admin.permanent')}</span>
                         </div>
                       )}
                     </TableCell>
@@ -409,10 +411,10 @@ export default function RegionsManagementTab() {
                       {region.isActive ? (
                         <Badge className="bg-green-500">
                           <CheckCircle className="w-3 h-3 mr-1" />
-                          Activa
+                          {t('admin.active')}
                         </Badge>
                       ) : (
-                        <Badge variant="secondary">Inactiva</Badge>
+                        <Badge variant="secondary">{t('admin.inactive')}</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -437,7 +439,7 @@ export default function RegionsManagementTab() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Total Regiones</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('admin.totalRegions')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{regions.length}</div>
@@ -483,23 +485,23 @@ export default function RegionsManagementTab() {
       }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Nueva Configuración de Región</DialogTitle>
+            <DialogTitle>{t('admin.newRegionConfig')}</DialogTitle>
             <DialogDescription>
-              Crea una nueva configuración regional para el programa de lealtad
+              {t('admin.createRegionalConfig')}
             </DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="new-region" className="text-right">
-                Región*
+                {t('admin.regionRequired')}
               </Label>
               <Select
                 value={newRegion.region}
                 onValueChange={(value) => setNewRegion({ ...newRegion, region: value })}
               >
                 <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Selecciona región" />
+                  <SelectValue placeholder={t('admin.selectRegion')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NOLA">NOLA</SelectItem>
@@ -512,14 +514,14 @@ export default function RegionsManagementTab() {
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="new-category" className="text-right">
-                Categoría*
+                {t('admin.categoryRequired')}
               </Label>
               <Select
                 value={newRegion.category}
                 onValueChange={(value) => setNewRegion({ ...newRegion, category: value })}
               >
                 <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Selecciona categoría" />
+                  <SelectValue placeholder={t('admin.selectCategory')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ENTERPRISE">ENTERPRISE</SelectItem>
@@ -531,33 +533,33 @@ export default function RegionsManagementTab() {
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="new-subcategory" className="text-right">
-                Subcategoría
+                {t('admin.subcategory')}
               </Label>
               <Input
                 id="new-subcategory"
                 value={newRegion.subcategory}
                 onChange={(e) => setNewRegion({ ...newRegion, subcategory: e.target.value })}
                 className="col-span-3"
-                placeholder="Opcional"
+                placeholder={t('admin.optional')}
               />
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="new-name" className="text-right">
-                Nombre*
+                {t('admin.nameRequired')}
               </Label>
               <Input
                 id="new-name"
                 value={newRegion.name}
                 onChange={(e) => setNewRegion({ ...newRegion, name: e.target.value })}
                 className="col-span-3"
-                placeholder="Ej: NOLA ENTERPRISE"
+                placeholder={t('admin.nameExample')}
               />
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="new-newCustomerGoalRate" className="text-right">
-                Cliente Nuevo
+                {t('admin.newCustomer')}
               </Label>
               <div className="col-span-3 flex items-center gap-2">
                 <span className="text-sm">US$</span>
@@ -571,13 +573,13 @@ export default function RegionsManagementTab() {
                   })}
                   className="flex-1"
                 />
-                <span className="text-sm">= 1 gol</span>
+                <span className="text-sm">= 1 {t('admin.goal')}</span>
               </div>
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="new-renewalGoalRate" className="text-right">
-                Renovación
+                {t('admin.renewal')}
               </Label>
               <div className="col-span-3 flex items-center gap-2">
                 <span className="text-sm">US$</span>
@@ -591,13 +593,13 @@ export default function RegionsManagementTab() {
                   })}
                   className="flex-1"
                 />
-                <span className="text-sm">= 1 gol</span>
+                <span className="text-sm">= 1 {t('admin.goal')}</span>
               </div>
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="new-monthlyGoalTarget" className="text-right">
-                Meta Mensual
+                {t('admin.monthlyGoal')}
               </Label>
               <div className="col-span-3 flex items-center gap-2">
                 <Input
@@ -610,13 +612,13 @@ export default function RegionsManagementTab() {
                   })}
                   className="flex-1"
                 />
-                <span className="text-sm">goles</span>
+                <span className="text-sm">{t('admin.goals')}</span>
               </div>
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="new-isActive" className="text-right">
-                Estado
+                {t('admin.state')}
               </Label>
               <div className="col-span-3">
                 <Select
@@ -630,8 +632,8 @@ export default function RegionsManagementTab() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Activa</SelectItem>
-                    <SelectItem value="inactive">Inactiva</SelectItem>
+                    <SelectItem value="active">{t('admin.active')}</SelectItem>
+                    <SelectItem value="inactive">{t('admin.inactive')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -640,7 +642,7 @@ export default function RegionsManagementTab() {
             <div className="border-t pt-4 mt-4">
               <div className="grid grid-cols-4 items-center gap-4 mb-4">
                 <Label htmlFor="new-isPermanent" className="text-right">
-                  Vigencia
+                  {t('admin.validity')}
                 </Label>
                 <div className="col-span-3 flex items-center gap-3">
                   <Switch
@@ -656,12 +658,12 @@ export default function RegionsManagementTab() {
                     {newRegion.isPermanent ? (
                       <>
                         <Infinity className="h-4 w-4 text-green-500" />
-                        <span>Permanente (sin fecha de caducidad)</span>
+                        <span>{t('admin.noPermanentExpiration')}</span>
                       </>
                     ) : (
                       <>
                         <Calendar className="h-4 w-4 text-blue-500" />
-                        <span>Con fecha de caducidad</span>
+                        <span>{t('admin.withExpirationDate')}</span>
                       </>
                     )}
                   </Label>
@@ -671,7 +673,7 @@ export default function RegionsManagementTab() {
               {!newRegion.isPermanent && (
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="new-expirationDate" className="text-right">
-                    Fecha de Caducidad
+                    {t('admin.expirationDate')}
                   </Label>
                   <div className="col-span-3">
                     <Input
@@ -685,7 +687,7 @@ export default function RegionsManagementTab() {
                       min={new Date().toISOString().split('T')[0]}
                     />
                     <p className="text-sm text-muted-foreground mt-1">
-                      La región se desactivará automáticamente en esta fecha
+                      {t('admin.autoDeactivateRegion')}
                     </p>
                   </div>
                 </div>

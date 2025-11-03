@@ -21,6 +21,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import type { AuthUser } from "@/lib/auth";
 import backgroundImage from "@assets/BANNER-PRINICPAL_1758666220909.jpg";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface UserStats {
   totalPoints: number;
@@ -48,6 +49,7 @@ interface Reward {
 }
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const [isDealModalOpen, setIsDealModalOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
@@ -161,11 +163,11 @@ export default function Dashboard() {
                     <Coins className="text-gray-700 h-6 w-6" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-gray-600 text-sm">Available Points</div>
+                    <div className="text-gray-600 text-sm">{t('dashboard.availablePoints')}</div>
                     <div className="text-2xl font-bold text-gray-900" data-testid="text-available-points">
                       {statsLoading ? "..." : stats?.availablePoints?.toLocaleString() || "0"}
                     </div>
-                    <div className="text-gray-500 text-xs">Ready to redeem</div>
+                    <div className="text-gray-500 text-xs">{t('dashboard.readyToRedeem')}</div>
                   </div>
                 </div>
 
@@ -175,11 +177,11 @@ export default function Dashboard() {
                     <Handshake className="text-gray-700 h-6 w-6" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-gray-600 text-sm">Pending Deals</div>
+                    <div className="text-gray-600 text-sm">{t('dashboard.pendingDeals')}</div>
                     <div className="text-2xl font-bold text-gray-900" data-testid="text-pending-deals">
                       {statsLoading ? "..." : stats?.pendingDeals || "0"}
                     </div>
-                    <div className="text-gray-500 text-xs">Awaiting approval</div>
+                    <div className="text-gray-500 text-xs">{t('dashboard.awaitingApproval')}</div>
                   </div>
                 </div>
 
@@ -189,11 +191,11 @@ export default function Dashboard() {
                     <Gift className="text-gray-700 h-6 w-6" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-gray-600 text-sm">Redeemed Rewards</div>
+                    <div className="text-gray-600 text-sm">{t('dashboard.redeemedRewards')}</div>
                     <div className="text-2xl font-bold text-gray-900" data-testid="text-redeemed-rewards">
                       {statsLoading ? "..." : stats?.redeemedRewards || "0"}
                     </div>
-                    <div className="text-gray-500 text-xs">Lifetime total</div>
+                    <div className="text-gray-500 text-xs">{t('dashboard.lifetimeTotal')}</div>
                   </div>
                 </div>
 
@@ -203,10 +205,10 @@ export default function Dashboard() {
             <div className="relative z-10 p-8 min-h-[400px] flex items-center">
               <div>
                 <h1 className="text-4xl font-bold mb-2 text-white" data-testid="text-welcome">
-                  Welcome back, {user.firstName} {user.lastName}!
+                  {t('dashboard.welcome')}, {user.firstName} {user.lastName}!
                 </h1>
                 <p className="text-white text-lg" data-testid="text-admin-role">
-                  <span className="font-medium">System Administrator</span>
+                  <span className="font-medium">{t('dashboard.systemAdministrator')}</span>
                 </p>
               </div>
             </div>
@@ -289,21 +291,19 @@ export default function Dashboard() {
         <div className="mb-12">
           <Card className="shadow-material">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center">
                     <TrendingUp className="text-white h-6 w-6" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900" data-testid="text-leaderboard-title">
-                      Top Performers
+                      {t('dashboard.topPerformers')}
                     </h2>
-                    <p className="text-sm text-gray-600">Users with the most points</p>
+                    <p className="text-sm text-gray-600">{t('dashboard.usersWithMostPoints')}</p>
                   </div>
                 </div>
-              </div>
-
-              {leaderboardLoading ? (
+              </div>              {leaderboardLoading ? (
                 <div className="space-y-4">
                   {[...Array(5)].map((_, i) => (
                     <Skeleton key={i} className="h-16 w-full" />
@@ -347,7 +347,7 @@ export default function Dashboard() {
                               {leaderUser.firstName} {leaderUser.lastName}
                             </h3>
                             {isCurrentUser && (
-                              <Badge className="bg-blue-600 text-white">You</Badge>
+                              <Badge className="bg-blue-600 text-white">{t('dashboard.you')}</Badge>
                             )}
                           </div>
                           <p className={`text-sm ${isCurrentUser ? "text-blue-700" : "text-gray-600"}`}>
@@ -361,7 +361,7 @@ export default function Dashboard() {
                             {leaderUser.totalPoints.toLocaleString()}
                           </div>
                           <div className={`text-sm ${isCurrentUser ? "text-blue-700" : "text-gray-600"}`}>
-                            points
+                            {t('deals.points').toLowerCase()}
                           </div>
                         </div>
                       </div>
@@ -371,7 +371,7 @@ export default function Dashboard() {
               ) : (
                 <div className="text-center py-8">
                   <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <p className="text-gray-600">No leaderboard data available yet</p>
+                  <p className="text-gray-600">{t('dashboard.noLeaderboardData')}</p>
                 </div>
               )}
             </CardContent>
@@ -498,14 +498,14 @@ export default function Dashboard() {
           <div className="bg-blue-900 rounded-2xl shadow-xl overflow-hidden">
             <div className="px-6 py-5">
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold text-white">Recent Deals</h3>
+                <h3 className="text-xl font-semibold text-white">{t('dashboard.recentDeals')}</h3>
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   className="text-white hover:bg-blue-800 hover:text-white" 
                   data-testid="button-view-all-deals"
                 >
-                  View All
+                  {t('common.viewAll') || 'View All'}
                 </Button>
               </div>
             </div>

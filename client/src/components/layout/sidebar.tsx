@@ -13,6 +13,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface SidebarProps {
   className?: string;
@@ -20,45 +21,46 @@ interface SidebarProps {
 
 interface NavItem {
   href: string;
-  label: string;
+  labelKey: string;
   icon: React.ComponentType<{ className?: string }>;
-  description?: string;
+  descriptionKey?: string;
 }
 
 const adminNavItems: NavItem[] = [
   {
     href: "/admin",
-    label: "Overview",
+    labelKey: "admin.overview",
     icon: LayoutDashboard,
-    description: "Dashboard and analytics"
+    descriptionKey: "admin.dashboardAnalytics"
   },
   {
     href: "/admin/users",
-    label: "Users",
+    labelKey: "admin.users",
     icon: Users,
-    description: "Manage user accounts"
+    descriptionKey: "admin.manageUserAccounts"
   },
   {
     href: "/admin/deals",
-    label: "Deals",
+    labelKey: "admin.deals",
     icon: ClipboardCheck,
-    description: "Review and approve deals"
+    descriptionKey: "admin.approveDeals"
   },
   {
     href: "/admin/rewards",
-    label: "Rewards",
+    labelKey: "admin.rewards",
     icon: Gift,
-    description: "Manage reward catalog"
+    descriptionKey: "admin.manageRewardCatalog"
   },
   {
     href: "/admin/reports",
-    label: "Reports",
+    labelKey: "admin.reports",
     icon: BarChart3,
-    description: "Generate analytics reports"
+    descriptionKey: "admin.generateAnalytics"
   },
 ];
 
 export default function Sidebar({ className }: SidebarProps) {
+  const { t } = useTranslation();
   const [location] = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -77,7 +79,7 @@ export default function Sidebar({ className }: SidebarProps) {
             <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">LP</span>
             </div>
-            <span className="font-semibold text-gray-900">Admin Panel</span>
+            <span className="font-semibold text-gray-900">{t('admin.panel')}</span>
           </div>
         )}
         <Button
@@ -112,14 +114,14 @@ export default function Sidebar({ className }: SidebarProps) {
                   isActive && "bg-primary-600 text-white hover:bg-primary-700",
                   !isActive && "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
                 )}
-                data-testid={`nav-${item.label.toLowerCase()}`}
+                data-testid={`nav-${t(item.labelKey).toLowerCase().replace(/\s+/g, '-')}`}
               >
                 <Icon className={cn("h-5 w-5", isCollapsed ? "" : "mr-3")} />
                 {!isCollapsed && (
                   <div className="text-left">
-                    <div className="font-medium">{item.label}</div>
-                    {item.description && (
-                      <div className="text-xs opacity-75">{item.description}</div>
+                    <div className="font-medium">{t(item.labelKey)}</div>
+                    {item.descriptionKey && (
+                      <div className="text-xs opacity-75">{t(item.descriptionKey)}</div>
                     )}
                   </div>
                 )}
@@ -144,8 +146,8 @@ export default function Sidebar({ className }: SidebarProps) {
             <Settings className={cn("h-5 w-5", isCollapsed ? "" : "mr-3")} />
             {!isCollapsed && (
               <div className="text-left">
-                <div className="font-medium">Settings</div>
-                <div className="text-xs opacity-75">System configuration</div>
+                <div className="font-medium">{t('admin.settings')}</div>
+                <div className="text-xs opacity-75">{t('admin.systemConfiguration')}</div>
               </div>
             )}
           </Button>
