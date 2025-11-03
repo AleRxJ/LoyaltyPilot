@@ -1074,11 +1074,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Complete registration with invite token
   app.post("/api/auth/register-with-token", async (req, res) => {
     try {
-      const { inviteToken, username, password } = req.body;
+      const { inviteToken, username, password, region, category, subcategory } = req.body;
       
-      if (!inviteToken || !username || !password) {
+      if (!inviteToken || !username || !password || !region || !category) {
         return res.status(400).json({ 
-          message: "Invite token, username, and password are required" 
+          message: "Invite token, username, password, region, and category are required" 
         });
       }
 
@@ -1111,6 +1111,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedUser = await storage.updateUser(user.id, {
         username,
         password: hashedPassword,
+        region: region as "NOLA" | "SOLA" | "BRASIL" | "MEXICO",
+        regionCategory: category as "ENTERPRISE" | "SMB" | "MSSP",
+        regionSubcategory: subcategory || null,
         isApproved: true, // Auto-approve invited users
         approvedAt: new Date(),
         approvedBy: 'system', // System approval for invited users
@@ -1128,6 +1131,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: updatedUser!.email,
           firstName: updatedUser!.firstName,
           lastName: updatedUser!.lastName,
+          region: updatedUser!.region,
+          category: updatedUser!.regionCategory,
+          subcategory: updatedUser!.regionSubcategory,
         }
       });
     } catch (error) {

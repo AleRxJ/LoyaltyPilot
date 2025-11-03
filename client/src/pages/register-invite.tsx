@@ -8,13 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
+  region: z.string().min(1, "Debes seleccionar una región"),
+  category: z.string().min(1, "Debes seleccionar una categoría"),
+  subcategory: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -32,11 +37,21 @@ export default function RegisterWithInvite() {
   const [inviteData, setInviteData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [token, setToken] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+
+  // Fetch available regions
+  const { data: regions = [] } = useQuery({
+    queryKey: ['/api/admin/regions'],
+    enabled: isValid, // Solo cargar si la invitación es válida
+  });
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
+    watch,
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
   });
@@ -107,6 +122,9 @@ export default function RegisterWithInvite() {
           inviteToken: token,
           username: data.username,
           password: data.password,
+          region: data.region,
+          category: data.category,
+          subcategory: data.subcategory || null,
         }),
       });
 
@@ -235,6 +253,112 @@ export default function RegisterWithInvite() {
                 <p className="text-sm text-red-500 mt-1">{errors.confirmPassword.message}</p>
               )}
             </div>
+
+            <div>
+              <Label htmlFor="region">Región *</Label>
+              <Select
+                onValueChange={(value) => {
+                  setSelectedRegion(value);
+                  setValue("region", value);
+                  setSelectedCategory(""); // Reset category when region changes
+                  setValue("category", "");
+                  setValue("subcategory", "");
+                }}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona tu región" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NOLA">NOLA (North of Latin America)</SelectItem>
+                  <SelectItem value="SOLA">SOLA (South of Latin America)</SelectItem>
+                  <SelectItem value="BRASIL">BRASIL</SelectItem>
+                  <SelectItem value="MEXICO">MÉXICO</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.region && (
+                <p className="text-sm text-red-500 mt-1">{errors.region.message}</p>
+              )}
+            </div>
+
+            {selectedRegion && (
+              <div>
+                <Label htmlFor="category">Categoría *</Label>
+                <Select
+                  onValueChange={(value) => {
+                    setSelectedCategory(value);
+                    setValue("category", value);
+                    setValue("subcategory", "");
+                  }}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona tu categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
+                    <SelectItem value="SMB">SMB</SelectItem>
+                    {selectedRegion === "NOLA" && (
+                      <SelectItem value="MSSP">MSSP</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                {errors.category && (
+                  <p className="text-sm text-red-500 mt-1">{errors.category.message}</p>
+                )}
+              </div>
+            )}
+
+            {selectedRegion && selectedCategory && (
+              <>
+                {selectedRegion === "NOLA" && selectedCategory !== "MSSP" && (
+                  <div>
+                    <Label htmlFor="subcategory">Subcategoría *</Label>
+                    <Select
+                      onValueChange={(value) => setValue("subcategory", value)}
+                      disabled={isSubmitting}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona tu subcategoría" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="COLOMBIA">Colombia</SelectItem>
+                        <SelectItem value="CENTRO AMÉRICA">Centro América</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {selectedRegion === "MEXICO" && (
+                  <div>
+                    <Label htmlFor="subcategory">Nivel de Partner *</Label>
+                    <Select
+                      onValueChange={(value) => setValue("subcategory", value)}
+                      disabled={isSubmitting}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona tu nivel" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {selectedCategory === "ENTERPRISE" && (
+                          <>
+                            <SelectItem value="PLATINUM">Platinum</SelectItem>
+                            <SelectItem value="GOLD">Gold</SelectItem>
+                          </>
+                        )}
+                        {selectedCategory === "SMB" && (
+                          <>
+                            <SelectItem value="PLATINUM">Platinum</SelectItem>
+                            <SelectItem value="GOLD">Gold</SelectItem>
+                            <SelectItem value="SILVER & REGISTERED">Silver & Registered</SelectItem>
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </>
+            )}
 
             <Alert>
               <AlertDescription className="text-xs">

@@ -49,7 +49,7 @@ import {
 // Database connection and ORM helpers
 // ───────────────────────────────────────────────
 import { db } from "./db";
-import { and, desc, eq, count, sum, gte, gt, lte, isNotNull, sql } from "drizzle-orm";
+import { and, desc, eq, count, sum, gte, gt, lte, isNotNull, isNull, sql } from "drizzle-orm";
 
 // ───────────────────────────────────────────────
 // Utilities
@@ -398,11 +398,63 @@ export class DatabaseStorage implements IStorage {
       Number(deal.dealValue),
     );
 
+    // Get user to determine their region configuration
+    const user = await this.getUser(deal.userId);
+    let goalsEarned = 0;
+    let regionConfigId: string | null = null;
+
+    if (user && user.region && user.regionCategory) {
+      // Find the region configuration for this user
+      const regionConfig = await db
+        .select()
+        .from(regionConfigs)
+        .where(
+          and(
+            eq(regionConfigs.region, user.region),
+            eq(regionConfigs.category, user.regionCategory),
+            user.regionSubcategory 
+              ? eq(regionConfigs.subcategory, user.regionSubcategory)
+              : isNull(regionConfigs.subcategory)
+          )
+        )
+        .limit(1);
+
+      if (regionConfig.length > 0) {
+        const config = regionConfig[0];
+        regionConfigId = config.id;
+        
+        // Calculate goals based on deal type and region configuration
+        const dealValue = Number(deal.dealValue);
+        const goalRate = deal.dealType === "new_customer" 
+          ? config.newCustomerGoalRate 
+          : config.renewalGoalRate;
+        
+        goalsEarned = dealValue / goalRate;
+        
+        console.log(`✅ Calculated goals for deal ${id}:`, {
+          dealValue,
+          dealType: deal.dealType,
+          goalRate,
+          goalsEarned,
+          region: user.region,
+          category: user.regionCategory,
+          subcategory: user.regionSubcategory,
+        });
+      } else {
+        console.warn(`⚠️ No region config found for user ${user.id}:`, {
+          region: user.region,
+          category: user.regionCategory,
+          subcategory: user.regionSubcategory,
+        });
+      }
+    }
+
     const [updatedDeal] = await db
       .update(deals)
       .set({
         status: "approved",
         pointsEarned,
+        goalsEarned: goalsEarned.toFixed(2),
         approvedBy,
         approvedAt: new Date(),
         updatedAt: new Date(),
@@ -425,6 +477,22 @@ export class DatabaseStorage implements IStorage {
         id,
         pointsEarned
       );
+    }
+
+    // Add goals to history
+    if (updatedDeal && goalsEarned > 0 && regionConfigId) {
+      const approvalDate = new Date();
+      await db.insert(goalsHistory).values({
+        userId: updatedDeal.userId,
+        dealId: id,
+        goals: goalsEarned.toFixed(2),
+        month: approvalDate.getMonth() + 1, // 1-12
+        year: approvalDate.getFullYear(),
+        regionConfigId: regionConfigId,
+        description: `${goalsEarned.toFixed(2)} goals earned from ${deal.dealType === "new_customer" ? "new customer" : "renewal"} deal: ${deal.productName}`,
+      });
+
+      console.log(`📊 Goals history created for user ${updatedDeal.userId}: ${goalsEarned.toFixed(2)} goals`);
     }
 
     return updatedDeal || undefined;
