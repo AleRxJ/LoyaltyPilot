@@ -1,0 +1,1 @@
+ALTER TABLE "region_configs" ADD COLUMN "expiration_date" timestamp;

@@ -11,6 +11,10 @@ import {
   supportTickets,
   userRewards,
   users,
+  regionConfigs,
+  monthlyRegionPrizes,
+  rewardRegionAssignments,
+  goalsHistory,
   type Campaign,
   type Deal,
   type DealWithUser,
@@ -33,6 +37,12 @@ import {
   type UpdateSupportTicket,
   type User,
   type UserReward,
+  type RegionConfig,
+  type InsertRegionConfig,
+  type MonthlyRegionPrize,
+  type InsertMonthlyRegionPrize,
+  type RewardRegionAssignment,
+  type GoalsHistory,
 } from "@shared/schema";
 
 // ───────────────────────────────────────────────
@@ -202,6 +212,18 @@ export interface IStorage {
     updates: UpdatePointsConfig,
     updatedBy: string,
   ): Promise<PointsConfig | undefined>;
+
+  // Regions methods
+  getAllRegionConfigs(): Promise<RegionConfig[]>;
+  getRegionConfig(id: string): Promise<RegionConfig | undefined>;
+  createRegionConfig(config: InsertRegionConfig): Promise<RegionConfig>;
+  updateRegionConfig(id: string, updates: Partial<RegionConfig>): Promise<RegionConfig | undefined>;
+  getMonthlyRegionPrizes(
+    regionConfigId: string,
+    month: number,
+    year: number,
+  ): Promise<MonthlyRegionPrize[]>;
+  seedRegions(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1480,6 +1502,293 @@ export class DatabaseStorage implements IStorage {
       .where(eq(pointsConfig.id, existingConfig.id))
       .returning();
     return config || undefined;
+  }
+
+  // ═══════════════════════════════════════════════
+  // Regions methods
+  // ═══════════════════════════════════════════════
+
+  async getAllRegionConfigs(): Promise<RegionConfig[]> {
+    const configs = await db
+      .select()
+      .from(regionConfigs)
+      .where(eq(regionConfigs.isActive, true))
+      .orderBy(regionConfigs.region, regionConfigs.category);
+    return configs;
+  }
+
+  async getRegionConfig(id: string): Promise<RegionConfig | undefined> {
+    const [config] = await db
+      .select()
+      .from(regionConfigs)
+      .where(eq(regionConfigs.id, id));
+    return config || undefined;
+  }
+
+  async createRegionConfig(config: InsertRegionConfig): Promise<RegionConfig> {
+    // Convertir expirationDate de string a Date si viene como string
+    const processedConfig = {
+      ...config,
+      expirationDate: config.expirationDate 
+        ? new Date(config.expirationDate) 
+        : null,
+    };
+    
+    const [newConfig] = await db
+      .insert(regionConfigs)
+      .values(processedConfig)
+      .returning();
+    return newConfig;
+  }
+
+  async updateRegionConfig(
+    id: string,
+    updates: Partial<RegionConfig>
+  ): Promise<RegionConfig | undefined> {
+    // Convertir expirationDate de string a Date si viene como string
+    const processedUpdates = {
+      ...updates,
+      expirationDate: updates.expirationDate !== undefined
+        ? (updates.expirationDate ? new Date(updates.expirationDate) : null)
+        : undefined,
+      updatedAt: new Date(),
+    };
+    
+    const [updated] = await db
+      .update(regionConfigs)
+      .set(processedUpdates)
+      .where(eq(regionConfigs.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getMonthlyRegionPrizes(
+    regionConfigId: string,
+    month: number,
+    year: number,
+  ): Promise<MonthlyRegionPrize[]> {
+    const prizes = await db
+      .select()
+      .from(monthlyRegionPrizes)
+      .where(
+        and(
+          eq(monthlyRegionPrizes.regionConfigId, regionConfigId),
+          eq(monthlyRegionPrizes.month, month),
+          eq(monthlyRegionPrizes.year, year),
+          eq(monthlyRegionPrizes.isActive, true)
+        )
+      );
+    return prizes;
+  }
+
+  async seedRegions(): Promise<void> {
+    console.log("🌱 Seeding regions...");
+
+    // NOLA Regions
+    const nolaConfigs: InsertRegionConfig[] = [
+      {
+        region: "NOLA",
+        category: "ENTERPRISE",
+        subcategory: "COLOMBIA",
+        name: "NOLA ENTERPRISE COLOMBIA",
+        newCustomerGoalRate: 1000,
+        renewalGoalRate: 2000,
+        monthlyGoalTarget: 10,
+        isActive: true,
+      },
+      {
+        region: "NOLA",
+        category: "ENTERPRISE",
+        subcategory: "CENTRO AMÉRICA",
+        name: "NOLA ENTERPRISE CENTRO AMÉRICA",
+        newCustomerGoalRate: 1000,
+        renewalGoalRate: 2000,
+        monthlyGoalTarget: 10,
+        isActive: true,
+      },
+      {
+        region: "NOLA",
+        category: "SMB",
+        subcategory: "COLOMBIA",
+        name: "NOLA SMB COLOMBIA",
+        newCustomerGoalRate: 1000,
+        renewalGoalRate: 2000,
+        monthlyGoalTarget: 8,
+        isActive: true,
+      },
+      {
+        region: "NOLA",
+        category: "SMB",
+        subcategory: "CENTRO AMÉRICA",
+        name: "NOLA SMB CENTRO AMÉRICA",
+        newCustomerGoalRate: 1000,
+        renewalGoalRate: 2000,
+        monthlyGoalTarget: 8,
+        isActive: true,
+      },
+      {
+        region: "NOLA",
+        category: "MSSP",
+        subcategory: null,
+        name: "NOLA MSSP",
+        newCustomerGoalRate: 1000,
+        renewalGoalRate: 2000,
+        monthlyGoalTarget: 5,
+        isActive: true,
+      },
+    ];
+
+    // SOLA Regions
+    const solaConfigs: InsertRegionConfig[] = [
+      {
+        region: "SOLA",
+        category: "ENTERPRISE",
+        subcategory: null,
+        name: "SOLA ENTERPRISE",
+        newCustomerGoalRate: 1000,
+        renewalGoalRate: 2000,
+        monthlyGoalTarget: 12,
+        isActive: true,
+      },
+      {
+        region: "SOLA",
+        category: "SMB",
+        subcategory: null,
+        name: "SOLA SMB",
+        newCustomerGoalRate: 1000,
+        renewalGoalRate: 2000,
+        monthlyGoalTarget: 10,
+        isActive: true,
+      },
+    ];
+
+    // BRASIL Regions
+    const brasilConfigs: InsertRegionConfig[] = [
+      {
+        region: "BRASIL",
+        category: "ENTERPRISE",
+        subcategory: null,
+        name: "BRASIL ENTERPRISE",
+        newCustomerGoalRate: 1000,
+        renewalGoalRate: 2000,
+        monthlyGoalTarget: 15,
+        isActive: true,
+      },
+      {
+        region: "BRASIL",
+        category: "SMB",
+        subcategory: null,
+        name: "BRASIL SMB",
+        newCustomerGoalRate: 1000,
+        renewalGoalRate: 2000,
+        monthlyGoalTarget: 12,
+        isActive: true,
+      },
+    ];
+
+    // MÉXICO Regions
+    const mexicoConfigs: InsertRegionConfig[] = [
+      {
+        region: "MEXICO",
+        category: "ENTERPRISE",
+        subcategory: "PLATINUM",
+        name: "MÉXICO ENTERPRISE PLATINUM",
+        newCustomerGoalRate: 1000,
+        renewalGoalRate: 2000,
+        monthlyGoalTarget: 20,
+        isActive: true,
+      },
+      {
+        region: "MEXICO",
+        category: "ENTERPRISE",
+        subcategory: "GOLD",
+        name: "MÉXICO ENTERPRISE GOLD",
+        newCustomerGoalRate: 1000,
+        renewalGoalRate: 2000,
+        monthlyGoalTarget: 15,
+        isActive: true,
+      },
+      {
+        region: "MEXICO",
+        category: "SMB",
+        subcategory: "PLATINUM",
+        name: "MÉXICO SMB PLATINUM",
+        newCustomerGoalRate: 1000,
+        renewalGoalRate: 2000,
+        monthlyGoalTarget: 12,
+        isActive: true,
+      },
+      {
+        region: "MEXICO",
+        category: "SMB",
+        subcategory: "GOLD",
+        name: "MÉXICO SMB GOLD",
+        newCustomerGoalRate: 1000,
+        renewalGoalRate: 2000,
+        monthlyGoalTarget: 10,
+        isActive: true,
+      },
+      {
+        region: "MEXICO",
+        category: "SMB",
+        subcategory: "SILVER & REGISTERED",
+        name: "MÉXICO SMB SILVER & REGISTERED",
+        newCustomerGoalRate: 1000,
+        renewalGoalRate: 2000,
+        monthlyGoalTarget: 8,
+        isActive: true,
+      },
+    ];
+
+    // Insertar todas las configuraciones
+    const allConfigs = [
+      ...nolaConfigs,
+      ...solaConfigs,
+      ...brasilConfigs,
+      ...mexicoConfigs,
+    ];
+
+    const insertedConfigs = await db
+      .insert(regionConfigs)
+      .values(allConfigs)
+      .returning();
+    console.log(`✅ ${insertedConfigs.length} region configs created`);
+
+    // Premios mensuales según el calendario proporcionado
+    const monthlyPrizesData = [
+      { month: 11, monthName: "NOVEMBER", prizeName: "RAPPI BONUS" },
+      { month: 12, monthName: "DECEMBER", prizeName: "WORLD CUP HAT EMBLEM" },
+      { month: 1, monthName: "JANUARY", prizeName: "WORLD CUP SOCCER BALL" },
+      { month: 2, monthName: "FEBRUARY", prizeName: "WORLD CUP T-SHIRT" },
+      { month: 3, monthName: "MARCH", prizeName: "EARBUDS BOSE" },
+      { month: 4, monthName: "APRIL", prizeName: "SPEAKER" },
+    ];
+
+    const currentYear = 2025;
+    const regionPrizes: InsertMonthlyRegionPrize[] = [];
+
+    // Crear premios para cada región y cada mes
+    for (const config of insertedConfigs) {
+      for (const prize of monthlyPrizesData) {
+        regionPrizes.push({
+          regionConfigId: config.id,
+          month: prize.month,
+          year: currentYear,
+          prizeName: prize.prizeName,
+          prizeDescription: `Sorteo mensual de ${prize.monthName} para ${config.name}`,
+          goalTarget: config.monthlyGoalTarget || 10,
+          isActive: true,
+        });
+      }
+    }
+
+    const insertedPrizes = await db
+      .insert(monthlyRegionPrizes)
+      .values(regionPrizes)
+      .returning();
+    console.log(`✅ ${insertedPrizes.length} monthly prizes created`);
+
+    console.log("🎉 Seeding completed successfully!");
   }
 }
 

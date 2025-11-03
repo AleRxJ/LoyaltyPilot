@@ -30,7 +30,8 @@ import {
   UserPlus,
   Trash2,
   Edit,
-  Settings
+  Settings,
+  Globe
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -40,6 +41,8 @@ import { CSVUploader } from "@/components/CSVUploader";
 import SupportTicketsTab from "@/components/admin/SupportTicketsTab";
 import PointsConfigTab from "@/components/admin/PointsConfigTab";
 import UserInvitationsTab from "@/components/admin/UserInvitationsTab";
+import RegionsOverview from "@/components/admin/RegionsOverview";
+import RegionsManagementTab from "@/components/admin/RegionsManagementTab";
 import type { User, Deal, Reward } from "@shared/schema";
 import type { AuthUser } from "@/lib/auth";
 import type { UploadResult } from '@uppy/core';
@@ -890,12 +893,16 @@ export default function Admin() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
           <TabsTrigger value="invitations" data-testid="tab-invitations">Invitations</TabsTrigger>
           <TabsTrigger value="users" data-testid="tab-users">Users</TabsTrigger>
           <TabsTrigger value="deals" data-testid="tab-deals">Deals</TabsTrigger>
           <TabsTrigger value="rewards" data-testid="tab-rewards">Rewards</TabsTrigger>
+          <TabsTrigger value="regions" data-testid="tab-regions">
+            <Globe className="w-4 h-4 mr-2" />
+            Regiones
+          </TabsTrigger>
           <TabsTrigger value="settings" data-testid="tab-settings">
             <Settings className="w-4 h-4 mr-2" />
             Settings
@@ -984,6 +991,11 @@ export default function Admin() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Regions Overview Section */}
+          <div className="mb-8">
+            <RegionsOverview />
           </div>
 
           {/* Reports Section */}
@@ -2225,6 +2237,11 @@ export default function Admin() {
               </Tabs>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Regions Tab */}
+        <TabsContent value="regions" className="mt-6">
+          <RegionsManagementTab />
         </TabsContent>
 
         {/* Settings Tab - with sub-tabs for Support and Points Config */}

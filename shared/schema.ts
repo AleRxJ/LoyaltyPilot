@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -9,6 +9,9 @@ export const productTypeEnum = pgEnum("product_type", ["software", "hardware", "
 export const rewardStatusEnum = pgEnum("reward_status", ["pending", "approved", "rejected", "delivered"]);
 export const shipmentStatusEnum = pgEnum("shipment_status", ["pending", "shipped", "delivered"]);
 export const supportTicketStatusEnum = pgEnum("support_ticket_status", ["open", "in_progress", "resolved", "closed"]);
+export const regionEnum = pgEnum("region", ["NOLA", "SOLA", "BRASIL", "MEXICO"]);
+export const regionCategoryEnum = pgEnum("region_category", ["ENTERPRISE", "SMB", "MSSP"]);
+export const dealTypeEnum = pgEnum("deal_type", ["new_customer", "renewal"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -19,6 +22,9 @@ export const users = pgTable("users", {
   lastName: text("last_name").notNull(),
   role: userRoleEnum("role").notNull().default("user"),
   country: text("country").notNull(),
+  region: regionEnum("region"),
+  regionCategory: regionCategoryEnum("region_category"),
+  regionSubcategory: text("region_subcategory"), // Para casos como "COLOMBIA", "CENTRO AMÉRICA", "PLATINUM", "GOLD", etc.
   isActive: boolean("is_active").notNull().default(true),
   isApproved: boolean("is_approved").notNull().default(false),
   approvedBy: varchar("approved_by"),
@@ -36,12 +42,14 @@ export const deals = pgTable("deals", {
   productType: productTypeEnum("product_type").notNull(),
   productName: text("product_name").notNull(),
   dealValue: decimal("deal_value", { precision: 12, scale: 2 }).notNull(),
+  dealType: dealTypeEnum("deal_type").notNull().default("new_customer"), // new_customer o renewal
   quantity: integer("quantity").notNull(),
   closeDate: timestamp("close_date").notNull(),
   clientInfo: text("client_info"),
   licenseAgreementNumber: text("license_agreement_number"),
   status: dealStatusEnum("status").notNull().default("pending"),
   pointsEarned: integer("points_earned").default(0),
+  goalsEarned: decimal("goals_earned", { precision: 10, scale: 2 }).default("0"), // Goles según la región
   approvedBy: varchar("approved_by").references(() => users.id),
   approvedAt: timestamp("approved_at"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
@@ -129,10 +137,69 @@ export const pointsConfig = pgTable("points_config", {
   hardwareRate: integer("hardware_rate").notNull().default(5000),
   equipmentRate: integer("equipment_rate").notNull().default(10000),
   grandPrizeThreshold: integer("grand_prize_threshold").notNull().default(50000),
+  // Reglas de acumulación de goles (por defecto)
+  defaultNewCustomerGoalRate: integer("default_new_customer_goal_rate").notNull().default(1000),
+  defaultRenewalGoalRate: integer("default_renewal_goal_rate").notNull().default(2000),
   redemptionStartDate: timestamp("redemption_start_date"),
   redemptionEndDate: timestamp("redemption_end_date"),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
   updatedBy: varchar("updated_by").references(() => users.id),
+});
+
+// Configuración de regiones y sus subdivisiones
+export const regionConfigs = pgTable("region_configs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  region: regionEnum("region").notNull(),
+  category: regionCategoryEnum("category").notNull(),
+  subcategory: text("subcategory"), // Ej: "COLOMBIA", "CENTRO AMÉRICA", "PLATINUM", "GOLD", "SILVER"
+  name: text("name").notNull(), // Ej: "NOLA ENTERPRISE COLOMBIA"
+  newCustomerGoalRate: integer("new_customer_goal_rate").notNull().default(1000), // US$ para 1 gol
+  renewalGoalRate: integer("renewal_goal_rate").notNull().default(2000), // US$ para 1 gol
+  monthlyGoalTarget: integer("monthly_goal_target"), // Meta mensual en goles para sorteo
+  isActive: boolean("is_active").notNull().default(true),
+  expirationDate: timestamp("expiration_date"), // Fecha de caducidad opcional (null = permanente)
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+}, (table) => ({
+  // Constraint único: no puede haber duplicados de región + categoría + subcategoría
+  uniqueRegionConfig: unique().on(table.region, table.category, table.subcategory),
+}));
+
+// Premios mensuales por región
+export const monthlyRegionPrizes = pgTable("monthly_region_prizes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  regionConfigId: varchar("region_config_id").notNull().references(() => regionConfigs.id),
+  month: integer("month").notNull(), // 1-12
+  year: integer("year").notNull(),
+  prizeName: text("prize_name").notNull(),
+  prizeDescription: text("prize_description"),
+  goalTarget: integer("goal_target").notNull(), // Meta en goles para participar en sorteo
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+// Asociación de rewards a regiones/países
+export const rewardRegionAssignments = pgTable("reward_region_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  rewardId: varchar("reward_id").notNull().references(() => rewards.id),
+  region: regionEnum("region"), // Opcional: aplica a toda la región
+  country: text("country"), // Opcional: aplica solo a un país
+  regionConfigId: varchar("region_config_id").references(() => regionConfigs.id), // Opcional: aplica a una configuración específica
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+// Historial de goles por usuario
+export const goalsHistory = pgTable("goals_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  dealId: varchar("deal_id").references(() => deals.id),
+  goals: decimal("goals", { precision: 10, scale: 2 }).notNull(),
+  month: integer("month").notNull(),
+  year: integer("year").notNull(),
+  regionConfigId: varchar("region_config_id").references(() => regionConfigs.id),
+  description: text("description").notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
 // Relations
@@ -222,6 +289,45 @@ export const supportTicketsRelations = relations(supportTickets, ({ one }) => ({
   }),
 }));
 
+export const regionConfigsRelations = relations(regionConfigs, ({ many }) => ({
+  monthlyPrizes: many(monthlyRegionPrizes),
+  rewardAssignments: many(rewardRegionAssignments),
+  goalsHistory: many(goalsHistory),
+}));
+
+export const monthlyRegionPrizesRelations = relations(monthlyRegionPrizes, ({ one }) => ({
+  regionConfig: one(regionConfigs, {
+    fields: [monthlyRegionPrizes.regionConfigId],
+    references: [regionConfigs.id],
+  }),
+}));
+
+export const rewardRegionAssignmentsRelations = relations(rewardRegionAssignments, ({ one }) => ({
+  reward: one(rewards, {
+    fields: [rewardRegionAssignments.rewardId],
+    references: [rewards.id],
+  }),
+  regionConfig: one(regionConfigs, {
+    fields: [rewardRegionAssignments.regionConfigId],
+    references: [regionConfigs.id],
+  }),
+}));
+
+export const goalsHistoryRelations = relations(goalsHistory, ({ one }) => ({
+  user: one(users, {
+    fields: [goalsHistory.userId],
+    references: [users.id],
+  }),
+  deal: one(deals, {
+    fields: [goalsHistory.dealId],
+    references: [deals.id],
+  }),
+  regionConfig: one(regionConfigs, {
+    fields: [goalsHistory.regionConfigId],
+    references: [regionConfigs.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -244,6 +350,7 @@ export const updateUserSchema = createInsertSchema(users).omit({
 export const insertDealSchema = createInsertSchema(deals).omit({
   id: true,
   pointsEarned: true,
+  goalsEarned: true,
   approvedBy: true,
   approvedAt: true,
   createdAt: true,
@@ -256,6 +363,7 @@ export const updateDealSchema = createInsertSchema(deals).omit({
   id: true,
   userId: true,
   pointsEarned: true,
+  goalsEarned: true,
   approvedBy: true,
   approvedAt: true,
   createdAt: true,
@@ -311,6 +419,33 @@ export const updatePointsConfigSchema = createInsertSchema(pointsConfig).omit({
   redemptionEndDate: z.string().nullable().optional().transform(val => val ? new Date(val) : null),
 }).partial();
 
+export const insertRegionConfigSchema = createInsertSchema(regionConfigs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateRegionConfigSchema = createInsertSchema(regionConfigs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export const insertMonthlyRegionPrizeSchema = createInsertSchema(monthlyRegionPrizes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRewardRegionAssignmentSchema = createInsertSchema(rewardRegionAssignments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertGoalsHistorySchema = createInsertSchema(goalsHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -333,6 +468,15 @@ export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
 export type UpdateSupportTicket = z.infer<typeof updateSupportTicketSchema>;
 export type PointsConfig = typeof pointsConfig.$inferSelect;
 export type UpdatePointsConfig = z.infer<typeof updatePointsConfigSchema>;
+export type RegionConfig = typeof regionConfigs.$inferSelect;
+export type InsertRegionConfig = z.infer<typeof insertRegionConfigSchema>;
+export type UpdateRegionConfig = z.infer<typeof updateRegionConfigSchema>;
+export type MonthlyRegionPrize = typeof monthlyRegionPrizes.$inferSelect;
+export type InsertMonthlyRegionPrize = z.infer<typeof insertMonthlyRegionPrizeSchema>;
+export type RewardRegionAssignment = typeof rewardRegionAssignments.$inferSelect;
+export type InsertRewardRegionAssignment = z.infer<typeof insertRewardRegionAssignmentSchema>;
+export type GoalsHistory = typeof goalsHistory.$inferSelect;
+export type InsertGoalsHistory = z.infer<typeof insertGoalsHistorySchema>;
 
 // Deal with user information for admin views
 export type DealWithUser = Deal & {

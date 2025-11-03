@@ -1,0 +1,272 @@
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Globe, Target, TrendingUp, Users, Calendar, Infinity, Flag, MapPin, Award, Medal, Trophy } from "lucide-react";
+import { useState } from "react";
+
+interface RegionConfig {
+  id: string;
+  region: string;
+  category: string;
+  subcategory: string | null;
+  name: string;
+  newCustomerGoalRate: number;
+  renewalGoalRate: number;
+  monthlyGoalTarget: number;
+  isActive: boolean;
+  expirationDate: string | null;
+}
+
+interface RegionStats {
+  totalUsers: number;
+  activeDeals: number;
+  totalGoals: number;
+  monthlyProgress: number;
+}
+
+export default function RegionsOverview() {
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+
+  const { data: regions, isLoading: regionsLoading } = useQuery<RegionConfig[]>({
+    queryKey: ["/api/admin/regions"],
+  });
+
+  // Group regions by main region
+  const groupedRegions = regions?.reduce((acc, region) => {
+    if (!acc[region.region]) {
+      acc[region.region] = [];
+    }
+    acc[region.region].push(region);
+    return acc;
+  }, {} as Record<string, RegionConfig[]>);
+
+  const getRegionColor = (region: string) => {
+    const colors: Record<string, string> = {
+      NOLA: "from-blue-500 to-blue-600",
+      SOLA: "from-green-500 to-green-600",
+      BRASIL: "from-yellow-500 to-yellow-600",
+      MEXICO: "from-red-500 to-red-600",
+    };
+    return colors[region] || "from-gray-500 to-gray-600";
+  };
+
+  const getRegionIcon = (region: string) => {
+    const flagIcons: Record<string, JSX.Element> = {
+      NOLA: (
+        <div className="relative h-10 w-14 flex items-center justify-center bg-blue-100 rounded shadow-md">
+          <Globe className="h-6 w-6 text-blue-600" />
+        </div>
+      ),
+      SOLA: (
+        <div className="relative h-10 w-14 flex items-center justify-center bg-green-100 rounded shadow-md">
+          <Globe className="h-6 w-6 text-green-600" />
+        </div>
+      ),
+      BRASIL: <img src="https://flagcdn.com/w80/br.png" alt="Brasil" className="h-10 w-14 rounded object-cover shadow-md" />,
+      MEXICO: <img src="https://flagcdn.com/w80/mx.png" alt="México" className="h-10 w-14 rounded object-cover shadow-md" />,
+    };
+    return flagIcons[region] || <Globe className="h-8 w-8" />;
+  };
+
+  const getCountryIcon = (subcategory: string | null) => {
+    if (!subcategory) return null;
+    const countryIcons: Record<string, JSX.Element> = {
+      COLOMBIA: <img src="https://flagcdn.com/w20/co.png" alt="Colombia" className="h-3 w-4 rounded" />,
+      "CENTRO AMÉRICA": (
+        <div className="relative h-3 w-4 flex items-center justify-center bg-blue-50 rounded">
+          <MapPin className="h-2.5 w-2.5 text-blue-600" />
+        </div>
+      ),
+      PLATINUM: <Trophy className="h-4 w-4 text-yellow-500" />,
+      GOLD: <Award className="h-4 w-4 text-yellow-600" />,
+      "SILVER & REGISTERED": <Medal className="h-4 w-4 text-gray-400" />,
+    };
+    return countryIcons[subcategory] || null;
+  };
+
+  if (regionsLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-20 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Region Cards */}
+      <div>
+        <h2 className="text-2xl font-bold mb-4">Regiones Configuradas</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {groupedRegions && Object.entries(groupedRegions).map(([regionName, configs]) => (
+            <Card
+              key={regionName}
+              className={`cursor-pointer transition-all hover:shadow-lg ${
+                selectedRegion === regionName ? "ring-2 ring-primary" : ""
+              }`}
+              onClick={() => setSelectedRegion(selectedRegion === regionName ? null : regionName)}
+            >
+              <CardHeader className={`bg-gradient-to-br ${getRegionColor(regionName)} text-white rounded-t-lg`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {getRegionIcon(regionName)}
+                    <CardTitle className="text-xl">{regionName}</CardTitle>
+                  </div>
+                  <Badge variant="secondary" className="bg-white/20 text-white">
+                    {configs.length}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Users className="h-4 w-4" />
+                      Configuraciones
+                    </span>
+                    <span className="font-semibold">{configs.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Target className="h-4 w-4" />
+                      Categorías
+                    </span>
+                    <span className="font-semibold">
+                      {Array.from(new Set(configs.map(c => c.category))).join(", ")}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <TrendingUp className="h-4 w-4" />
+                      Meta Promedio
+                    </span>
+                    <span className="font-semibold">
+                      {Math.round(configs.reduce((sum, c) => sum + (c.monthlyGoalTarget || 0), 0) / configs.length)} goles
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Selected Region Details */}
+      {selectedRegion && groupedRegions && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              {getRegionIcon(selectedRegion)}
+              Configuraciones de {selectedRegion}
+            </CardTitle>
+            <CardDescription>
+              Detalles de las {groupedRegions[selectedRegion].length} configuraciones en esta región
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Categoría</TableHead>
+                  <TableHead>Subcategoría</TableHead>
+                  <TableHead>Cliente Nuevo</TableHead>
+                  <TableHead>Renovación</TableHead>
+                  <TableHead>Meta Mensual</TableHead>
+                  <TableHead>Vigencia</TableHead>
+                  <TableHead>Estado</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {groupedRegions[selectedRegion].map((config) => (
+                  <TableRow key={config.id}>
+                    <TableCell className="font-medium">{config.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{config.category}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {config.subcategory ? (
+                        <Badge variant="secondary" className="gap-1 flex items-center w-fit">
+                          {getCountryIcon(config.subcategory)}
+                          <span>{config.subcategory}</span>
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      ${config.newCustomerGoalRate.toLocaleString()} = 1 gol
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      ${config.renewalGoalRate.toLocaleString()} = 1 gol
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-semibold">{config.monthlyGoalTarget} goles</span>
+                    </TableCell>
+                    <TableCell>
+                      {config.expirationDate ? (
+                        <div className="flex items-center gap-1 text-sm">
+                          <Calendar className="w-3 h-3 text-blue-500" />
+                          <span>{new Date(config.expirationDate).toLocaleDateString('es-ES', { 
+                            day: '2-digit', 
+                            month: 'short', 
+                            year: 'numeric' 
+                          })}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-sm text-green-600">
+                          <Infinity className="w-4 h-4" />
+                          <span>Permanente</span>
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {config.isActive ? (
+                        <Badge className="bg-green-500">Activa</Badge>
+                      ) : (
+                        <Badge variant="secondary">Inactiva</Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty State */}
+      {!regions || regions.length === 0 && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Globe className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No hay regiones configuradas</h3>
+            <p className="text-muted-foreground text-center mb-4">
+              Ejecuta el seed para poblar las regiones predefinidas
+            </p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

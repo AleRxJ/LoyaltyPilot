@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,7 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Settings, DollarSign, Trophy, Calendar } from "lucide-react";
+import { Settings, DollarSign, Trophy, Calendar, Target, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { PointsConfig } from "@shared/schema";
@@ -26,6 +27,8 @@ const pointsConfigFormSchema = z.object({
   hardwareRate: z.number().min(1, "Debe ser al menos 1").max(1000000, "Valor muy alto"),
   equipmentRate: z.number().min(1, "Debe ser al menos 1").max(1000000, "Valor muy alto"),
   grandPrizeThreshold: z.number().min(1, "Debe ser al menos 1").max(10000000, "Valor muy alto"),
+  defaultNewCustomerGoalRate: z.number().min(1, "Debe ser al menos 1").max(1000000, "Valor muy alto"),
+  defaultRenewalGoalRate: z.number().min(1, "Debe ser al menos 1").max(1000000, "Valor muy alto"),
   redemptionStartDate: z.string().optional(),
   redemptionEndDate: z.string().optional(),
 });
@@ -47,6 +50,8 @@ export default function PointsConfigTab() {
       hardwareRate: 5000,
       equipmentRate: 10000,
       grandPrizeThreshold: 50000,
+      defaultNewCustomerGoalRate: 1000,
+      defaultRenewalGoalRate: 2000,
       redemptionStartDate: "",
       redemptionEndDate: "",
     },
@@ -59,6 +64,8 @@ export default function PointsConfigTab() {
         hardwareRate: config.hardwareRate,
         equipmentRate: config.equipmentRate,
         grandPrizeThreshold: config.grandPrizeThreshold,
+        defaultNewCustomerGoalRate: (config as any).defaultNewCustomerGoalRate || 1000,
+        defaultRenewalGoalRate: (config as any).defaultRenewalGoalRate || 2000,
         redemptionStartDate: config.redemptionStartDate 
           ? new Date(config.redemptionStartDate).toISOString().split('T')[0] 
           : "",
@@ -76,6 +83,8 @@ export default function PointsConfigTab() {
         hardwareRate: data.hardwareRate,
         equipmentRate: data.equipmentRate,
         grandPrizeThreshold: data.grandPrizeThreshold,
+        defaultNewCustomerGoalRate: data.defaultNewCustomerGoalRate,
+        defaultRenewalGoalRate: data.defaultRenewalGoalRate,
         redemptionStartDate: data.redemptionStartDate ? new Date(data.redemptionStartDate).toISOString() : null,
         redemptionEndDate: data.redemptionEndDate ? new Date(data.redemptionEndDate).toISOString() : null,
       };
@@ -86,7 +95,7 @@ export default function PointsConfigTab() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/points-config"] });
       toast({
         title: "Configuración actualizada",
-        description: "Las reglas de asignación de puntos han sido actualizadas exitosamente",
+        description: "Las reglas de asignación de puntos y goles han sido actualizadas exitosamente",
       });
     },
     onError: (error: Error) => {
@@ -207,6 +216,77 @@ export default function PointsConfigTab() {
                     </FormItem>
                   )}
                 />
+              </div>
+
+              <div className="border-t pt-6">
+                <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Target className="h-5 w-5 text-emerald-600" />
+                      Reglas de Acumulación de Goals
+                    </CardTitle>
+                    <CardDescription>
+                      Configuración predeterminada para la conversión de ventas a goals (1 Goal = Entrada a sorteo mensual)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-6 md:grid-cols-2">
+                      <FormField
+                        control={form.control}
+                        name="defaultNewCustomerGoalRate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              <DollarSign className="h-4 w-4 text-emerald-500" />
+                              Cliente Nuevo
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="1000"
+                                data-testid="input-new-customer-goal-rate"
+                                {...field}
+                                onChange={(e) => field.onChange(Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormDescription>Dólares necesarios por 1 Goal (Cliente Nuevo)</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="defaultRenewalGoalRate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2">
+                              <DollarSign className="h-4 w-4 text-teal-500" />
+                              Renovación
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="2000"
+                                data-testid="input-renewal-goal-rate"
+                                {...field}
+                                onChange={(e) => field.onChange(Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormDescription>Dólares necesarios por 1 Goal (Renovación)</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <Alert className="mt-4">
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>
+                        Estas son las tasas predeterminadas del sistema. Cada región puede tener tasas personalizadas que anulan estos valores.
+                      </AlertDescription>
+                    </Alert>
+                  </CardContent>
+                </Card>
               </div>
 
               <div className="border-t pt-6">

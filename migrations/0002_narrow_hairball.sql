@@ -1,0 +1,1 @@
+ALTER TABLE "region_configs" ADD CONSTRAINT "region_configs_region_category_subcategory_unique" UNIQUE("region","category","subcategory");

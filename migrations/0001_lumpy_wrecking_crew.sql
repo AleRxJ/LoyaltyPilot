@@ -1,0 +1,2 @@
+ALTER TABLE "points_config" ADD COLUMN "default_new_customer_goal_rate" integer DEFAULT 1000 NOT NULL;--> statement-breakpoint
+ALTER TABLE "points_config" ADD COLUMN "default_renewal_goal_rate" integer DEFAULT 2000 NOT NULL;

@@ -2361,6 +2361,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Regions configuration routes
+  app.get("/api/admin/regions", async (req, res) => {
+    const userRole = req.session?.userRole;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const regions = await storage.getAllRegionConfigs();
+      res.json(regions);
+    } catch (error) {
+      console.error("Get regions error:", error);
+      res.status(500).json({ message: "Failed to get regions" });
+    }
+  });
+
+  app.post("/api/admin/regions", async (req, res) => {
+    const userRole = req.session?.userRole;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const regionConfig = req.body;
+      
+      // Validar que no exista ya una región con la misma combinación
+      const existingRegions = await storage.getAllRegionConfigs();
+      const subcategoryToCheck = regionConfig.subcategory || null;
+      
+      const duplicate = existingRegions.find(r => 
+        r.region === regionConfig.region && 
+        r.category === regionConfig.category && 
+        (r.subcategory || null) === subcategoryToCheck
+      );
+      
+      if (duplicate) {
+        return res.status(409).json({ 
+          message: `Ya existe una configuración para ${regionConfig.region} - ${regionConfig.category}${subcategoryToCheck ? ' - ' + subcategoryToCheck : ''}`
+        });
+      }
+      
+      const newRegion = await storage.createRegionConfig(regionConfig);
+      res.json(newRegion);
+    } catch (error) {
+      console.error("Create region error:", error);
+      
+      // Manejar error de constraint único de la base de datos
+      if ((error as any).code === '23505') { // PostgreSQL unique violation
+        return res.status(409).json({ 
+          message: "Ya existe una configuración regional con estos parámetros" 
+        });
+      }
+      
+      res.status(500).json({ message: "Failed to create region" });
+    }
+  });
+
+  app.post("/api/admin/regions/seed", async (req, res) => {
+    const userRole = req.session?.userRole;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      await storage.seedRegions();
+      res.json({ message: "Regions seeded successfully" });
+    } catch (error) {
+      console.error("Seed regions error:", error);
+      res.status(500).json({ message: "Failed to seed regions" });
+    }
+  });
+
+  app.patch("/api/admin/regions/:id", async (req, res) => {
+    const userRole = req.session?.userRole;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      console.log("Update region request:", { id, updates });
+      
+      const region = await storage.updateRegionConfig(id, updates);
+      
+      if (!region) {
+        return res.status(404).json({ message: "Region not found" });
+      }
+      
+      res.json(region);
+    } catch (error) {
+      console.error("Update region error:", error);
+      res.status(500).json({ message: "Failed to update region" });
+    }
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;
