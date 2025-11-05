@@ -1,0 +1,2 @@
+ALTER TABLE "region_configs" ADD COLUMN "reward_id" varchar;--> statement-breakpoint
+ALTER TABLE "region_configs" ADD CONSTRAINT "region_configs_reward_id_rewards_id_fk" FOREIGN KEY ("reward_id") REFERENCES "public"."rewards"("id") ON DELETE no action ON UPDATE no action;

@@ -2393,6 +2393,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const regionConfig = req.body;
+      console.log("Received region config:", regionConfig);
+      console.log("RewardId value:", regionConfig.rewardId, "Type:", typeof regionConfig.rewardId);
       
       // Validar que no exista ya una región con la misma combinación
       const existingRegions = await storage.getAllRegionConfigs();
@@ -2464,6 +2466,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Update region error:", error);
       res.status(500).json({ message: "Failed to update region" });
+    }
+  });
+
+  app.delete("/api/admin/regions/:id", async (req, res) => {
+    const userRole = req.session?.userRole;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { id } = req.params;
+      console.log("Delete region request:", { id });
+      
+      const region = await storage.deleteRegionConfig(id);
+      
+      if (!region) {
+        return res.status(404).json({ message: "Region not found" });
+      }
+      
+      res.json({ message: "Region deleted successfully", region });
+    } catch (error) {
+      console.error("Delete region error:", error);
+      res.status(500).json({ message: "Failed to delete region" });
     }
   });
 

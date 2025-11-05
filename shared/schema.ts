@@ -153,6 +153,7 @@ export const regionConfigs = pgTable("region_configs", {
   category: regionCategoryEnum("category").notNull(),
   subcategory: text("subcategory"), // Ej: "COLOMBIA", "CENTRO AMÉRICA", "PLATINUM", "GOLD", "SILVER"
   name: text("name").notNull(), // Ej: "NOLA ENTERPRISE COLOMBIA"
+  rewardId: varchar("reward_id").references(() => rewards.id), // Premio asociado a esta región
   newCustomerGoalRate: integer("new_customer_goal_rate").notNull().default(1000), // US$ para 1 gol
   renewalGoalRate: integer("renewal_goal_rate").notNull().default(2000), // US$ para 1 gol
   monthlyGoalTarget: integer("monthly_goal_target"), // Meta mensual en goles para sorteo

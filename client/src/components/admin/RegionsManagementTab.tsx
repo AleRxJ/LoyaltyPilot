@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Globe, Plus, Edit, Save, X, CheckCircle, Database, Calendar, Infinity } from "lucide-react";
+import { Globe, Plus, Edit, Save, X, CheckCircle, Database, Calendar, Infinity, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -40,12 +40,47 @@ interface RegionConfig {
   category: string;
   subcategory: string | null;
   name: string;
+  rewardId: string | null;
   newCustomerGoalRate: number;
   renewalGoalRate: number;
   monthlyGoalTarget: number;
   isActive: boolean;
   expirationDate: string | null;
 }
+
+// Estructura jerárquica: Región → Países (opcionales) → Ciudades (opcionales)
+const REGION_HIERARCHY: Record<string, Record<string, string[]>> = {
+  NOLA: {
+    "COLOMBIA": ["Bogotá", "Medellín", "Cali", "Barranquilla", "Cartagena"],
+    "CENTRO AMERICA": ["Guatemala", "San Salvador", "Tegucigalpa", "Managua", "San José", "Panamá"],
+  },
+  SOLA: {
+    "ARGENTINA": ["Buenos Aires", "Córdoba", "Rosario", "Mendoza", "La Plata"],
+    "CHILE": ["Santiago", "Valparaíso", "Concepción", "La Serena", "Antofagasta"],
+    "PERU": ["Lima", "Arequipa", "Cusco", "Trujillo"],
+    "OTROS": [], // Para otros países de SOLA sin ciudades específicas
+  },
+  BRASIL: {
+    "": ["São Paulo", "Rio de Janeiro", "Brasília", "Salvador", "Fortaleza", "Belo Horizonte", "Curitiba", "Recife"],
+  },
+  MEXICO: {
+    "": ["Ciudad de México", "Guadalajara", "Monterrey", "Puebla", "Tijuana", "León", "Querétaro", "Mérida"],
+  },
+};
+
+// Categorías disponibles por región
+const REGION_CATEGORIES: Record<string, string[]> = {
+  NOLA: ["ENTERPRISE", "SMB", "MSSP"],
+  SOLA: ["ENTERPRISE", "SMB"],
+  BRASIL: ["ENTERPRISE", "SMB"],
+  MEXICO: ["ENTERPRISE", "SMB"], // Categorías base, los niveles van en subcategoría
+};
+
+// Niveles/subcategorías para MÉXICO según la categoría
+const MEXICO_LEVELS: Record<string, string[]> = {
+  ENTERPRISE: ["PLATINUM", "GOLD (2)"],
+  SMB: ["PLATINUM", "GOLD (2)", "SILVER & REGISTERED"],
+};
 
 export default function RegionsManagementTab() {
   const { t } = useTranslation();
@@ -65,13 +100,23 @@ export default function RegionsManagementTab() {
   const { data: regions, isLoading } = useQuery<RegionConfig[]>({
     queryKey: ["/api/admin/regions"],
   });
+
+  // Query para obtener los rewards activos
+  const { data: rewards } = useQuery({
+    queryKey: ["/api/rewards"],
+    select: (data: any[]) => data.filter(reward => reward.isActive),
+  });
   
   // Form state for creating new region - se inicializará con valores del sistema
   const [newRegion, setNewRegion] = useState({
     region: "",
     category: "",
+    country: "", // Nuevo: país seleccionado
+    city: "", // Nuevo: ciudad seleccionada
+    mexicoLevel: "", // Nuevo: nivel para México (PLATINUM, GOLD, SILVER)
     subcategory: "",
     name: "",
+    rewardId: "", // Nuevo: reward asociado
     newCustomerGoalRate: 1000,
     renewalGoalRate: 2000,
     monthlyGoalTarget: 10,
@@ -79,6 +124,58 @@ export default function RegionsManagementTab() {
     expirationDate: null as string | null,
     isPermanent: true, // Nuevo campo para controlar si es permanente
   });
+
+  // Estados para manejar las opciones dinámicas
+  const [availableCountries, setAvailableCountries] = useState<string[]>([]);
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [availableMexicoLevels, setAvailableMexicoLevels] = useState<string[]>([]);
+
+  // Actualizar países y categorías cuando se selecciona una región
+  useEffect(() => {
+    if (newRegion.region && REGION_HIERARCHY[newRegion.region]) {
+      const countries = Object.keys(REGION_HIERARCHY[newRegion.region]);
+      setAvailableCountries(countries);
+      
+      // Actualizar categorías disponibles según la región
+      setAvailableCategories(REGION_CATEGORIES[newRegion.region] || []);
+      
+      // Para BRASIL y MEXICO que tienen ciudades directas (key vacía "")
+      if (countries.length === 1 && countries[0] === "") {
+        setAvailableCities(REGION_HIERARCHY[newRegion.region][""]);
+        setNewRegion(prev => ({ ...prev, country: "", city: "", category: "" }));
+      } else {
+        setNewRegion(prev => ({ ...prev, country: "", city: "", category: "" })); // Reset país, ciudad y categoría
+        setAvailableCities([]);
+      }
+    } else {
+      setAvailableCountries([]);
+      setAvailableCities([]);
+      setAvailableCategories([]);
+    }
+  }, [newRegion.region]);
+
+  // Actualizar ciudades cuando se selecciona un país (solo para NOLA con países)
+  useEffect(() => {
+    if (newRegion.region && newRegion.country && REGION_HIERARCHY[newRegion.region]?.[newRegion.country]) {
+      setAvailableCities(REGION_HIERARCHY[newRegion.region][newRegion.country]);
+      setNewRegion(prev => ({ ...prev, city: "" })); // Reset ciudad
+    } else if (!newRegion.country && availableCountries.length === 1 && availableCountries[0] === "") {
+      // Mantener las ciudades para BRASIL/MEXICO
+      return;
+    } else {
+      setAvailableCities([]);
+    }
+  }, [newRegion.country]);
+
+  // Actualizar niveles de México cuando se selecciona una categoría (solo para MÉXICO)
+  useEffect(() => {
+    if (newRegion.region === "MEXICO" && newRegion.category && MEXICO_LEVELS[newRegion.category]) {
+      setAvailableMexicoLevels(MEXICO_LEVELS[newRegion.category]);
+    } else {
+      setAvailableMexicoLevels([]);
+    }
+  }, [newRegion.region, newRegion.category]);
 
   // Actualizar los valores predeterminados cuando se carga la configuración
   useEffect(() => {
@@ -164,6 +261,32 @@ export default function RegionsManagementTab() {
     },
   });
 
+  const deleteRegionMutation = useMutation({
+    mutationFn: async (id: string) => {
+      try {
+        const res = await apiRequest("DELETE", `/api/admin/regions/${id}`);
+        return await res.json();
+      } catch (error) {
+        console.error("Delete region error:", error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/regions"] });
+      toast({
+        title: "Región eliminada",
+        description: "La región ha sido eliminada exitosamente",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al eliminar región",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleUpdateRegion = (updates: Partial<RegionConfig>) => {
     if (editingRegion) {
       // Filtrar campos que no deben ser actualizados (id, createdAt, updatedAt)
@@ -190,8 +313,32 @@ export default function RegionsManagementTab() {
       return;
     }
     
+    // Construir la subcategoría automáticamente si se seleccionaron país/ciudad/nivel
+    let finalSubcategory = newRegion.subcategory;
+    
+    // Para MÉXICO: usar nivel si está seleccionado
+    if (newRegion.region === "MEXICO" && newRegion.mexicoLevel) {
+      if (newRegion.city && newRegion.city !== "") {
+        finalSubcategory = `${newRegion.mexicoLevel} - ${newRegion.city}`;
+      } else {
+        finalSubcategory = newRegion.mexicoLevel;
+      }
+    }
+    // Para otras regiones: usar país/ciudad
+    else if (newRegion.country && newRegion.country !== "") {
+      // Si hay país (NOLA con COLOMBIA o CENTRO AMERICA)
+      if (newRegion.city && newRegion.city !== "") {
+        finalSubcategory = `${newRegion.country} - ${newRegion.city}`;
+      } else {
+        finalSubcategory = newRegion.country;
+      }
+    } else if (newRegion.city && newRegion.city !== "") {
+      // Si solo hay ciudad (BRASIL sin país intermedio)
+      finalSubcategory = newRegion.city;
+    }
+    
     // Validar duplicados en el frontend antes de enviar
-    const subcategoryToCheck = newRegion.subcategory || null;
+    const subcategoryToCheck = finalSubcategory || null;
     const duplicate = regions?.find(r => 
       r.region === newRegion.region && 
       r.category === newRegion.category && 
@@ -211,8 +358,9 @@ export default function RegionsManagementTab() {
     const payload = {
       region: newRegion.region,
       category: newRegion.category,
-      subcategory: newRegion.subcategory || null,
+      subcategory: finalSubcategory || null,
       name: newRegion.name,
+      rewardId: newRegion.rewardId && newRegion.rewardId !== "" ? newRegion.rewardId : null,
       newCustomerGoalRate: newRegion.newCustomerGoalRate,
       renewalGoalRate: newRegion.renewalGoalRate,
       monthlyGoalTarget: newRegion.monthlyGoalTarget,
@@ -223,6 +371,7 @@ export default function RegionsManagementTab() {
         : (newRegion.expirationDate ? new Date(newRegion.expirationDate).toISOString() : null),
     };
     
+    console.log("Creating region with payload:", payload);
     createRegionMutation.mutate(payload);
   };
 
@@ -234,8 +383,12 @@ export default function RegionsManagementTab() {
     setNewRegion({
       region: "",
       category: "",
+      country: "",
+      city: "",
+      mexicoLevel: "",
       subcategory: "",
       name: "",
+      rewardId: "",
       newCustomerGoalRate: defaultNewCustomerRate,
       renewalGoalRate: defaultRenewalRate,
       monthlyGoalTarget: 10,
@@ -243,6 +396,16 @@ export default function RegionsManagementTab() {
       expirationDate: null,
       isPermanent: true,
     });
+    setAvailableCountries([]);
+    setAvailableCities([]);
+    setAvailableCategories([]);
+    setAvailableMexicoLevels([]);
+  };
+
+  const handleDeleteRegion = (id: string, name: string) => {
+    if (confirm(`¿Estás seguro de que quieres eliminar la región "${name}"? Esta acción no se puede deshacer.`)) {
+      deleteRegionMutation.mutate(id);
+    }
   };
 
   const filteredRegions = regions?.filter((region) => {
@@ -356,6 +519,7 @@ export default function RegionsManagementTab() {
                   <TableHead>{t('admin.tableHeaders.region')}</TableHead>
                   <TableHead>{t('admin.tableHeaders.category')}</TableHead>
                   <TableHead>{t('admin.tableHeaders.subcategory')}</TableHead>
+                  <TableHead>Premio</TableHead>
                   <TableHead>{t('admin.tableHeaders.newCustomer')}</TableHead>
                   <TableHead>{t('admin.tableHeaders.renewal')}</TableHead>
                   <TableHead>{t('admin.tableHeaders.monthlyGoal')}</TableHead>
@@ -379,6 +543,15 @@ export default function RegionsManagementTab() {
                         <Badge>{region.subcategory}</Badge>
                       ) : (
                         <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {region.rewardId ? (
+                        <span className="text-sm">
+                          {rewards?.find((r: any) => r.id === region.rewardId)?.name || "Premio asignado"}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">Sin premio</span>
                       )}
                     </TableCell>
                     <TableCell className="text-sm">
@@ -418,13 +591,23 @@ export default function RegionsManagementTab() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditingRegion(region)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingRegion(region)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteRegion(region.id, region.name)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -512,6 +695,51 @@ export default function RegionsManagementTab() {
               </Select>
             </div>
 
+            {/* País - Se muestra solo si la región tiene países disponibles */}
+            {availableCountries.length > 0 && availableCountries[0] !== "" && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="new-country" className="text-right">
+                  País
+                </Label>
+                <Select
+                  value={newRegion.country}
+                  onValueChange={(value) => setNewRegion({ ...newRegion, country: value })}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Selecciona un país" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCountries.map(country => (
+                      <SelectItem key={country} value={country}>{country}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Ciudad - OPCIONAL - Se muestra si hay ciudades disponibles */}
+            {availableCities.length > 0 && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="new-city" className="text-right">
+                  Ciudad <span className="text-muted-foreground">(Opcional)</span>
+                </Label>
+                <Select
+                  value={newRegion.city || "NONE"}
+                  onValueChange={(value) => setNewRegion({ ...newRegion, city: value === "NONE" ? "" : value })}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Selecciona una ciudad (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NONE">Sin ciudad específica</SelectItem>
+                    {availableCities.map(city => (
+                      <SelectItem key={city} value={city}>{city}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="new-category" className="text-right">
                 {t('admin.categoryRequired')}
@@ -519,29 +747,81 @@ export default function RegionsManagementTab() {
               <Select
                 value={newRegion.category}
                 onValueChange={(value) => setNewRegion({ ...newRegion, category: value })}
+                disabled={!newRegion.region || availableCategories.length === 0}
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder={t('admin.selectCategory')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ENTERPRISE">ENTERPRISE</SelectItem>
-                  <SelectItem value="SMB">SMB</SelectItem>
-                  <SelectItem value="MSSP">MSSP</SelectItem>
+                  {availableCategories.map(category => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Nivel para MÉXICO - Se muestra solo si la región es MÉXICO y hay una categoría seleccionada */}
+            {newRegion.region === "MEXICO" && availableMexicoLevels.length > 0 && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="new-mexico-level" className="text-right">
+                  Nivel <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={newRegion.mexicoLevel}
+                  onValueChange={(value) => setNewRegion({ ...newRegion, mexicoLevel: value })}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Selecciona el nivel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableMexicoLevels.map(level => (
+                      <SelectItem key={level} value={level}>{level}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="new-subcategory" className="text-right">
                 {t('admin.subcategory')}
               </Label>
-              <Input
-                id="new-subcategory"
-                value={newRegion.subcategory}
-                onChange={(e) => setNewRegion({ ...newRegion, subcategory: e.target.value })}
-                className="col-span-3"
-                placeholder={t('admin.optional')}
-              />
+              <div className="col-span-3 space-y-1">
+                <Input
+                  id="new-subcategory"
+                  value={newRegion.subcategory}
+                  onChange={(e) => setNewRegion({ ...newRegion, subcategory: e.target.value })}
+                  placeholder={t('admin.optional')}
+                  disabled={!!(newRegion.country || newRegion.city || newRegion.mexicoLevel)}
+                />
+                {/* Para México con nivel */}
+                {newRegion.region === "MEXICO" && newRegion.mexicoLevel && newRegion.city && newRegion.city !== "" && (
+                  <p className="text-xs text-muted-foreground">
+                    Se generará automáticamente: {newRegion.mexicoLevel} - {newRegion.city}
+                  </p>
+                )}
+                {newRegion.region === "MEXICO" && newRegion.mexicoLevel && (!newRegion.city || newRegion.city === "") && (
+                  <p className="text-xs text-muted-foreground">
+                    Se generará automáticamente: {newRegion.mexicoLevel}
+                  </p>
+                )}
+                {/* Para otras regiones */}
+                {newRegion.region !== "MEXICO" && newRegion.country && newRegion.country !== "" && newRegion.city && newRegion.city !== "" && (
+                  <p className="text-xs text-muted-foreground">
+                    Se generará automáticamente: {newRegion.country} - {newRegion.city}
+                  </p>
+                )}
+                {newRegion.region !== "MEXICO" && newRegion.country && newRegion.country !== "" && (!newRegion.city || newRegion.city === "") && (
+                  <p className="text-xs text-muted-foreground">
+                    Se generará automáticamente: {newRegion.country}
+                  </p>
+                )}
+                {newRegion.region !== "MEXICO" && (!newRegion.country || newRegion.country === "") && newRegion.city && newRegion.city !== "" && (
+                  <p className="text-xs text-muted-foreground">
+                    Se generará automáticamente: {newRegion.city}
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">
@@ -555,6 +835,33 @@ export default function RegionsManagementTab() {
                 className="col-span-3"
                 placeholder={t('admin.nameExample')}
               />
+            </div>
+
+            {/* Selector de Reward */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="new-reward" className="text-right">
+                Premio Asociado
+              </Label>
+              <Select
+                value={newRegion.rewardId || "NONE"}
+                onValueChange={(value) => setNewRegion({ ...newRegion, rewardId: value === "NONE" ? "" : value })}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecciona un premio (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">Sin premio asociado</SelectItem>
+                  {rewards && rewards.length > 0 ? (
+                    rewards.map((reward: any) => (
+                      <SelectItem key={reward.id} value={reward.id}>
+                        {reward.name} ({reward.pointsCost} pts)
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="NO_REWARDS" disabled>No hay premios activos</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">
@@ -737,6 +1044,71 @@ export default function RegionsManagementTab() {
                   className="col-span-3"
                 />
               </div>
+
+              {/* Selector de Premio */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-reward" className="text-right">
+                  Premio Asociado
+                </Label>
+                <Select
+                  value={editingRegion.rewardId || "NONE"}
+                  onValueChange={(value) => setEditingRegion({ ...editingRegion, rewardId: value === "NONE" ? null : value })}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Selecciona un premio (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NONE">Sin premio asociado</SelectItem>
+                    {rewards && rewards.length > 0 ? (
+                      rewards.map((reward: any) => (
+                        <SelectItem key={reward.id} value={reward.id}>
+                          {reward.name} ({reward.pointsCost} pts)
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="NO_REWARDS" disabled>No hay premios activos</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Mostrar región y categoría (solo lectura) */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">
+                  Región
+                </Label>
+                <div className="col-span-3">
+                  <Badge variant="outline" className="text-sm">
+                    {editingRegion.region}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">
+                  Categoría
+                </Label>
+                <div className="col-span-3">
+                  <Badge variant="secondary" className="text-sm">
+                    {editingRegion.category}
+                  </Badge>
+                </div>
+              </div>
+
+              {editingRegion.subcategory && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right">
+                    Subcategoría
+                  </Label>
+                  <div className="col-span-3">
+                    <Badge className="text-sm">
+                      {editingRegion.subcategory}
+                    </Badge>
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t pt-4 mt-2"></div>
 
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="newCustomerGoalRate" className="text-right">

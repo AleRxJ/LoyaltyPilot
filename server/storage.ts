@@ -218,6 +218,7 @@ export interface IStorage {
   getRegionConfig(id: string): Promise<RegionConfig | undefined>;
   createRegionConfig(config: InsertRegionConfig): Promise<RegionConfig>;
   updateRegionConfig(id: string, updates: Partial<RegionConfig>): Promise<RegionConfig | undefined>;
+  deleteRegionConfig(id: string): Promise<RegionConfig | undefined>;
   getMonthlyRegionPrizes(
     regionConfigId: string,
     month: number,
@@ -1631,18 +1632,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createRegionConfig(config: InsertRegionConfig): Promise<RegionConfig> {
+    console.log("Storage createRegionConfig called with:", config);
+    console.log("RewardId in storage:", config.rewardId, "Type:", typeof config.rewardId);
+
+    // Normalizar rewardId: aceptar null, undefined o cadena vacía como null
+    const normalizedRewardId = config.rewardId && config.rewardId !== "" ? config.rewardId : null;
+
     // Convertir expirationDate de string a Date si viene como string
     const processedConfig = {
       ...config,
+      rewardId: normalizedRewardId,
       expirationDate: config.expirationDate 
         ? new Date(config.expirationDate) 
         : null,
     };
-    
+
+    console.log("Processed config before insert:", processedConfig);
+
     const [newConfig] = await db
       .insert(regionConfigs)
       .values(processedConfig)
       .returning();
+
+    console.log("Created region config:", newConfig);
     return newConfig;
   }
 
@@ -1650,9 +1662,10 @@ export class DatabaseStorage implements IStorage {
     id: string,
     updates: Partial<RegionConfig>
   ): Promise<RegionConfig | undefined> {
-    // Convertir expirationDate de string a Date si viene como string
-    const processedUpdates = {
+    // Normalizar rewardId y convertir expirationDate de string a Date si viene como string
+    const processedUpdates: any = {
       ...updates,
+      rewardId: updates.rewardId !== undefined ? (updates.rewardId && updates.rewardId !== "" ? updates.rewardId : null) : undefined,
       expirationDate: updates.expirationDate !== undefined
         ? (updates.expirationDate ? new Date(updates.expirationDate) : null)
         : undefined,
@@ -1665,6 +1678,20 @@ export class DatabaseStorage implements IStorage {
       .where(eq(regionConfigs.id, id))
       .returning();
     return updated || undefined;
+  }
+
+  async deleteRegionConfig(id: string): Promise<RegionConfig | undefined> {
+    // Primero eliminar los premios mensuales asociados
+    await db
+      .delete(monthlyRegionPrizes)
+      .where(eq(monthlyRegionPrizes.regionConfigId, id));
+    
+    // Luego eliminar la configuración de región
+    const [deleted] = await db
+      .delete(regionConfigs)
+      .where(eq(regionConfigs.id, id))
+      .returning();
+    return deleted || undefined;
   }
 
   async getMonthlyRegionPrizes(
