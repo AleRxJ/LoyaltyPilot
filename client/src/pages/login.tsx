@@ -5,11 +5,14 @@ import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { login, register } from "@/lib/auth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Mail } from "lucide-react";
 import backgroundVideo from "@assets/social_u8721598234_httpss.mj.run9PeHEv50RaI_Se_mueva_el_humo_--ar_16_859139eb-2b54-44ba-a70e-0b35e099a25c_3_1758640235341.mp4";
 import logo from "@assets/LOGO-FINAL-LOYALTY_1758659070059.png";
 
@@ -32,6 +35,8 @@ type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
+  const [showMagicLinkDialog, setShowMagicLinkDialog] = useState(false);
+  const [magicLinkEmail, setMagicLinkEmail] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -88,6 +93,39 @@ export default function Login() {
       toast({
         title: "Error",
         description: error.message || "Registration failed",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const magicLinkMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const response = await fetch("/api/auth/request-magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to send magic link");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "✅ Enlace enviado",
+        description: "Si el email existe en nuestro sistema, recibirás un enlace de acceso. Revisa tu bandeja de entrada.",
+      });
+      setShowMagicLinkDialog(false);
+      setMagicLinkEmail("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send magic link",
         variant: "destructive",
       });
     },
@@ -189,6 +227,27 @@ export default function Login() {
                   data-testid="button-login"
                 >
                   {loginMutation.isPending ? "Signing in..." : "Sign In"}
+                </Button>
+                
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-muted-foreground">
+                      O continúa con
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setShowMagicLinkDialog(true)}
+                >
+                  <Mail className="mr-2 h-4 w-4" />
+                  Acceder sin contraseña
                 </Button>
               </form>
             </Form>
@@ -349,6 +408,54 @@ export default function Login() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Magic Link Dialog */}
+      <Dialog open={showMagicLinkDialog} onOpenChange={setShowMagicLinkDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>🔐 Acceso sin Contraseña</DialogTitle>
+            <DialogDescription>
+              Ingresa tu email y te enviaremos un enlace mágico para acceder a tu cuenta.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="magic-link-email">Email</Label>
+              <Input
+                id="magic-link-email"
+                type="email"
+                placeholder="tu@email.com"
+                value={magicLinkEmail}
+                onChange={(e) => setMagicLinkEmail(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && magicLinkEmail) {
+                    magicLinkMutation.mutate(magicLinkEmail);
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter className="sm:justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowMagicLinkDialog(false);
+                setMagicLinkEmail("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={() => magicLinkMutation.mutate(magicLinkEmail)}
+              disabled={!magicLinkEmail || magicLinkMutation.isPending}
+            >
+              {magicLinkMutation.isPending ? "Enviando..." : "Enviar enlace"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

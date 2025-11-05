@@ -63,6 +63,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByInviteToken(inviteToken: string): Promise<User | undefined>;
+  getUserByLoginToken(loginToken: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   getUserStats(userId: string): Promise<{
@@ -260,6 +261,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(users)
       .where(eq(users.inviteToken, inviteToken));
+    return user || undefined;
+  }
+
+  async getUserByLoginToken(loginToken: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.loginToken, loginToken));
     return user || undefined;
   }
 

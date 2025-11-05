@@ -817,3 +817,138 @@ export async function sendSupportTicketToAdmin(
     return false;
   }
 }
+
+export interface MagicLinkEmailData {
+  email: string;
+  firstName: string;
+  lastName: string;
+  loginToken: string;
+}
+
+/**
+ * Envía un email con magic link para acceso sin contraseña
+ */
+export async function sendMagicLinkEmail(data: MagicLinkEmailData): Promise<boolean> {
+  try {
+    if (!BREVO_API_KEY) {
+      console.warn('BREVO_API_KEY no configurada. Email no enviado.');
+      console.log('Simulated magic link email to:', data.email);
+      console.log('Magic link:', `${APP_URL}/login/magic?token=${data.loginToken}`);
+      return true; // Simular éxito en desarrollo
+    }
+
+    const magicLink = `${APP_URL}/login/magic?token=${data.loginToken}`;
+    
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.to = [{ email: data.email, name: `${data.firstName} ${data.lastName}` }];
+    sendSmtpEmail.sender = { email: FROM_EMAIL, name: 'Loyalty Program Platform' };
+    sendSmtpEmail.subject = '🔐 Tu enlace de acceso a LoyaltyPilot';
+    sendSmtpEmail.htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+            }
+            .header {
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+              padding: 30px;
+              text-align: center;
+              border-radius: 10px 10px 0 0;
+            }
+            .content {
+              background: #f9fafb;
+              padding: 30px;
+              border-radius: 0 0 10px 10px;
+            }
+            .button {
+              display: inline-block;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white !important;
+              padding: 15px 30px;
+              text-decoration: none;
+              border-radius: 5px;
+              margin: 20px 0;
+              font-weight: bold;
+            }
+            .footer {
+              margin-top: 30px;
+              text-align: center;
+              color: #6b7280;
+              font-size: 12px;
+            }
+            .warning {
+              background: #fef3c7;
+              border-left: 4px solid #f59e0b;
+              padding: 15px;
+              margin: 20px 0;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>🔐 Acceso sin Contraseña</h1>
+          </div>
+          <div class="content">
+            <p>Hola ${data.firstName},</p>
+            
+            <p>Has solicitado acceder a tu cuenta sin contraseña. Haz clic en el siguiente botón para iniciar sesión:</p>
+            
+            <div style="text-align: center;">
+              <a href="${magicLink}" class="button">Acceder Ahora</a>
+            </div>
+            
+            <p style="margin-top: 20px; font-size: 14px; color: #6b7280;">
+              O copia y pega este enlace en tu navegador:<br>
+              <a href="${magicLink}">${magicLink}</a>
+            </p>
+            
+            <div class="warning">
+              <p style="margin: 0;"><strong>⏰ Importante:</strong></p>
+              <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                <li>Este enlace expira en <strong>15 minutos</strong></li>
+                <li>Solo puede usarse <strong>una vez</strong></li>
+                <li>Si no solicitaste este acceso, ignora este email</li>
+              </ul>
+            </div>
+          </div>
+          <div class="footer">
+            <p>Este es un correo automático, por favor no respondas a este mensaje.</p>
+            <p>&copy; ${new Date().getFullYear()} Loyalty Program Platform. Todos los derechos reservados.</p>
+          </div>
+        </body>
+        </html>
+      `;
+    sendSmtpEmail.textContent = `
+Hola ${data.firstName},
+
+Has solicitado acceder a tu cuenta sin contraseña.
+
+Para iniciar sesión, visita el siguiente enlace:
+${magicLink}
+
+IMPORTANTE:
+- Este enlace expira en 15 minutos
+- Solo puede usarse una vez
+- Si no solicitaste este acceso, ignora este email
+
+Saludos,
+Loyalty Program Platform
+      `.trim();
+
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('Magic link email sent successfully to:', data.email);
+    return true;
+  } catch (error) {
+    console.error('Error sending magic link email:', error);
+    return false;
+  }
+}

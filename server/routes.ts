@@ -13,7 +13,8 @@ import {
   sendDealApprovedEmail, 
   sendRedemptionApprovedEmail,
   sendRedemptionRequestToAdmin,
-  sendSupportTicketToAdmin
+  sendSupportTicketToAdmin,
+  sendMagicLinkEmail
 } from "./email.js";
 
 // Extend session data interface
@@ -107,6 +108,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } else {
       res.json({ message: "Logged out" });
+    }
+  });
+
+  // Request magic link for passwordless login
+  app.post("/api/auth/request-magic-link", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        // Por seguridad, no revelar si el email existe o no
+        return res.json({ 
+          message: "Si el email existe en nuestro sistema, recibirás un enlace de acceso." 
+        });
+      }
+
+      // Verificar que el usuario esté aprobado
+      if (!user.isApproved) {
+        return res.json({ 
+          message: "Si el email existe en nuestro sistema, recibirás un enlace de acceso." 
+        });
+      }
+
+      // Generar token de login (expira en 15 minutos)
+      const loginToken = nanoid(32);
+      const expiryDate = new Date();
+      expiryDate.setMinutes(expiryDate.getMinutes() + 15);
+
+      // Guardar token en la base de datos
+      await storage.updateUser(user.id, {
+        loginToken,
+        loginTokenExpiry: expiryDate,
+      });
+
+      // Enviar email con magic link
+      await sendMagicLinkEmail({
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        loginToken,
+      });
+
+      res.json({ 
+        message: "Si el email existe en nuestro sistema, recibirás un enlace de acceso." 
+      });
+    } catch (error) {
+      console.error("Request magic link error:", error);
+      res.status(500).json({ message: "Failed to send magic link" });
+    }
+  });
+
+  // Verify and login with magic link
+  app.get("/api/auth/verify-magic-link/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      // Buscar usuario por loginToken
+      const user = await storage.getUserByLoginToken(token);
+      
+      if (!user) {
+        return res.status(404).json({ 
+          valid: false,
+          message: "Enlace inválido o expirado" 
+        });
+      }
+
+      // Verificar que el token no haya expirado
+      if (!user.loginTokenExpiry || new Date() > new Date(user.loginTokenExpiry)) {
+        return res.status(400).json({ 
+          valid: false,
+          message: "Este enlace ha expirado. Solicita uno nuevo." 
+        });
+      }
+
+      // Crear sesión automáticamente
+      req.session.userId = user.id;
+      req.session.userRole = user.role;
+
+      // Limpiar el token (un solo uso)
+      await storage.updateUser(user.id, {
+        loginToken: null,
+        loginTokenExpiry: null,
+      });
+
+      res.json({ 
+        valid: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+        }
+      });
+    } catch (error) {
+      console.error("Verify magic link error:", error);
+      res.status(500).json({ 
+        valid: false,
+        message: "Error al verificar el enlace" 
+      });
     }
   });
 

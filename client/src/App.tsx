@@ -15,6 +15,7 @@ import Rewards from "@/pages/rewards";
 import Admin from "@/pages/admin";
 import RegisterWithInvite from "@/pages/register-invite";
 import PasswordlessLogin from "@/pages/passwordless-login";
+import MagicLinkLogin from "@/pages/magic-link-login";
 import ProfilePage from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 
@@ -68,6 +69,10 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
       // Redirect from passwordless login
       const redirectPath = user.role === "admin" ? "/admin" : "/";
       setLocation(redirectPath);
+    } else if (user && location.startsWith("/login/magic")) {
+      // Redirect from magic link login
+      const redirectPath = user.role === "admin" ? "/admin" : "/";
+      setLocation(redirectPath);
     }
   }, [user, location, setLocation]);
 
@@ -80,7 +85,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // Allow access to register and passwordless-login pages without authentication
-  if (!user && location !== "/login" && location !== "/register" && !location.startsWith("/passwordless-login")) {
+  if (!user && location !== "/login" && location !== "/register" && !location.startsWith("/passwordless-login") && !location.startsWith("/login/magic")) {
     return <Login />;
   }
 
@@ -101,6 +106,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={RegisterWithInvite} />
       <Route path="/passwordless-login" component={PasswordlessLogin} />
+      <Route path="/login/magic" component={MagicLinkLogin} />
       <Route path="/" component={Dashboard} />
       <Route path="/deals" component={Deals} />
       <Route path="/rewards" component={Rewards} />
