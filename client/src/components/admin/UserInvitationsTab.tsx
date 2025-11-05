@@ -19,7 +19,6 @@ interface InviteFormData {
   email: string;
   firstName: string;
   lastName: string;
-  country: string;
 }
 
 export default function UserInvitationsTab() {
@@ -30,7 +29,6 @@ export default function UserInvitationsTab() {
     email: "",
     firstName: "",
     lastName: "",
-    country: "",
   });
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [bulkUsers, setBulkUsers] = useState<InviteFormData[]>([]);
@@ -88,7 +86,7 @@ export default function UserInvitationsTab() {
         description: "El email de invitación ha sido enviado exitosamente.",
       });
       setIsInviteDialogOpen(false);
-      setInviteForm({ email: "", firstName: "", lastName: "", country: "" });
+      setInviteForm({ email: "", firstName: "", lastName: "" });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users/pending"] });
     },
     onError: (error: any) => {
@@ -159,7 +157,7 @@ export default function UserInvitationsTab() {
   });
 
   const handleSingleInvite = () => {
-    if (!inviteForm.email || !inviteForm.firstName || !inviteForm.lastName || !inviteForm.country) {
+    if (!inviteForm.email || !inviteForm.firstName || !inviteForm.lastName) {
       toast({
         title: "Campos requeridos",
         description: "Por favor completa todos los campos",
@@ -190,8 +188,7 @@ export default function UserInvitationsTab() {
           email: row.email || row.Email || row.EMAIL || "",
           firstName: row.firstName || row.FirstName || row.first_name || row["First Name"] || "",
           lastName: row.lastName || row.LastName || row.last_name || row["Last Name"] || "",
-          country: row.country || row.Country || row.COUNTRY || "",
-        })).filter(user => user.email && user.firstName && user.lastName && user.country);
+        })).filter(user => user.email && user.firstName && user.lastName);
 
         setBulkUsers(users);
         setCsvPreview(`${users.length} usuarios válidos encontrados en el archivo.`);
@@ -230,8 +227,8 @@ export default function UserInvitationsTab() {
 
   const downloadCsvTemplate = () => {
     const template = [
-      { email: "usuario@ejemplo.com", firstName: "Nombre", lastName: "Apellido", country: "México" },
-      { email: "otro@ejemplo.com", firstName: "John", lastName: "Doe", country: "Colombia" },
+      { email: "usuario@ejemplo.com", firstName: "Nombre", lastName: "Apellido" },
+      { email: "otro@ejemplo.com", firstName: "John", lastName: "Doe" },
     ];
 
     const worksheet = XLSX.utils.json_to_sheet(template);
@@ -296,15 +293,6 @@ export default function UserInvitationsTab() {
                     />
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="country">País *</Label>
-                  <Input
-                    id="country"
-                    placeholder="México"
-                    value={inviteForm.country}
-                    onChange={(e) => setInviteForm({ ...inviteForm, country: e.target.value })}
-                  />
-                </div>
                 <Button 
                   onClick={handleSingleInvite} 
                   className="w-full"
@@ -333,7 +321,7 @@ export default function UserInvitationsTab() {
               <div className="space-y-4">
                 <Alert>
                   <AlertDescription>
-                    El archivo CSV debe contener las columnas: <strong>email</strong>, <strong>firstName</strong>, <strong>lastName</strong>, <strong>country</strong>
+                    El archivo CSV debe contener las columnas: <strong>email</strong>, <strong>firstName</strong>, <strong>lastName</strong>
                   </AlertDescription>
                 </Alert>
 
@@ -366,7 +354,6 @@ export default function UserInvitationsTab() {
                         <TableRow>
                           <TableHead>Email</TableHead>
                           <TableHead>Nombre</TableHead>
-                          <TableHead>País</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -374,7 +361,6 @@ export default function UserInvitationsTab() {
                           <TableRow key={idx}>
                             <TableCell className="text-xs">{user.email}</TableCell>
                             <TableCell className="text-xs">{user.firstName} {user.lastName}</TableCell>
-                            <TableCell className="text-xs">{user.country}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

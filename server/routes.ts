@@ -890,11 +890,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const { email, firstName, lastName, country } = req.body;
+      const { email, firstName, lastName } = req.body;
       
-      if (!email || !firstName || !lastName || !country) {
+      if (!email || !firstName || !lastName) {
         return res.status(400).json({ 
-          message: "Email, first name, last name, and country are required" 
+          message: "Email, first name, and last name are required" 
         });
       }
 
@@ -921,7 +921,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: hashedPassword,
         firstName,
         lastName,
-        country,
+        country: null, // Will be set during registration
         role: "user",
         isActive: true,
         isApproved: false,
@@ -994,9 +994,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const userData of users) {
         try {
-          const { email, firstName, lastName, country } = userData;
+          const { email, firstName, lastName } = userData;
           
-          if (!email || !firstName || !lastName || !country) {
+          if (!email || !firstName || !lastName) {
             results.failed.push({
               email: email || 'unknown',
               reason: 'Missing required fields',
@@ -1026,7 +1026,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             password: hashedPassword,
             firstName,
             lastName,
-            country,
+            country: null, // Will be set during registration
             role: "user",
             isActive: true,
             isApproved: false,
@@ -1074,11 +1074,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Complete registration with invite token
   app.post("/api/auth/register-with-token", async (req, res) => {
     try {
-      const { inviteToken, username, password, region, category, subcategory } = req.body;
+      const { inviteToken, username, password, country, region, category, subcategory } = req.body;
       
-      if (!inviteToken || !username || !password || !region || !category) {
+      if (!inviteToken || !username || !password || !country || !region || !category) {
         return res.status(400).json({ 
-          message: "Invite token, username, password, region, and category are required" 
+          message: "Invite token, username, password, country, region, and category are required" 
         });
       }
 
@@ -1111,6 +1111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedUser = await storage.updateUser(user.id, {
         username,
         password: hashedPassword,
+        country,
         region: region as "NOLA" | "SOLA" | "BRASIL" | "MEXICO",
         regionCategory: category as "ENTERPRISE" | "SMB" | "MSSP",
         regionSubcategory: subcategory || null,

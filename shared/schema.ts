@@ -21,7 +21,7 @@ export const users = pgTable("users", {
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   role: userRoleEnum("role").notNull().default("user"),
-  country: text("country").notNull(),
+  country: text("country"), // Set during registration
   region: regionEnum("region"),
   regionCategory: regionCategoryEnum("region_category"),
   regionSubcategory: text("region_subcategory"), // Para casos como "COLOMBIA", "CENTRO AMÉRICA", "PLATINUM", "GOLD", etc.
@@ -30,6 +30,8 @@ export const users = pgTable("users", {
   approvedBy: varchar("approved_by"),
   approvedAt: timestamp("approved_at"),
   inviteToken: text("invite_token"),
+  loginToken: text("login_token"), // Token para passwordless login
+  loginTokenExpiry: timestamp("login_token_expiry"), // Expiración del token de login
   resetToken: text("reset_token"),
   resetTokenExpiry: timestamp("reset_token_expiry"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),

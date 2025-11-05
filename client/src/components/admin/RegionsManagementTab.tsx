@@ -33,6 +33,7 @@ import { Globe, Plus, Edit, Save, X, CheckCircle, Database, Calendar, Infinity, 
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useTranslation } from "@/hooks/useTranslation";
+import { REGION_HIERARCHY, REGION_CATEGORIES, MEXICO_LEVELS } from "@/../../shared/constants";
 
 interface RegionConfig {
   id: string;
@@ -47,40 +48,6 @@ interface RegionConfig {
   isActive: boolean;
   expirationDate: string | null;
 }
-
-// Estructura jerárquica: Región → Países (opcionales) → Ciudades (opcionales)
-const REGION_HIERARCHY: Record<string, Record<string, string[]>> = {
-  NOLA: {
-    "COLOMBIA": ["Bogotá", "Medellín", "Cali", "Barranquilla", "Cartagena"],
-    "CENTRO AMERICA": ["Guatemala", "San Salvador", "Tegucigalpa", "Managua", "San José", "Panamá"],
-  },
-  SOLA: {
-    "ARGENTINA": ["Buenos Aires", "Córdoba", "Rosario", "Mendoza", "La Plata"],
-    "CHILE": ["Santiago", "Valparaíso", "Concepción", "La Serena", "Antofagasta"],
-    "PERU": ["Lima", "Arequipa", "Cusco", "Trujillo"],
-    "OTROS": [], // Para otros países de SOLA sin ciudades específicas
-  },
-  BRASIL: {
-    "": ["São Paulo", "Rio de Janeiro", "Brasília", "Salvador", "Fortaleza", "Belo Horizonte", "Curitiba", "Recife"],
-  },
-  MEXICO: {
-    "": ["Ciudad de México", "Guadalajara", "Monterrey", "Puebla", "Tijuana", "León", "Querétaro", "Mérida"],
-  },
-};
-
-// Categorías disponibles por región
-const REGION_CATEGORIES: Record<string, string[]> = {
-  NOLA: ["ENTERPRISE", "SMB", "MSSP"],
-  SOLA: ["ENTERPRISE", "SMB"],
-  BRASIL: ["ENTERPRISE", "SMB"],
-  MEXICO: ["ENTERPRISE", "SMB"], // Categorías base, los niveles van en subcategoría
-};
-
-// Niveles/subcategorías para MÉXICO según la categoría
-const MEXICO_LEVELS: Record<string, string[]> = {
-  ENTERPRISE: ["PLATINUM", "GOLD (2)"],
-  SMB: ["PLATINUM", "GOLD (2)", "SILVER & REGISTERED"],
-};
 
 export default function RegionsManagementTab() {
   const { t } = useTranslation();

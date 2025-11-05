@@ -11,11 +11,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { REGION_HIERARCHY } from "@/../../shared/constants";
 
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
+  country: z.string().optional(),
+  city: z.string().optional(),
   region: z.string().min(1, "Debes seleccionar una región"),
   category: z.string().min(1, "Debes seleccionar una categoría"),
   subcategory: z.string().optional(),
@@ -36,8 +39,12 @@ export default function RegisterWithInvite() {
   const [inviteData, setInviteData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [token, setToken] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("");
   const [selectedRegion, setSelectedRegion] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [availableCountries, setAvailableCountries] = useState<string[]>([]);
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
 
   const {
     register,
@@ -67,6 +74,44 @@ export default function RegisterWithInvite() {
     setToken(inviteToken);
     verifyToken(inviteToken);
   }, []);
+
+  // Actualizar países disponibles cuando se selecciona una región
+  useEffect(() => {
+    if (selectedRegion) {
+      const countries = Object.keys(REGION_HIERARCHY[selectedRegion] || {});
+      setAvailableCountries(countries);
+      
+      // Si solo hay un país (vacío o específico), seleccionarlo automáticamente
+      if (countries.length === 1) {
+        setSelectedCountry(countries[0]);
+        setValue("country", countries[0]);
+      } else {
+        setSelectedCountry("");
+        setValue("country", "");
+      }
+      
+      setSelectedCity("");
+      setValue("city", "");
+      setAvailableCities([]);
+    } else {
+      setAvailableCountries([]);
+      setSelectedCountry("");
+      setSelectedCity("");
+      setAvailableCities([]);
+    }
+  }, [selectedRegion]);
+
+  // Actualizar ciudades disponibles cuando se selecciona un país
+  useEffect(() => {
+    if (selectedRegion && selectedCountry !== undefined) {
+      const cities = REGION_HIERARCHY[selectedRegion]?.[selectedCountry] || [];
+      setAvailableCities(cities);
+      
+      // Reset ciudad seleccionada
+      setSelectedCity("");
+      setValue("city", "");
+    }
+  }, [selectedCountry, selectedRegion]);
 
   const verifyToken = async (inviteToken: string) => {
     try {
@@ -104,7 +149,35 @@ export default function RegisterWithInvite() {
     setIsSubmitting(true);
     
     try {
+      // 1. PRIMERO cerrar cualquier sesión activa
+      console.log("🔓 Cerrando sesión actual si existe...");
+      try {
+        await fetch("/api/auth/logout", {
+          method: "POST",
+          credentials: "include",
+        });
+        console.log("✅ Sesión cerrada");
+      } catch (logoutError) {
+        console.log("⚠️ No había sesión activa o error al cerrar:", logoutError);
+      }
+
+      // 2. LUEGO completar el registro
       console.log("🚀 Enviando petición a /api/auth/register-with-token");
+      
+      // Construir el valor de country basado en la selección
+      let finalCountry = "";
+      if (data.country && data.country !== "") {
+        // Si hay país específico (NOLA: COLOMBIA, CENTRO AMERICA; SOLA: ARGENTINA, CHILE, PERU, OTROS)
+        if (data.city) {
+          finalCountry = `${data.country} - ${data.city}`;
+        } else {
+          finalCountry = data.country;
+        }
+      } else if (data.city) {
+        // BRASIL o MÉXICO (sin país intermedio, solo ciudad)
+        finalCountry = data.city;
+      }
+      
       const response = await fetch("/api/auth/register-with-token", {
         method: "POST",
         headers: {
@@ -115,6 +188,7 @@ export default function RegisterWithInvite() {
           inviteToken: token,
           username: data.username,
           password: data.password,
+          country: finalCountry,
           region: data.region,
           category: data.category,
           subcategory: data.subcategory || null,
@@ -134,8 +208,11 @@ export default function RegisterWithInvite() {
         description: result.message || "Tu cuenta está lista. Ya puedes iniciar sesión.",
       });
 
-      console.log("✅ Registro exitoso, redirigiendo...");
-      setTimeout(() => navigate("/login"), 2000);
+      console.log("✅ Registro exitoso, redirigiendo al login...");
+      // Usar window.location.href para forzar recarga completa y limpiar estado
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 2000);
     } catch (error: any) {
       console.error("❌ Error en registro:", error);
       toast({
@@ -198,8 +275,7 @@ export default function RegisterWithInvite() {
             <Alert className="mb-6">
               <AlertDescription>
                 <strong>Email:</strong> {inviteData.email}<br />
-                <strong>Nombre:</strong> {inviteData.firstName} {inviteData.lastName}<br />
-                <strong>País:</strong> {inviteData.country}
+                <strong>Nombre:</strong> {inviteData.firstName} {inviteData.lastName}
               </AlertDescription>
             </Alert>
           )}
@@ -274,6 +350,60 @@ export default function RegisterWithInvite() {
                 <p className="text-sm text-red-500 mt-1">{errors.region.message}</p>
               )}
             </div>
+
+            {/* Mostrar selector de país solo si la región tiene países */}
+            {selectedRegion && availableCountries.length > 0 && availableCountries[0] !== "" && (
+              <div>
+                <Label htmlFor="country">
+                  {selectedRegion === "NOLA" ? "Subcategoría" : "País"} *
+                </Label>
+                <Select
+                  value={selectedCountry}
+                  onValueChange={(value) => {
+                    setSelectedCountry(value);
+                    setValue("country", value, { shouldValidate: true });
+                  }}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={selectedRegion === "NOLA" ? "Selecciona subcategoría" : "Selecciona país"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCountries.map((country) => (
+                      <SelectItem key={country} value={country}>
+                        {country}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Mostrar selector de ciudad si hay ciudades disponibles */}
+            {selectedRegion && availableCities.length > 0 && (
+              <div>
+                <Label htmlFor="city">Ciudad (Opcional)</Label>
+                <Select
+                  value={selectedCity}
+                  onValueChange={(value) => {
+                    setSelectedCity(value);
+                    setValue("city", value);
+                  }}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona tu ciudad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCities.map((city) => (
+                      <SelectItem key={city} value={city}>
+                        {city}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {selectedRegion && (
               <div>

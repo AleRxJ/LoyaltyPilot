@@ -52,8 +52,20 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Redirect authenticated users away from login/register pages
   useEffect(() => {
-    if (user && (location === "/login" || location === "/register" || location.startsWith("/passwordless-login"))) {
-      // Use the appropriate redirect based on user role
+    // Allow /register with token even if authenticated (for invite completion)
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasInviteToken = urlParams.get("token");
+    
+    if (user && location === "/login") {
+      // Always redirect from login if authenticated
+      const redirectPath = user.role === "admin" ? "/admin" : "/";
+      setLocation(redirectPath);
+    } else if (user && location === "/register" && !hasInviteToken) {
+      // Only redirect from register if there's no invite token
+      const redirectPath = user.role === "admin" ? "/admin" : "/";
+      setLocation(redirectPath);
+    } else if (user && location.startsWith("/passwordless-login")) {
+      // Redirect from passwordless login
       const redirectPath = user.role === "admin" ? "/admin" : "/";
       setLocation(redirectPath);
     }

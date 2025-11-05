@@ -74,7 +74,7 @@ const editUserSchema = z.object({
   email: z.string().email("Invalid email address"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  country: z.string().min(1, "Country is required"),
+  country: z.string().optional().nullable(),
   role: z.enum(["user", "admin"]),
   isActive: z.boolean(),
 });
@@ -1391,7 +1391,12 @@ export default function Admin() {
                             <FormItem>
                               <FormLabel>Country</FormLabel>
                               <FormControl>
-                                <Input placeholder="United States" {...field} data-testid="input-edit-country" />
+                                <Input 
+                                  placeholder="United States" 
+                                  {...field} 
+                                  value={field.value || ""} 
+                                  data-testid="input-edit-country" 
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
