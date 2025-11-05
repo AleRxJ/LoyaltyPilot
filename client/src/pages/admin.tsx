@@ -43,6 +43,7 @@ import PointsConfigTab from "@/components/admin/PointsConfigTab";
 import UserInvitationsTab from "@/components/admin/UserInvitationsTab";
 import RegionsOverview from "@/components/admin/RegionsOverview";
 import RegionsManagementTab from "@/components/admin/RegionsManagementTab";
+import ProgramConfigTab from "@/components/admin/ProgramConfigTab";
 import type { User, Deal, Reward } from "@shared/schema";
 import type { AuthUser } from "@/lib/auth";
 import type { UploadResult } from '@uppy/core';
@@ -2246,23 +2247,26 @@ export default function Admin() {
           <RegionsManagementTab />
         </TabsContent>
 
-        {/* Settings Tab - with sub-tabs for Support and Points Config */}
+        {/* Settings Tab - with sub-tabs for Support, Points Config, and Program Configuration */}
         <TabsContent value="settings" className="mt-6">
           <Card className="shadow-material">
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Settings className="w-5 h-5 mr-2" />
-                System Settings
+                {t('admin.systemSettings')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="support" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsList className="grid w-full grid-cols-3 mb-6">
                   <TabsTrigger value="support" data-testid="subtab-support">
-                    Support Tickets
+                    {t('admin.supportTickets')}
                   </TabsTrigger>
                   <TabsTrigger value="points-config" data-testid="subtab-points-config">
-                    Points Configuration
+                    {t('admin.pointsConfiguration')}
+                  </TabsTrigger>
+                  <TabsTrigger value="program-config" data-testid="subtab-program-config">
+                    {t('admin.programConfiguration')}
                   </TabsTrigger>
                 </TabsList>
 
@@ -2274,6 +2278,11 @@ export default function Admin() {
                 {/* Points Config Sub-Tab */}
                 <TabsContent value="points-config">
                   <PointsConfigTab />
+                </TabsContent>
+
+                {/* Program Configuration Sub-Tab */}
+                <TabsContent value="program-config">
+                  <ProgramConfigTab />
                 </TabsContent>
               </Tabs>
             </CardContent>

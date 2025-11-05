@@ -224,6 +224,15 @@ export interface IStorage {
     year: number,
   ): Promise<MonthlyRegionPrize[]>;
   seedRegions(): Promise<void>;
+
+  // Campaign methods
+  getCampaigns(): Promise<Campaign[]>;
+  createCampaign(campaign: InsertCampaign): Promise<Campaign>;
+  updateCampaign(id: string, updates: Partial<Campaign>): Promise<Campaign | undefined>;
+  deleteCampaign(id: string): Promise<Campaign | undefined>;
+  
+  // Region Config methods (extended)
+  getRegionConfigs(): Promise<RegionConfig[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1017,6 +1026,34 @@ export class DatabaseStorage implements IStorage {
 
   async getCampaigns(): Promise<Campaign[]> {
     return await db.select().from(campaigns).orderBy(desc(campaigns.createdAt));
+  }
+
+  async createCampaign(campaign: InsertCampaign): Promise<Campaign> {
+    const [newCampaign] = await db
+      .insert(campaigns)
+      .values(campaign)
+      .returning();
+    return newCampaign;
+  }
+
+  async updateCampaign(
+    id: string,
+    updates: Partial<Campaign>
+  ): Promise<Campaign | undefined> {
+    const [updated] = await db
+      .update(campaigns)
+      .set(updates)
+      .where(eq(campaigns.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteCampaign(id: string): Promise<Campaign | undefined> {
+    const [deleted] = await db
+      .delete(campaigns)
+      .where(eq(campaigns.id, id))
+      .returning();
+    return deleted || undefined;
   }
 
   async getActiveCampaigns(): Promise<Campaign[]> {
@@ -1857,6 +1894,18 @@ export class DatabaseStorage implements IStorage {
     console.log(`✅ ${insertedPrizes.length} monthly prizes created`);
 
     console.log("🎉 Seeding completed successfully!");
+  }
+
+  // ═══════════════════════════════════════════════
+  // Extended Region Config methods
+  // ═══════════════════════════════════════════════
+
+  async getRegionConfigs(): Promise<RegionConfig[]> {
+    const configs = await db
+      .select()
+      .from(regionConfigs)
+      .orderBy(regionConfigs.region, regionConfigs.category);
+    return configs;
   }
 }
 

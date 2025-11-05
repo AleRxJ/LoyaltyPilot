@@ -2467,6 +2467,169 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ========== CAMPAIGN ROUTES ==========
+  
+  // Get all campaigns
+  app.get("/api/admin/campaigns", async (req, res) => {
+    const userRole = req.session?.userRole;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const campaigns = await storage.getCampaigns();
+      res.json(campaigns);
+    } catch (error) {
+      console.error("Get campaigns error:", error);
+      res.status(500).json({ message: "Failed to get campaigns" });
+    }
+  });
+
+  // Create campaign
+  app.post("/api/admin/campaigns", async (req, res) => {
+    const userRole = req.session?.userRole;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const campaignData = req.body;
+      
+      // Convert date strings to Date objects
+      const processedData = {
+        ...campaignData,
+        startDate: new Date(campaignData.startDate),
+        endDate: new Date(campaignData.endDate),
+        multiplier: campaignData.multiplier.toString(), // Ensure it's a string for decimal type
+      };
+      
+      const campaign = await storage.createCampaign(processedData);
+      res.status(201).json(campaign);
+    } catch (error) {
+      console.error("Create campaign error:", error);
+      res.status(500).json({ message: "Failed to create campaign" });
+    }
+  });
+
+  // Update campaign (toggle active status or other fields)
+  app.patch("/api/admin/campaigns/:id", async (req, res) => {
+    const userRole = req.session?.userRole;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      
+      const campaign = await storage.updateCampaign(id, updates);
+      
+      if (!campaign) {
+        return res.status(404).json({ message: "Campaign not found" });
+      }
+      
+      res.json(campaign);
+    } catch (error) {
+      console.error("Update campaign error:", error);
+      res.status(500).json({ message: "Failed to update campaign" });
+    }
+  });
+
+  // Delete campaign
+  app.delete("/api/admin/campaigns/:id", async (req, res) => {
+    const userRole = req.session?.userRole;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { id } = req.params;
+      
+      const campaign = await storage.deleteCampaign(id);
+      
+      if (!campaign) {
+        return res.status(404).json({ message: "Campaign not found" });
+      }
+      
+      res.json({ message: "Campaign deleted successfully", campaign });
+    } catch (error) {
+      console.error("Delete campaign error:", error);
+      res.status(500).json({ message: "Failed to delete campaign" });
+    }
+  });
+
+  // Get all region configurations
+  app.get("/api/admin/region-configs", async (req, res) => {
+    const userRole = req.session?.userRole;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const configs = await storage.getRegionConfigs();
+      res.json(configs);
+    } catch (error) {
+      console.error("Get region configs error:", error);
+      res.status(500).json({ message: "Failed to get region configurations" });
+    }
+  });
+
+  // Create region configuration
+  app.post("/api/admin/region-configs", async (req, res) => {
+    const userRole = req.session?.userRole;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const configData = req.body;
+      const config = await storage.createRegionConfig(configData);
+      res.status(201).json(config);
+    } catch (error) {
+      console.error("Create region config error:", error);
+      
+      // Handle unique constraint violation
+      if ((error as any).code === '23505') {
+        return res.status(409).json({ 
+          message: "A configuration already exists for this region, category, and subcategory combination" 
+        });
+      }
+      
+      res.status(500).json({ message: "Failed to create region configuration" });
+    }
+  });
+
+  // Update region configuration
+  app.patch("/api/admin/region-configs/:id", async (req, res) => {
+    const userRole = req.session?.userRole;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      
+      const config = await storage.updateRegionConfig(id, updates);
+      
+      if (!config) {
+        return res.status(404).json({ message: "Region configuration not found" });
+      }
+      
+      res.json(config);
+    } catch (error) {
+      console.error("Update region config error:", error);
+      res.status(500).json({ message: "Failed to update region configuration" });
+    }
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;
