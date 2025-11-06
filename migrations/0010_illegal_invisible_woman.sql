@@ -1,0 +1,1 @@
+ALTER TABLE "monthly_region_prizes" ALTER COLUMN "rank" SET DEFAULT 1;

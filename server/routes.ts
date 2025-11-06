@@ -739,7 +739,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           {
             rewardName: reward.name,
             pointsCost: reward.pointsCost,
-            status: updatedRedemption.status
+            status: updatedRedemption.status,
+            estimatedDeliveryDays: reward.estimatedDeliveryDays || undefined
           }
         );
       }
@@ -2850,6 +2851,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get grand prize ranking error:", error);
       res.status(500).json({ message: "Failed to get grand prize ranking" });
+    }
+  });
+
+  // Monthly Prizes routes
+  app.get("/api/admin/monthly-prizes", async (req, res) => {
+    if (!req.session.userId || req.session.userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { month, year } = req.query;
+      const prizes = await storage.getMonthlyPrizes(
+        month ? parseInt(month as string) : undefined,
+        year ? parseInt(year as string) : undefined
+      );
+      res.json(prizes);
+    } catch (error) {
+      console.error("Get monthly prizes error:", error);
+      res.status(500).json({ message: "Failed to get monthly prizes" });
+    }
+  });
+
+  app.post("/api/admin/monthly-prizes", async (req, res) => {
+    if (!req.session.userId || req.session.userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const prize = await storage.createMonthlyPrize(req.body);
+      res.json(prize);
+    } catch (error) {
+      console.error("Create monthly prize error:", error);
+      res.status(500).json({ message: "Failed to create monthly prize" });
+    }
+  });
+
+  app.patch("/api/admin/monthly-prizes/:id", async (req, res) => {
+    if (!req.session.userId || req.session.userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { id } = req.params;
+      const prize = await storage.updateMonthlyPrize(id, req.body);
+      res.json(prize);
+    } catch (error) {
+      console.error("Update monthly prize error:", error);
+      res.status(500).json({ message: "Failed to update monthly prize" });
+    }
+  });
+
+  app.delete("/api/admin/monthly-prizes/:id", async (req, res) => {
+    if (!req.session.userId || req.session.userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { id } = req.params;
+      await storage.deleteMonthlyPrize(id);
+      res.json({ message: "Prize deleted successfully" });
+    } catch (error) {
+      console.error("Delete monthly prize error:", error);
+      res.status(500).json({ message: "Failed to delete monthly prize" });
     }
   });
 

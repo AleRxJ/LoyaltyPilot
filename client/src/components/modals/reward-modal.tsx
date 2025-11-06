@@ -22,6 +22,7 @@ const rewardSchema = z.object({
   isActive: z.boolean().default(true),
   stockQuantity: z.string().optional(),
   imageUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
+  estimatedDeliveryDays: z.string().optional(),
 });
 
 type RewardForm = z.infer<typeof rewardSchema>;
@@ -58,6 +59,7 @@ export default function RewardModal({ isOpen, onClose, reward }: RewardModalProp
       isActive: true,
       stockQuantity: "",
       imageUrl: "",
+      estimatedDeliveryDays: "",
     },
   });
 
@@ -72,6 +74,7 @@ export default function RewardModal({ isOpen, onClose, reward }: RewardModalProp
         isActive: reward.isActive ?? true,
         stockQuantity: reward.stockQuantity?.toString() || "",
         imageUrl: reward.imageUrl || "",
+        estimatedDeliveryDays: reward.estimatedDeliveryDays?.toString() || "",
       });
     } else {
       form.reset({
@@ -82,6 +85,7 @@ export default function RewardModal({ isOpen, onClose, reward }: RewardModalProp
         isActive: true,
         stockQuantity: "",
         imageUrl: "",
+        estimatedDeliveryDays: "",
       });
     }
   }, [reward, form]);
@@ -93,6 +97,7 @@ export default function RewardModal({ isOpen, onClose, reward }: RewardModalProp
         pointsCost: parseInt(data.pointsCost),
         stockQuantity: data.stockQuantity ? parseInt(data.stockQuantity) : null,
         imageUrl: data.imageUrl || null,
+        estimatedDeliveryDays: data.estimatedDeliveryDays ? parseInt(data.estimatedDeliveryDays) : null,
       };
       
       if (isEditing) {
@@ -236,6 +241,25 @@ export default function RewardModal({ isOpen, onClose, reward }: RewardModalProp
                         type="number"
                         placeholder="100"
                         data-testid="input-stock-quantity"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="estimatedDeliveryDays"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tiempo Estimado de Entrega (días)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        placeholder="15"
+                        data-testid="input-estimated-delivery-days"
                       />
                     </FormControl>
                     <FormMessage />

@@ -69,6 +69,7 @@ export const rewards = pgTable("rewards", {
   isActive: boolean("is_active").notNull().default(true),
   stockQuantity: integer("stock_quantity"),
   imageUrl: text("image_url"),
+  estimatedDeliveryDays: integer("estimated_delivery_days").default(15), // Días estimados de entrega
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
@@ -176,8 +177,10 @@ export const monthlyRegionPrizes = pgTable("monthly_region_prizes", {
   regionConfigId: varchar("region_config_id").notNull().references(() => regionConfigs.id),
   month: integer("month").notNull(), // 1-12
   year: integer("year").notNull(),
+  rank: integer("rank").notNull().default(1), // Posición en el ranking (1 = primero, 2 = segundo, etc.)
   prizeName: text("prize_name").notNull(),
   prizeDescription: text("prize_description"),
+  prizeValue: decimal("prize_value", { precision: 10, scale: 2 }), // Valor monetario del premio (opcional)
   goalTarget: integer("goal_target").notNull(), // Meta en goles para participar en sorteo
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),

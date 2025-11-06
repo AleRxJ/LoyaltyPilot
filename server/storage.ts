@@ -54,7 +54,7 @@ import {
 // Database connection and ORM helpers
 // ───────────────────────────────────────────────
 import { db } from "./db";
-import { and, desc, eq, count, sum, gte, gt, lte, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, count, sum, gte, gt, lte, isNotNull, isNull, sql } from "drizzle-orm";
 
 // ───────────────────────────────────────────────
 // Utilities
@@ -248,6 +248,12 @@ export interface IStorage {
   updateGrandPrizeCriteria(id: string, updates: UpdateGrandPrizeCriteria): Promise<GrandPrizeCriteria | undefined>;
   deleteGrandPrizeCriteria(id: string): Promise<void>;
   getGrandPrizeRanking(criteriaId: string): Promise<any[]>;
+
+  // Monthly Prizes methods
+  getMonthlyPrizes(month?: number, year?: number): Promise<MonthlyRegionPrize[]>;
+  createMonthlyPrize(prize: InsertMonthlyRegionPrize): Promise<MonthlyRegionPrize>;
+  updateMonthlyPrize(id: string, updates: Partial<MonthlyRegionPrize>): Promise<MonthlyRegionPrize | undefined>;
+  deleteMonthlyPrize(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2127,6 +2133,61 @@ export class DatabaseStorage implements IStorage {
       }));
 
     return filteredRanking;
+  }
+
+  // Monthly Prizes methods
+  async getMonthlyPrizes(
+    month?: number,
+    year?: number,
+  ): Promise<MonthlyRegionPrize[]> {
+    let query = db
+      .select()
+      .from(monthlyRegionPrizes)
+      .orderBy(desc(monthlyRegionPrizes.year), desc(monthlyRegionPrizes.month), asc(monthlyRegionPrizes.rank));
+
+    if (month !== undefined && year !== undefined) {
+      const prizes = await query.where(
+        and(
+          eq(monthlyRegionPrizes.month, month),
+          eq(monthlyRegionPrizes.year, year),
+        ),
+      );
+      return prizes;
+    } else if (month !== undefined) {
+      const prizes = await query.where(eq(monthlyRegionPrizes.month, month));
+      return prizes;
+    } else if (year !== undefined) {
+      const prizes = await query.where(eq(monthlyRegionPrizes.year, year));
+      return prizes;
+    }
+
+    return await query;
+  }
+
+  async createMonthlyPrize(
+    prize: InsertMonthlyRegionPrize,
+  ): Promise<MonthlyRegionPrize> {
+    const [newPrize] = await db
+      .insert(monthlyRegionPrizes)
+      .values(prize)
+      .returning();
+    return newPrize;
+  }
+
+  async updateMonthlyPrize(
+    id: string,
+    updates: Partial<MonthlyRegionPrize>,
+  ): Promise<MonthlyRegionPrize | undefined> {
+    const [updatedPrize] = await db
+      .update(monthlyRegionPrizes)
+      .set(updates)
+      .where(eq(monthlyRegionPrizes.id, id))
+      .returning();
+    return updatedPrize || undefined;
+  }
+
+  async deleteMonthlyPrize(id: string): Promise<void> {
+    await db.delete(monthlyRegionPrizes).where(eq(monthlyRegionPrizes.id, id));
   }
 }
 

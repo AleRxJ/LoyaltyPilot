@@ -475,13 +475,14 @@ export async function sendRedemptionApprovedEmail(
     rewardName: string;
     pointsCost: number;
     status: string;
+    estimatedDeliveryDays?: number;
   }
-): Promise<boolean> {
+): Promise<void> {
   try {
     if (!BREVO_API_KEY) {
       console.warn('BREVO_API_KEY no configurada. Email no enviado.');
       console.log(`Simulated redemption approved email to: ${email}`);
-      return true;
+      return;
     }
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
@@ -550,6 +551,15 @@ export async function sendRedemptionApprovedEmail(
           
           <p><strong>Estado:</strong> ${redemptionDetails.status === 'approved' ? '✅ Aprobado' : '📦 En proceso'}</p>
           
+          ${redemptionDetails.estimatedDeliveryDays ? `
+          <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0; color: #374151;">
+              <strong>⏱️ Tiempo estimado de entrega:</strong> 
+              <span style="color: #8b5cf6; font-weight: bold;">${redemptionDetails.estimatedDeliveryDays} días hábiles</span>
+            </p>
+          </div>
+          ` : ''}
+          
           <p>Recibirás más información sobre la entrega de tu recompensa próximamente.</p>
           
           <p style="margin-top: 30px;">
@@ -572,10 +582,8 @@ export async function sendRedemptionApprovedEmail(
 
     await apiInstance.sendTransacEmail(sendSmtpEmail);
     console.log('Redemption approved email sent successfully to:', email);
-    return true;
   } catch (error) {
     console.error('Error sending redemption approved email:', error);
-    return false;
   }
 }
 

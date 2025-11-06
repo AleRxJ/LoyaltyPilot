@@ -45,6 +45,7 @@ import RegionsOverview from "@/components/admin/RegionsOverview";
 import RegionsManagementTab from "@/components/admin/RegionsManagementTab";
 import ProgramConfigTab from "@/components/admin/ProgramConfigTab";
 import GrandPrizeTab from "@/components/admin/GrandPrizeTab";
+import MonthlyPrizesTab from "@/components/admin/MonthlyPrizesTab";
 import type { User, Deal, Reward } from "@shared/schema";
 import type { AuthUser } from "@/lib/auth";
 import type { UploadResult } from '@uppy/core';
@@ -2264,7 +2265,7 @@ export default function Admin() {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="support" className="w-full">
-                <TabsList className="grid w-full grid-cols-4 mb-6">
+                <TabsList className="grid w-full grid-cols-5 mb-6">
                   <TabsTrigger value="support" data-testid="subtab-support">
                     {t('admin.supportTickets')}
                   </TabsTrigger>
@@ -2276,6 +2277,9 @@ export default function Admin() {
                   </TabsTrigger>
                   <TabsTrigger value="grand-prize" data-testid="subtab-grand-prize">
                     Gran Premio Final
+                  </TabsTrigger>
+                  <TabsTrigger value="monthly-prizes" data-testid="subtab-monthly-prizes">
+                    Premios Mensuales
                   </TabsTrigger>
                 </TabsList>
 
@@ -2297,6 +2301,11 @@ export default function Admin() {
                 {/* Grand Prize Sub-Tab */}
                 <TabsContent value="grand-prize">
                   <GrandPrizeTab />
+                </TabsContent>
+
+                {/* Monthly Prizes Sub-Tab */}
+                <TabsContent value="monthly-prizes">
+                  <MonthlyPrizesTab />
                 </TabsContent>
               </Tabs>
             </CardContent>

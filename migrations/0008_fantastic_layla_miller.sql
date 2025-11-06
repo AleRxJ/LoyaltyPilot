@@ -1,0 +1,1 @@
+ALTER TABLE "rewards" ADD COLUMN "estimated_delivery_days" integer DEFAULT 15;
