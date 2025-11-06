@@ -15,6 +15,8 @@ import {
   monthlyRegionPrizes,
   rewardRegionAssignments,
   goalsHistory,
+  grandPrizeCriteria,
+  grandPrizeWinners,
   type Campaign,
   type Deal,
   type DealWithUser,
@@ -43,6 +45,9 @@ import {
   type InsertMonthlyRegionPrize,
   type RewardRegionAssignment,
   type GoalsHistory,
+  type GrandPrizeCriteria,
+  type InsertGrandPrizeCriteria,
+  type UpdateGrandPrizeCriteria,
 } from "@shared/schema";
 
 // ───────────────────────────────────────────────
@@ -235,6 +240,14 @@ export interface IStorage {
   
   // Region Config methods (extended)
   getRegionConfigs(): Promise<RegionConfig[]>;
+
+  // Grand Prize methods
+  getActiveGrandPrizeCriteria(): Promise<GrandPrizeCriteria | undefined>;
+  getAllGrandPrizeCriteria(): Promise<GrandPrizeCriteria[]>;
+  createGrandPrizeCriteria(criteria: InsertGrandPrizeCriteria): Promise<GrandPrizeCriteria>;
+  updateGrandPrizeCriteria(id: string, updates: UpdateGrandPrizeCriteria): Promise<GrandPrizeCriteria | undefined>;
+  deleteGrandPrizeCriteria(id: string): Promise<void>;
+  getGrandPrizeRanking(criteriaId: string): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1943,6 +1956,179 @@ export class DatabaseStorage implements IStorage {
       .orderBy(regionConfigs.region, regionConfigs.category);
     return configs;
   }
+
+  // ═══════════════════════════════════════════════
+  // Grand Prize methods
+  // ═══════════════════════════════════════════════
+
+  async getActiveGrandPrizeCriteria(): Promise<GrandPrizeCriteria | undefined> {
+    const [criteria] = await db
+      .select()
+      .from(grandPrizeCriteria)
+      .where(eq(grandPrizeCriteria.isActive, true))
+      .limit(1);
+    return criteria;
+  }
+
+  async getAllGrandPrizeCriteria(): Promise<GrandPrizeCriteria[]> {
+    const allCriteria = await db
+      .select()
+      .from(grandPrizeCriteria)
+      .orderBy(desc(grandPrizeCriteria.createdAt));
+    return allCriteria;
+  }
+
+  async createGrandPrizeCriteria(data: InsertGrandPrizeCriteria): Promise<GrandPrizeCriteria> {
+    // Deactivate all other criteria
+    await db
+      .update(grandPrizeCriteria)
+      .set({ isActive: false })
+      .where(eq(grandPrizeCriteria.isActive, true));
+
+    // Convert string dates to Date objects
+    const processedData = {
+      ...data,
+      id: randomUUID(),
+      startDate: data.startDate ? new Date(data.startDate) : null,
+      endDate: data.endDate ? new Date(data.endDate) : null,
+    };
+
+    const [newCriteria] = await db
+      .insert(grandPrizeCriteria)
+      .values(processedData)
+      .returning();
+    return newCriteria;
+  }
+
+  async updateGrandPrizeCriteria(
+    id: string,
+    updates: UpdateGrandPrizeCriteria,
+  ): Promise<GrandPrizeCriteria | undefined> {
+    // If activating this criteria, deactivate all others
+    if (updates.isActive === true) {
+      await db
+        .update(grandPrizeCriteria)
+        .set({ isActive: false })
+        .where(eq(grandPrizeCriteria.isActive, true));
+    }
+
+    // Convert string dates to Date objects
+    const processedUpdates: any = {
+      ...updates,
+      updatedAt: new Date(),
+    };
+
+    if (updates.startDate !== undefined) {
+      processedUpdates.startDate = updates.startDate ? new Date(updates.startDate) : null;
+    }
+    if (updates.endDate !== undefined) {
+      processedUpdates.endDate = updates.endDate ? new Date(updates.endDate) : null;
+    }
+
+    const [updated] = await db
+      .update(grandPrizeCriteria)
+      .set(processedUpdates)
+      .where(eq(grandPrizeCriteria.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteGrandPrizeCriteria(id: string): Promise<void> {
+    await db
+      .delete(grandPrizeCriteria)
+      .where(eq(grandPrizeCriteria.id, id));
+  }
+
+  async getGrandPrizeRanking(criteriaId: string): Promise<any[]> {
+    const [criteria] = await db
+      .select()
+      .from(grandPrizeCriteria)
+      .where(eq(grandPrizeCriteria.id, criteriaId));
+
+    if (!criteria) {
+      return [];
+    }
+
+    // Build query filters based on criteria
+    let dealsQuery = db
+      .select({
+        userId: deals.userId,
+        totalPoints: sum(deals.pointsEarned).mapWith(Number).as("totalPoints"),
+        totalDeals: count(deals.id).as("totalDeals"),
+      })
+      .from(deals)
+      .where(eq(deals.status, "approved"))
+      .groupBy(deals.userId)
+      .$dynamic();
+
+    // Apply filters
+    const filters = [];
+
+    if (criteria.startDate) {
+      filters.push(gte(deals.approvedAt, criteria.startDate));
+    }
+    if (criteria.endDate) {
+      filters.push(lte(deals.approvedAt, criteria.endDate));
+    }
+
+    if (filters.length > 0) {
+      dealsQuery = dealsQuery.where(and(...filters));
+    }
+
+    const userStats = await dealsQuery;
+
+    // Join with user data and filter by region
+    const usersWithStats = await Promise.all(
+      userStats.map(async (stat) => {
+        const user = await this.getUser(stat.userId);
+        if (!user) return null;
+
+        // Filter by region if specified
+        if (criteria.region && criteria.region !== "all" && user.region !== criteria.region) {
+          return null;
+        }
+
+        // Filter by minimum requirements
+        if (criteria.minPoints && stat.totalPoints < criteria.minPoints) {
+          return null;
+        }
+        if (criteria.minDeals && stat.totalDeals < criteria.minDeals) {
+          return null;
+        }
+
+        // Calculate score based on criteria type
+        let score = 0;
+        if (criteria.criteriaType === "points") {
+          score = stat.totalPoints;
+        } else if (criteria.criteriaType === "deals") {
+          score = stat.totalDeals;
+        } else if (criteria.criteriaType === "combined") {
+          const pointsWeight = (criteria.pointsWeight || 60) / 100;
+          const dealsWeight = (criteria.dealsWeight || 40) / 100;
+          score = stat.totalPoints * pointsWeight + stat.totalDeals * dealsWeight;
+        }
+
+        return {
+          user,
+          points: stat.totalPoints || 0,
+          deals: stat.totalDeals || 0,
+          score,
+        };
+      }),
+    );
+
+    // Filter out nulls and sort by score
+    const filteredRanking = usersWithStats
+      .filter((entry) => entry !== null)
+      .sort((a, b) => b!.score - a!.score)
+      .map((entry, index) => ({
+        ...entry!,
+        rank: index + 1,
+      }));
+
+    return filteredRanking;
+  }
 }
 
 export const storage = new DatabaseStorage();
+

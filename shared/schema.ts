@@ -12,6 +12,8 @@ export const supportTicketStatusEnum = pgEnum("support_ticket_status", ["open", 
 export const regionEnum = pgEnum("region", ["NOLA", "SOLA", "BRASIL", "MEXICO"]);
 export const regionCategoryEnum = pgEnum("region_category", ["ENTERPRISE", "SMB", "MSSP"]);
 export const dealTypeEnum = pgEnum("deal_type", ["new_customer", "renewal"]);
+export const criteriaTypeEnum = pgEnum("criteria_type", ["points", "deals", "combined"]);
+
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -203,6 +205,34 @@ export const goalsHistory = pgTable("goals_history", {
   regionConfigId: varchar("region_config_id").references(() => regionConfigs.id),
   description: text("description").notNull(),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const grandPrizeCriteria = pgTable("grand_prize_criteria", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  criteriaType: criteriaTypeEnum("criteria_type").notNull().default("combined"),
+  minPoints: integer("min_points").default(0),
+  minDeals: integer("min_deals").default(0),
+  region: text("region"), // "all", "NOLA", "SOLA", "BRASIL", "MEXICO"
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  pointsWeight: integer("points_weight").default(60), // Peso en % para criterio combinado
+  dealsWeight: integer("deals_weight").default(40), // Peso en % para criterio combinado
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const grandPrizeWinners = pgTable("grand_prize_winners", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  criteriaId: varchar("criteria_id").notNull().references(() => grandPrizeCriteria.id),
+  points: integer("points").notNull(),
+  deals: integer("deals").notNull(),
+  score: decimal("score", { precision: 10, scale: 2 }).notNull(),
+  rank: integer("rank").notNull(),
+  awardedAt: timestamp("awarded_at").notNull().default(sql`now()`),
+  notes: text("notes"),
 });
 
 // Relations
@@ -449,6 +479,19 @@ export const insertGoalsHistorySchema = createInsertSchema(goalsHistory).omit({
   createdAt: true,
 });
 
+export const insertGrandPrizeCriteriaSchema = createInsertSchema(grandPrizeCriteria).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateGrandPrizeCriteriaSchema = insertGrandPrizeCriteriaSchema.partial();
+
+export const insertGrandPrizeWinnerSchema = createInsertSchema(grandPrizeWinners).omit({
+  id: true,
+  awardedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -480,6 +523,12 @@ export type RewardRegionAssignment = typeof rewardRegionAssignments.$inferSelect
 export type InsertRewardRegionAssignment = z.infer<typeof insertRewardRegionAssignmentSchema>;
 export type GoalsHistory = typeof goalsHistory.$inferSelect;
 export type InsertGoalsHistory = z.infer<typeof insertGoalsHistorySchema>;
+export type GrandPrizeCriteria = typeof grandPrizeCriteria.$inferSelect;
+export type InsertGrandPrizeCriteria = z.infer<typeof insertGrandPrizeCriteriaSchema>;
+export type UpdateGrandPrizeCriteria = z.infer<typeof updateGrandPrizeCriteriaSchema>;
+export type GrandPrizeWinner = typeof grandPrizeWinners.$inferSelect;
+export type InsertGrandPrizeWinner = z.infer<typeof insertGrandPrizeWinnerSchema>;
+
 
 // Deal with user information for admin views
 export type DealWithUser = Deal & {

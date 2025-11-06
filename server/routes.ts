@@ -2765,6 +2765,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Grand Prize routes
+  app.get("/api/admin/grand-prize/criteria", async (req, res) => {
+    if (!req.session.userId || req.session.userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const criteria = await storage.getActiveGrandPrizeCriteria();
+      res.json(criteria || {});
+    } catch (error) {
+      console.error("Get grand prize criteria error:", error);
+      res.status(500).json({ message: "Failed to get grand prize criteria" });
+    }
+  });
+
+  app.get("/api/admin/grand-prize/criteria/all", async (req, res) => {
+    if (!req.session.userId || req.session.userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const allCriteria = await storage.getAllGrandPrizeCriteria();
+      res.json(allCriteria);
+    } catch (error) {
+      console.error("Get all grand prize criteria error:", error);
+      res.status(500).json({ message: "Failed to get all grand prize criteria" });
+    }
+  });
+
+  app.post("/api/admin/grand-prize/criteria", async (req, res) => {
+    if (!req.session.userId || req.session.userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const criteria = await storage.createGrandPrizeCriteria(req.body);
+      res.json(criteria);
+    } catch (error) {
+      console.error("Create grand prize criteria error:", error);
+      res.status(500).json({ message: "Failed to create grand prize criteria" });
+    }
+  });
+
+  app.patch("/api/admin/grand-prize/criteria/:id", async (req, res) => {
+    if (!req.session.userId || req.session.userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { id } = req.params;
+      const criteria = await storage.updateGrandPrizeCriteria(id, req.body);
+      res.json(criteria);
+    } catch (error) {
+      console.error("Update grand prize criteria error:", error);
+      res.status(500).json({ message: "Failed to update grand prize criteria" });
+    }
+  });
+
+  app.delete("/api/admin/grand-prize/criteria/:id", async (req, res) => {
+    if (!req.session.userId || req.session.userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { id } = req.params;
+      await storage.deleteGrandPrizeCriteria(id);
+      res.json({ message: "Criteria deleted successfully" });
+    } catch (error) {
+      console.error("Delete grand prize criteria error:", error);
+      res.status(500).json({ message: "Failed to delete grand prize criteria" });
+    }
+  });
+
+  app.get("/api/admin/grand-prize/ranking/:criteriaId", async (req, res) => {
+    if (!req.session.userId || req.session.userRole !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      const { criteriaId } = req.params;
+      const ranking = await storage.getGrandPrizeRanking(criteriaId);
+      res.json(ranking);
+    } catch (error) {
+      console.error("Get grand prize ranking error:", error);
+      res.status(500).json({ message: "Failed to get grand prize ranking" });
+    }
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;

@@ -50,6 +50,13 @@
       "when": 1762376972427,
       "tag": "0006_wild_wasp",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1762378214688,
+      "tag": "0007_nifty_mimic",
+      "breakpoints": true
     }
   ]
 }

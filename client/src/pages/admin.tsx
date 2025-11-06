@@ -44,6 +44,7 @@ import UserInvitationsTab from "@/components/admin/UserInvitationsTab";
 import RegionsOverview from "@/components/admin/RegionsOverview";
 import RegionsManagementTab from "@/components/admin/RegionsManagementTab";
 import ProgramConfigTab from "@/components/admin/ProgramConfigTab";
+import GrandPrizeTab from "@/components/admin/GrandPrizeTab";
 import type { User, Deal, Reward } from "@shared/schema";
 import type { AuthUser } from "@/lib/auth";
 import type { UploadResult } from '@uppy/core';
@@ -2263,7 +2264,7 @@ export default function Admin() {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="support" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-6">
+                <TabsList className="grid w-full grid-cols-4 mb-6">
                   <TabsTrigger value="support" data-testid="subtab-support">
                     {t('admin.supportTickets')}
                   </TabsTrigger>
@@ -2272,6 +2273,9 @@ export default function Admin() {
                   </TabsTrigger>
                   <TabsTrigger value="program-config" data-testid="subtab-program-config">
                     {t('admin.programConfiguration')}
+                  </TabsTrigger>
+                  <TabsTrigger value="grand-prize" data-testid="subtab-grand-prize">
+                    Gran Premio Final
                   </TabsTrigger>
                 </TabsList>
 
@@ -2288,6 +2292,11 @@ export default function Admin() {
                 {/* Program Configuration Sub-Tab */}
                 <TabsContent value="program-config">
                   <ProgramConfigTab />
+                </TabsContent>
+
+                {/* Grand Prize Sub-Tab */}
+                <TabsContent value="grand-prize">
+                  <GrandPrizeTab />
                 </TabsContent>
               </Tabs>
             </CardContent>
