@@ -48,6 +48,7 @@ import {
   type GrandPrizeCriteria,
   type InsertGrandPrizeCriteria,
   type UpdateGrandPrizeCriteria,
+  type Region,
 } from "@shared/schema";
 
 // ───────────────────────────────────────────────
@@ -156,7 +157,7 @@ export interface IStorage {
   >;
 
   // Campaign methods
-  getCampaigns(): Promise<Campaign[]>;
+  getCampaigns(region?: Region): Promise<Campaign[]>;
   getActiveCampaigns(): Promise<Campaign[]>;
 
   // Admin methods
@@ -236,7 +237,7 @@ export interface IStorage {
   seedRegions(): Promise<void>;
 
   // Campaign methods
-  getCampaigns(): Promise<Campaign[]>;
+  getCampaigns(region?: Region): Promise<Campaign[]>;
   createCampaign(campaign: InsertCampaign): Promise<Campaign>;
   updateCampaign(id: string, updates: Partial<Campaign>): Promise<Campaign | undefined>;
   deleteCampaign(id: string): Promise<Campaign | undefined>;
@@ -245,15 +246,15 @@ export interface IStorage {
   getRegionConfigs(): Promise<RegionConfig[]>;
 
   // Grand Prize methods
-  getActiveGrandPrizeCriteria(): Promise<GrandPrizeCriteria | undefined>;
-  getAllGrandPrizeCriteria(): Promise<GrandPrizeCriteria[]>;
+  getActiveGrandPrizeCriteria(region?: string): Promise<GrandPrizeCriteria | undefined>;
+  getAllGrandPrizeCriteria(region?: string): Promise<GrandPrizeCriteria[]>;
   createGrandPrizeCriteria(criteria: InsertGrandPrizeCriteria): Promise<GrandPrizeCriteria>;
   updateGrandPrizeCriteria(id: string, updates: UpdateGrandPrizeCriteria): Promise<GrandPrizeCriteria | undefined>;
   deleteGrandPrizeCriteria(id: string): Promise<void>;
   getGrandPrizeRanking(criteriaId: string): Promise<any[]>;
 
   // Monthly Prizes methods
-  getMonthlyPrizes(month?: number, year?: number): Promise<MonthlyRegionPrize[]>;
+  getMonthlyPrizes(month?: number, year?: number, region?: string): Promise<MonthlyRegionPrize[]>;
   createMonthlyPrize(prize: InsertMonthlyRegionPrize): Promise<MonthlyRegionPrize>;
   updateMonthlyPrize(id: string, updates: Partial<MonthlyRegionPrize>): Promise<MonthlyRegionPrize | undefined>;
   deleteMonthlyPrize(id: string): Promise<void>;
@@ -1089,7 +1090,14 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async getCampaigns(): Promise<Campaign[]> {
+  async getCampaigns(region?: Region): Promise<Campaign[]> {
+    if (region) {
+      return await db
+        .select()
+        .from(campaigns)
+        .where(eq(campaigns.region, region))
+        .orderBy(desc(campaigns.createdAt));
+    }
     return await db.select().from(campaigns).orderBy(desc(campaigns.createdAt));
   }
 
@@ -2153,7 +2161,19 @@ export class DatabaseStorage implements IStorage {
   // Grand Prize methods
   // ═══════════════════════════════════════════════
 
-  async getActiveGrandPrizeCriteria(): Promise<GrandPrizeCriteria | undefined> {
+  async getActiveGrandPrizeCriteria(region?: string): Promise<GrandPrizeCriteria | undefined> {
+    if (region) {
+      const [criteria] = await db
+        .select()
+        .from(grandPrizeCriteria)
+        .where(and(
+          eq(grandPrizeCriteria.isActive, true),
+          eq(grandPrizeCriteria.region, region)
+        ))
+        .limit(1);
+      return criteria;
+    }
+    
     const [criteria] = await db
       .select()
       .from(grandPrizeCriteria)
@@ -2162,12 +2182,19 @@ export class DatabaseStorage implements IStorage {
     return criteria;
   }
 
-  async getAllGrandPrizeCriteria(): Promise<GrandPrizeCriteria[]> {
-    const allCriteria = await db
+  async getAllGrandPrizeCriteria(region?: string): Promise<GrandPrizeCriteria[]> {
+    if (region) {
+      return await db
+        .select()
+        .from(grandPrizeCriteria)
+        .where(eq(grandPrizeCriteria.region, region))
+        .orderBy(desc(grandPrizeCriteria.createdAt));
+    }
+    
+    return await db
       .select()
       .from(grandPrizeCriteria)
       .orderBy(desc(grandPrizeCriteria.createdAt));
-    return allCriteria;
   }
 
   async createGrandPrizeCriteria(data: InsertGrandPrizeCriteria): Promise<GrandPrizeCriteria> {
@@ -2325,29 +2352,38 @@ export class DatabaseStorage implements IStorage {
   async getMonthlyPrizes(
     month?: number,
     year?: number,
+    region?: string,
   ): Promise<MonthlyRegionPrize[]> {
     let query = db
       .select()
       .from(monthlyRegionPrizes)
+      .leftJoin(regionConfigs, eq(monthlyRegionPrizes.regionConfigId, regionConfigs.id))
       .orderBy(desc(monthlyRegionPrizes.year), desc(monthlyRegionPrizes.month), asc(monthlyRegionPrizes.rank));
 
-    if (month !== undefined && year !== undefined) {
-      const prizes = await query.where(
-        and(
-          eq(monthlyRegionPrizes.month, month),
-          eq(monthlyRegionPrizes.year, year),
-        ),
-      );
-      return prizes;
-    } else if (month !== undefined) {
-      const prizes = await query.where(eq(monthlyRegionPrizes.month, month));
-      return prizes;
-    } else if (year !== undefined) {
-      const prizes = await query.where(eq(monthlyRegionPrizes.year, year));
-      return prizes;
+    const conditions = [];
+    
+    // Filtrar por región si se proporciona
+    if (region) {
+      conditions.push(eq(regionConfigs.region, region as any));
+    }
+    
+    // Filtrar por mes si se proporciona
+    if (month !== undefined) {
+      conditions.push(eq(monthlyRegionPrizes.month, month));
+    }
+    
+    // Filtrar por año si se proporciona
+    if (year !== undefined) {
+      conditions.push(eq(monthlyRegionPrizes.year, year));
     }
 
-    return await query;
+    if (conditions.length > 0) {
+      const prizes = await query.where(and(...conditions));
+      return prizes.map(row => row.monthly_region_prizes);
+    }
+
+    const allPrizes = await query;
+    return allPrizes.map(row => row.monthly_region_prizes);
   }
 
   async createMonthlyPrize(

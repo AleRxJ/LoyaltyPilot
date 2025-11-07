@@ -52,6 +52,22 @@ export default function MonthlyPrizesTab() {
   const currentYear = new Date().getFullYear();
   const [selectedRegion, setSelectedRegion] = useState<string>("");
 
+  // Helper para obtener regionConfigId inicial
+  const getInitialRegionConfigId = () => {
+    // Si hay un usuario y configuraciones de región disponibles
+    if (currentUser && regionConfigs && regionConfigs.length > 0) {
+      if ((currentUser as any).role === "regional-admin") {
+        const userRegion = (currentUser as any).region;
+        const matchingConfig = regionConfigs.find(config => config.region === userRegion);
+        return matchingConfig?.id || "";
+      } else if ((currentUser as any).role === "admin" || (currentUser as any).role === "super-admin") {
+        // Para admin/super-admin, usar la primera configuración disponible como default
+        return regionConfigs[0]?.id || "";
+      }
+    }
+    return "";
+  };
+
   const [prize, setPrize] = useState<Prize>({
     regionConfigId: "",
     month: new Date().getMonth() + 1,
@@ -87,11 +103,47 @@ export default function MonthlyPrizesTab() {
     }
   }, [currentUser, selectedRegion]);
 
-  // Fetch region configs
+  // Fetch region configs - SIMPLE: solo obtener configs de la región actual
   const { data: regionConfigs, isLoading: configsLoading } = useQuery<RegionConfig[]>({
     queryKey: ["/api/admin/region-configs", selectedRegion],
+    queryFn: async () => {
+      const response = await fetch("/api/admin/region-configs", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch region configs");
+      const allConfigs = await response.json();
+      // SIMPLE: solo filtrar por región actual, sin deduplicar
+      return allConfigs.filter((config: any) => config.region === selectedRegion);
+    },
     enabled: !!selectedRegion,
   });
+
+  // Sincronizar regionConfigId basado en selectedRegion
+  useEffect(() => {
+    if (selectedRegion && regionConfigs && regionConfigs.length > 0) {
+      // Encontrar el regionConfig que corresponde a la región seleccionada
+      const matchingConfig = regionConfigs.find(config => config.region === selectedRegion);
+      if (matchingConfig && matchingConfig.id !== prize.regionConfigId) {
+        setPrize(prev => ({
+          ...prev,
+          regionConfigId: matchingConfig.id
+        }));
+      }
+    }
+  }, [selectedRegion, regionConfigs, prize.regionConfigId]);
+
+  // SIMPLE: Inicializar con la primera categoría disponible
+  useEffect(() => {
+    if (regionConfigs && regionConfigs.length > 0 && !prize.regionConfigId) {
+      setPrize(prev => ({
+        ...prev,
+        regionConfigId: regionConfigs[0].id
+      }));
+    }
+  }, [regionConfigs, prize.regionConfigId]);
+
+  // SIMPLE: Helper para reset
+  const getCurrentRegionConfigId = () => {
+    return regionConfigs && regionConfigs.length > 0 ? regionConfigs[0].id : "";
+  };
 
   // Fetch monthly prizes
   const { data: allPrizes, isLoading: prizesLoading } = useQuery<Prize[]>({
@@ -133,7 +185,7 @@ export default function MonthlyPrizesTab() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/monthly-prizes", filterMonth, filterYear, selectedRegion] });
       setEditingId(null);
       setPrize({
-        regionConfigId: "",
+        regionConfigId: getCurrentRegionConfigId(),
         month: new Date().getMonth() + 1,
         year: currentYear,
         rank: 1,
@@ -217,7 +269,7 @@ export default function MonthlyPrizesTab() {
   const handleCancelEdit = () => {
     setEditingId(null);
     setPrize({
-      regionConfigId: "",
+      regionConfigId: getCurrentRegionConfigId(),
       month: new Date().getMonth() + 1,
       year: currentYear,
       rank: 1,
@@ -296,25 +348,38 @@ export default function MonthlyPrizesTab() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Región */}
+          {/* Categoría - SIMPLE */}
           <div className="space-y-2">
-            <Label htmlFor="region-config">Región / Categoría *</Label>
-            <Select
-              value={prize.regionConfigId}
-              onValueChange={(value) => setPrize({ ...prize, regionConfigId: value })}
-            >
-              <SelectTrigger id="region-config">
-                <SelectValue placeholder="Selecciona región" />
-              </SelectTrigger>
-              <SelectContent>
-                {regionConfigs?.map((config) => (
-                  <SelectItem key={config.id} value={config.id}>
-                    {config.region} - {config.category}
-                    {config.level && ` (${config.level})`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="region-config">
+              Categoría *
+            </Label>
+            {configsLoading ? (
+              <div className="p-3 bg-gray-50 border rounded-md text-sm text-gray-500">
+                Cargando...
+              </div>
+            ) : !regionConfigs || regionConfigs.length === 0 ? (
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-700">
+                No hay categorías para {selectedRegion}
+              </div>
+            ) : (
+              // SIMPLE: Solo un selector, sin complicaciones
+              <Select
+                value={prize.regionConfigId}
+                onValueChange={(value) => setPrize({ ...prize, regionConfigId: value })}
+              >
+                <SelectTrigger id="region-config">
+                  <SelectValue placeholder="Selecciona categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  {regionConfigs?.map((config) => (
+                    <SelectItem key={config.id} value={config.id}>
+                      {config.category}
+                      {(config as any).subcategory && ` - ${(config as any).subcategory}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Mes y Año */}

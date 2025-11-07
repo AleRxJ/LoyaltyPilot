@@ -24,6 +24,7 @@ interface Campaign {
   startDate: string;
   endDate: string;
   isActive: boolean;
+  region: string;
 }
 
 interface RegionConfig {
@@ -54,6 +55,7 @@ export default function ProgramConfigTab() {
     multiplier: "1.5",
     startDate: "",
     endDate: "",
+    region: selectedRegion || "",
   });
 
   // Region config form states
@@ -88,9 +90,27 @@ export default function ProgramConfigTab() {
     }
   }, [currentUser, selectedRegion]);
 
+  // Sincronizar región del form con selectedRegion
+  useEffect(() => {
+    if (selectedRegion) {
+      setCampaignForm(prev => ({
+        ...prev,
+        region: selectedRegion
+      }));
+    }
+  }, [selectedRegion]);
+
   // Queries
   const { data: campaigns, isLoading: campaignsLoading } = useQuery<Campaign[]>({
     queryKey: ["/api/admin/campaigns", selectedRegion],
+    queryFn: async () => {
+      const url = selectedRegion 
+        ? `/api/admin/campaigns?region=${selectedRegion}`
+        : "/api/admin/campaigns";
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch campaigns");
+      return res.json();
+    },
     enabled: !!selectedRegion,
   });
 
@@ -113,6 +133,7 @@ export default function ProgramConfigTab() {
         multiplier: "1.5",
         startDate: "",
         endDate: "",
+        region: selectedRegion || "",
       });
       toast({
         title: "Success",
@@ -330,6 +351,19 @@ export default function ProgramConfigTab() {
                           onChange={(e) => setCampaignForm({ ...campaignForm, description: e.target.value })}
                           placeholder={t('admin.programConfig.campaigns.descriptionPlaceholder')}
                         />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="campaignRegion">Región</Label>
+                        <Input
+                          id="campaignRegion"
+                          value={campaignForm.region}
+                          disabled
+                          className="bg-gray-50"
+                        />
+                        <p className="text-sm text-gray-500">
+                          Esta campaña se creará para la región seleccionada
+                        </p>
                       </div>
 
                       <div className="space-y-2">

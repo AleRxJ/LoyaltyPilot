@@ -2816,7 +2816,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const campaigns = await storage.getCampaigns();
+      const region = req.query.region as string;
+      const campaigns = await storage.getCampaigns(region as any);
       res.json(campaigns);
     } catch (error) {
       console.error("Get campaigns error:", error);
@@ -2834,6 +2835,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const campaignData = req.body;
+      
+      // Asegurar que se incluya la región
+      if (!campaignData.region) {
+        return res.status(400).json({ message: "Region is required" });
+      }
       
       // Convert date strings to Date objects
       const processedData = {
@@ -2970,12 +2976,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Grand Prize routes
   app.get("/api/admin/grand-prize/criteria", async (req, res) => {
-    if (!req.session.userId || req.session.userRole !== "admin") {
+    const userRole = req.session?.userRole;
+    
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
     try {
-      const criteria = await storage.getActiveGrandPrizeCriteria();
+      const { region } = req.query;
+      const criteria = await storage.getActiveGrandPrizeCriteria(region as string);
       res.json(criteria || {});
     } catch (error) {
       console.error("Get grand prize criteria error:", error);
@@ -2984,12 +2993,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/admin/grand-prize/criteria/all", async (req, res) => {
-    if (!req.session.userId || req.session.userRole !== "admin") {
+    const userRole = req.session?.userRole;
+    
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
     try {
-      const allCriteria = await storage.getAllGrandPrizeCriteria();
+      const { region } = req.query;
+      const allCriteria = await storage.getAllGrandPrizeCriteria(region as string);
       res.json(allCriteria);
     } catch (error) {
       console.error("Get all grand prize criteria error:", error);
@@ -2998,7 +3010,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/admin/grand-prize/criteria", async (req, res) => {
-    if (!req.session.userId || req.session.userRole !== "admin") {
+    const userRole = req.session?.userRole;
+    
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -3058,15 +3072,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Monthly Prizes routes
   app.get("/api/admin/monthly-prizes", async (req, res) => {
-    if (!req.session.userId || req.session.userRole !== "admin") {
+    const userRole = req.session?.userRole;
+    
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
     try {
-      const { month, year } = req.query;
+      const { month, year, region } = req.query;
       const prizes = await storage.getMonthlyPrizes(
         month ? parseInt(month as string) : undefined,
-        year ? parseInt(year as string) : undefined
+        year ? parseInt(year as string) : undefined,
+        region as string
       );
       res.json(prizes);
     } catch (error) {
@@ -3076,7 +3093,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/admin/monthly-prizes", async (req, res) => {
-    if (!req.session.userId || req.session.userRole !== "admin") {
+    const userRole = req.session?.userRole;
+    
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -3090,7 +3109,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.patch("/api/admin/monthly-prizes/:id", async (req, res) => {
-    if (!req.session.userId || req.session.userRole !== "admin") {
+    const userRole = req.session?.userRole;
+    
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -3105,7 +3126,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.delete("/api/admin/monthly-prizes/:id", async (req, res) => {
-    if (!req.session.userId || req.session.userRole !== "admin") {
+    const userRole = req.session?.userRole;
+    
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 

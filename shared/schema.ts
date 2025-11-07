@@ -14,6 +14,9 @@ export const regionCategoryEnum = pgEnum("region_category", ["ENTERPRISE", "SMB"
 export const dealTypeEnum = pgEnum("deal_type", ["new_customer", "renewal"]);
 export const criteriaTypeEnum = pgEnum("criteria_type", ["points", "deals", "combined"]);
 
+// Types from enums
+export type Region = typeof regionEnum.enumValues[number];
+
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -111,6 +114,7 @@ export const campaigns = pgTable("campaigns", {
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
   isActive: boolean("is_active").notNull().default(true),
+  region: regionEnum("region").notNull(),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
@@ -220,7 +224,7 @@ export const grandPrizeCriteria = pgTable("grand_prize_criteria", {
   criteriaType: criteriaTypeEnum("criteria_type").notNull().default("combined"),
   minPoints: integer("min_points").default(0),
   minDeals: integer("min_deals").default(0),
-  region: text("region"), // "all", "NOLA", "SOLA", "BRASIL", "MEXICO"
+  region: text("region").notNull(), // "NOLA", "SOLA", "BRASIL", "MEXICO"
   startDate: timestamp("start_date"),
   endDate: timestamp("end_date"),
   pointsWeight: integer("points_weight").default(60), // Peso en % para criterio combinado

@@ -1,0 +1,1 @@
+ALTER TABLE "campaigns" ADD COLUMN "region" "region" NOT NULL;

@@ -48,7 +48,7 @@ export default function GrandPrizeTab() {
     criteriaType: "combined",
     minPoints: 0,
     minDeals: 0,
-    region: "all",
+    // region se asigna automáticamente del contexto
     startDate: "",
     endDate: "",
     pointsWeight: 60,
@@ -76,15 +76,34 @@ export default function GrandPrizeTab() {
     }
   }, [currentUser, selectedRegion]);
 
+  // SIMPLE: La región se asigna automáticamente en handleSaveCriteria
+  // No necesitamos sincronizar manualmente
+
   // Fetch ALL criteria
   const { data: allCriteria, isLoading: criteriaLoading } = useQuery<GrandPrizeCriteria[]>({
     queryKey: ["/api/admin/grand-prize/criteria/all", selectedRegion],
+    queryFn: async () => {
+      const url = selectedRegion 
+        ? `/api/admin/grand-prize/criteria/all?region=${selectedRegion}`
+        : "/api/admin/grand-prize/criteria/all";
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch grand prize criteria");
+      return res.json();
+    },
     enabled: !!selectedRegion,
   });
 
   // Fetch current active criteria
   const { data: currentCriteria } = useQuery<GrandPrizeCriteria>({
     queryKey: ["/api/admin/grand-prize/criteria", selectedRegion],
+    queryFn: async () => {
+      const url = selectedRegion 
+        ? `/api/admin/grand-prize/criteria?region=${selectedRegion}`
+        : "/api/admin/grand-prize/criteria";
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch active grand prize criteria");
+      return res.json();
+    },
     enabled: !!selectedRegion,
   });
 
@@ -127,7 +146,7 @@ export default function GrandPrizeTab() {
         criteriaType: "combined",
         minPoints: 0,
         minDeals: 0,
-        region: "all",
+        // region se asigna automáticamente del contexto
         startDate: "",
         endDate: "",
         pointsWeight: 60,
@@ -181,7 +200,12 @@ export default function GrandPrizeTab() {
   });
 
   const handleSaveCriteria = () => {
-    saveCriteriaMutation.mutate(criteria);
+    // SIMPLE: Automáticamente usar la región del contexto
+    const dataToSave = {
+      ...criteria,
+      region: selectedRegion, // Siempre usar la región seleccionada arriba
+    };
+    saveCriteriaMutation.mutate(dataToSave);
   };
 
   const handleEditCriteria = (criteriaToEdit: GrandPrizeCriteria) => {
@@ -379,25 +403,8 @@ export default function GrandPrizeTab() {
             </div>
           )}
 
-          {/* Región */}
-          <div className="space-y-2">
-            <Label htmlFor="region">Región</Label>
-            <Select
-              value={criteria.region || "all"}
-              onValueChange={(value) => setCriteria({ ...criteria, region: value })}
-            >
-              <SelectTrigger id="region">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las Regiones</SelectItem>
-                <SelectItem value="NOLA">NOLA</SelectItem>
-                <SelectItem value="SOLA">SOLA</SelectItem>
-                <SelectItem value="BRASIL">BRASIL</SelectItem>
-                <SelectItem value="MEXICO">MEXICO</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Región - OCULTO: se usa automáticamente la región del contexto */}
+          <input type="hidden" value={selectedRegion} />
 
           {/* Rango de Fechas */}
           <div className="grid grid-cols-2 gap-4">
