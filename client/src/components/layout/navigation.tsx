@@ -13,6 +13,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import type { AuthUser } from "@/lib/auth";
 import logo from "@assets/LOGO-FINAL-LOYALTY_1758720440342.png";
 import { NotificationBell } from "@/components/NotificationBell";
+import { isAdminRole } from "@/lib/roles";
 
 interface NavigationProps {
   user: AuthUser;
@@ -78,7 +79,7 @@ export default function Navigation({ user }: NavigationProps) {
     logoutMutation.mutate();
   };
 
-  const navItems = user.role === "admin" 
+  const navItems = isAdminRole(user.role) 
     ? [
         { href: "/admin", label: t("admin.panel"), current: location === "/admin" },
       ]

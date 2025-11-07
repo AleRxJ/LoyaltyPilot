@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,7 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Form,
   FormControl,
@@ -24,6 +32,7 @@ import { apiRequest } from "@/lib/queryClient";
 import type { PointsConfig } from "@shared/schema";
 
 const pointsConfigFormSchema = z.object({
+  region: z.string().min(1, "Región requerida"),
   softwareRate: z.number().min(1, "Debe ser al menos 1").max(1000000, "Valor muy alto"),
   hardwareRate: z.number().min(1, "Debe ser al menos 1").max(1000000, "Valor muy alto"),
   equipmentRate: z.number().min(1, "Debe ser al menos 1").max(1000000, "Valor muy alto"),
@@ -40,14 +49,48 @@ export default function PointsConfigTab() {
   const { toast } = useToast();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  
+  // Estado para la región seleccionada
+  const [selectedRegion, setSelectedRegion] = useState<string>("");
+
+  // Query para obtener el usuario actual
+  const { data: currentUser } = useQuery({
+    queryKey: ["/api/auth/me"],
+  });
+
+  // Determinar región basada en el rol del usuario
+  useEffect(() => {
+    if (currentUser) {
+      const user = currentUser as any;
+      if (user.role === "regional-admin") {
+        // Regional-admin solo puede ver su región
+        const userRegion = user.region || user.country || "";
+        setSelectedRegion(userRegion);
+      } else {
+        // Admin/Super-admin pueden seleccionar cualquier región, por defecto NOLA
+        setSelectedRegion(selectedRegion || "NOLA");
+      }
+    }
+  }, [currentUser]);
 
   const { data: config, isLoading } = useQuery<PointsConfig>({
-    queryKey: ["/api/admin/points-config"],
+    queryKey: ["/api/admin/points-config", selectedRegion],
+    enabled: !!selectedRegion,
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/points-config?region=${selectedRegion}`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch points configuration");
+      }
+      return response.json();
+    },
   });
 
   const form = useForm<PointsConfigForm>({
     resolver: zodResolver(pointsConfigFormSchema),
     defaultValues: {
+      region: "",
       softwareRate: 1000,
       hardwareRate: 5000,
       equipmentRate: 10000,
@@ -60,8 +103,9 @@ export default function PointsConfigTab() {
   });
 
   useEffect(() => {
-    if (config) {
+    if (config && selectedRegion) {
       form.reset({
+        region: selectedRegion,
         softwareRate: config.softwareRate,
         hardwareRate: config.hardwareRate,
         equipmentRate: config.equipmentRate,
@@ -75,12 +119,16 @@ export default function PointsConfigTab() {
           ? new Date(config.redemptionEndDate).toISOString().split('T')[0] 
           : "",
       });
+    } else if (selectedRegion) {
+      // Si no hay config pero hay región seleccionada, establecer la región en el formulario
+      form.setValue("region", selectedRegion);
     }
-  }, [config, form]);
+  }, [config, selectedRegion, form]);
 
   const updateConfigMutation = useMutation({
     mutationFn: async (data: PointsConfigForm) => {
       const payload = {
+        region: data.region,
         softwareRate: data.softwareRate,
         hardwareRate: data.hardwareRate,
         equipmentRate: data.equipmentRate,
@@ -94,10 +142,11 @@ export default function PointsConfigTab() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/points-config"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/points-config", selectedRegion] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/points-config"] }); // Para cachés generales
       toast({
         title: "Configuración actualizada",
-        description: "Las reglas de asignación de puntos y goles han sido actualizadas exitosamente",
+        description: `Las reglas de asignación de puntos para ${selectedRegion} han sido actualizadas exitosamente`,
       });
     },
     onError: (error: Error) => {
@@ -146,6 +195,44 @@ export default function PointsConfigTab() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Selector de región */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-medium">Configuración para región:</Label>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {(currentUser as any)?.role === "regional-admin" 
+                        ? "Como administrador regional, solo puedes configurar tu región"
+                        : "Selecciona la región para configurar"
+                      }
+                    </p>
+                  </div>
+                  {(currentUser as any)?.role === "regional-admin" ? (
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md text-sm font-medium">
+                        {selectedRegion}
+                      </span>
+                      <span className="text-xs text-gray-500">(Región asignada)</span>
+                    </div>
+                  ) : (
+                    <Select
+                      value={selectedRegion}
+                      onValueChange={(value) => setSelectedRegion(value)}
+                    >
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Seleccionar región" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NOLA">NOLA</SelectItem>
+                        <SelectItem value="SOLA">SOLA</SelectItem>
+                        <SelectItem value="BRASIL">BRASIL</SelectItem>
+                        <SelectItem value="MEXICO">MEXICO</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              </div>
+              
               <div className="grid gap-6 md:grid-cols-3">
                 <FormField
                   control={form.control}

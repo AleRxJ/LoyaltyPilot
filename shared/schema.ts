@@ -3,7 +3,7 @@ import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum, u
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
+export const userRoleEnum = pgEnum("user_role", ["user", "admin", "regional-admin", "super-admin"]);
 export const dealStatusEnum = pgEnum("deal_status", ["pending", "approved", "rejected"]);
 export const productTypeEnum = pgEnum("product_type", ["software", "hardware", "equipment"]);
 export const rewardStatusEnum = pgEnum("reward_status", ["pending", "approved", "rejected", "delivered"]);
@@ -27,6 +27,7 @@ export const users = pgTable("users", {
   region: regionEnum("region"),
   regionCategory: regionCategoryEnum("region_category"),
   regionSubcategory: text("region_subcategory"), // Para casos como "COLOMBIA", "CENTRO AMÉRICA", "PLATINUM", "GOLD", etc.
+  adminRegionId: varchar("admin_region_id").references(() => regionConfigs.id), // Para regional-admin: la región que administra. NULL para super-admin y users
   isActive: boolean("is_active").notNull().default(true),
   isApproved: boolean("is_approved").notNull().default(false),
   approvedBy: varchar("approved_by"),
@@ -43,6 +44,7 @@ export const users = pgTable("users", {
 export const deals = pgTable("deals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
+  regionId: varchar("region_id").references(() => regionConfigs.id), // Región del deal
   productType: productTypeEnum("product_type").notNull(),
   productName: text("product_name").notNull(),
   dealValue: decimal("deal_value", { precision: 12, scale: 2 }).notNull(),
@@ -66,6 +68,7 @@ export const rewards = pgTable("rewards", {
   description: text("description"),
   pointsCost: integer("points_cost").notNull(),
   category: text("category").notNull(),
+  region: regionEnum("region").notNull(), // Región a la que pertenece el reward
   isActive: boolean("is_active").notNull().default(true),
   stockQuantity: integer("stock_quantity"),
   imageUrl: text("image_url"),
@@ -138,6 +141,7 @@ export const supportTickets = pgTable("support_tickets", {
 
 export const pointsConfig = pgTable("points_config", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  region: regionEnum("region").notNull(), // ¡Campo región agregado!
   softwareRate: integer("software_rate").notNull().default(1000),
   hardwareRate: integer("hardware_rate").notNull().default(5000),
   equipmentRate: integer("equipment_rate").notNull().default(10000),

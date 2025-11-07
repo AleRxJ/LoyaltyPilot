@@ -15,6 +15,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -51,17 +57,53 @@ interface RegionConfig {
 
 export default function RegionsManagementTab() {
   const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState("configurations");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingRegion, setEditingRegion] = useState<RegionConfig | null>(null);
   const [filterRegion, setFilterRegion] = useState<string>("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [selectedRegion, setSelectedRegion] = useState<string>("");
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Query para obtener la configuración de puntos del sistema
+  // Query del usuario actual para determinar la región
+  const { data: currentUser } = useQuery({
+    queryKey: ["/api/auth/me"],
+  });
+
+  // Establecer región basada en el rol del usuario
+  useEffect(() => {
+    if (currentUser) {
+      const user = currentUser as any;
+      if (user.role === "regional-admin") {
+        const userRegion = user.region || user.country || "";
+        setSelectedRegion(userRegion);
+      } else if (user.role === "admin" || user.role === "super-admin") {
+        // Para admin/super-admin, usar la primera región disponible como default
+        if (!selectedRegion) {
+          setSelectedRegion("NOLA");
+        }
+      }
+    }
+  }, [currentUser, selectedRegion]);
+
+  // Query para obtener la configuración de puntos POR REGIÓN
   const { data: pointsConfig } = useQuery({
-    queryKey: ["/api/admin/points-config"],
+    queryKey: ["/api/admin/points-config", selectedRegion],
+    enabled: !!selectedRegion,
+    queryFn: async () => {
+      console.log("🔍 Cargando configuración para región:", selectedRegion);
+      const response = await fetch(`/api/admin/points-config?region=${selectedRegion}`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch points configuration");
+      }
+      const config = await response.json();
+      console.log("📦 Configuración cargada:", config);
+      return config;
+    },
   });
 
   const { data: regions, isLoading } = useQuery<RegionConfig[]>({
@@ -83,7 +125,6 @@ export default function RegionsManagementTab() {
     mexicoLevel: "", // Nuevo: nivel para México (PLATINUM, GOLD, SILVER)
     subcategory: "",
     name: "",
-    rewardId: "", // Nuevo: reward asociado
     newCustomerGoalRate: 1000,
     renewalGoalRate: 2000,
     monthlyGoalTarget: 10,
@@ -144,9 +185,12 @@ export default function RegionsManagementTab() {
     }
   }, [newRegion.region, newRegion.category]);
 
-  // Actualizar los valores predeterminados cuando se carga la configuración
+  // Actualizar los valores predeterminados cuando se carga la configuración o cambia la región
   useEffect(() => {
-    if (pointsConfig) {
+    if (pointsConfig && selectedRegion) {
+      console.log("🔄 Actualizando valores del formulario para región:", selectedRegion);
+      console.log("📊 Nueva configuración:", pointsConfig);
+      
       const defaultNewCustomerRate = (pointsConfig as any)?.defaultNewCustomerGoalRate || 1000;
       const defaultRenewalRate = (pointsConfig as any)?.defaultRenewalGoalRate || 2000;
       
@@ -155,8 +199,76 @@ export default function RegionsManagementTab() {
         newCustomerGoalRate: defaultNewCustomerRate,
         renewalGoalRate: defaultRenewalRate,
       }));
+      
+      console.log("✅ Valores actualizados:", {
+        newCustomerGoalRate: defaultNewCustomerRate,
+        renewalGoalRate: defaultRenewalRate
+      });
     }
-  }, [pointsConfig]);
+  }, [pointsConfig, selectedRegion]);
+
+  // Actualizar valores dinámicamente cuando se cambia la región en el formulario
+  useEffect(() => {
+    if (newRegion.region && newRegion.region !== selectedRegion) {
+      console.log("🔄 Cambiando región en formulario a:", newRegion.region);
+      
+      // Hacer una query específica para obtener la configuración de esta región
+      fetch(`/api/admin/points-config?region=${newRegion.region}`, {
+        credentials: "include",
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        }
+        throw new Error("Failed to fetch config");
+      })
+      .then(config => {
+        console.log("📦 Configuración para", newRegion.region, ":", config);
+        
+        const defaultNewCustomerRate = config?.defaultNewCustomerGoalRate || 1000;
+        const defaultRenewalRate = config?.defaultRenewalGoalRate || 2000;
+        
+        setNewRegion(prev => ({
+          ...prev,
+          newCustomerGoalRate: defaultNewCustomerRate,
+          renewalGoalRate: defaultRenewalRate,
+        }));
+        
+        console.log("✅ Valores actualizados en formulario:", {
+          newCustomerGoalRate: defaultNewCustomerRate,
+          renewalGoalRate: defaultRenewalRate
+        });
+      })
+      .catch(error => {
+        console.error("❌ Error cargando configuración:", error);
+      });
+    }
+  }, [newRegion.region]);
+
+  // Establecer región por defecto según el rol del usuario cuando se abre el modal
+  useEffect(() => {
+    if (isCreateModalOpen && currentUser) {
+      const user = currentUser as any;
+      
+      let defaultRegion = "";
+      
+      if (user.role === "regional-admin") {
+        // Para regional-admin, usar su región asignada
+        defaultRegion = user.region || user.country || "";
+      } else if (user.role === "admin" || user.role === "super-admin") {
+        // Para admin/super-admin, usar la región seleccionada en el selector principal
+        defaultRegion = selectedRegion || "";
+      }
+      
+      if (defaultRegion) {
+        console.log("🎯 Pre-llenando formulario con región:", defaultRegion);
+        setNewRegion(prev => ({
+          ...prev,
+          region: defaultRegion
+        }));
+      }
+    }
+  }, [isCreateModalOpen, currentUser, selectedRegion]);
 
   const seedRegionsMutation = useMutation({
     mutationFn: async () => {
@@ -327,7 +439,7 @@ export default function RegionsManagementTab() {
       category: newRegion.category,
       subcategory: finalSubcategory || null,
       name: newRegion.name,
-      rewardId: newRegion.rewardId && newRegion.rewardId !== "" ? newRegion.rewardId : null,
+      rewardId: null, // Se asignará posteriormente en la pestaña de asignación
       newCustomerGoalRate: newRegion.newCustomerGoalRate,
       renewalGoalRate: newRegion.renewalGoalRate,
       monthlyGoalTarget: newRegion.monthlyGoalTarget,
@@ -355,7 +467,6 @@ export default function RegionsManagementTab() {
       mexicoLevel: "",
       subcategory: "",
       name: "",
-      rewardId: "",
       newCustomerGoalRate: defaultNewCustomerRate,
       renewalGoalRate: defaultRenewalRate,
       monthlyGoalTarget: 10,
@@ -389,7 +500,7 @@ export default function RegionsManagementTab() {
 
   return (
     <div className="space-y-6">
-      {/* Header with actions */}
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">{t('admin.regionManagement')}</h2>
@@ -397,23 +508,78 @@ export default function RegionsManagementTab() {
             {t('admin.manageRegionalConfigs')}
           </p>
         </div>
-        <div className="flex gap-2">
-          {(!regions || regions.length === 0) && (
-            <Button
-              onClick={handleSeedRegions}
-              disabled={seedRegionsMutation.isPending}
-              variant="outline"
-            >
-              <Database className="w-4 h-4 mr-2" />
-              {seedRegionsMutation.isPending ? t('admin.seeding') : t('admin.populateRegions')}
-            </Button>
-          )}
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            {t('admin.newRegion')}
-          </Button>
+      </div>
+
+      {/* Selector de Región para Configuración de Puntos */}
+      <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Región para Configuración de Puntos</h3>
+            {currentUser && (currentUser as any).role === "regional-admin" ? (
+              <div className="flex items-center space-x-2">
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  {selectedRegion}
+                </Badge>
+                <span className="text-xs text-gray-500">
+                  (Como administrador regional, los valores por defecto provienen de tu región)
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <Select value={selectedRegion} onValueChange={(value) => {
+                  console.log("🎯 Cambiando región de", selectedRegion, "a", value);
+                  setSelectedRegion(value);
+                }}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Selecciona una región" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NOLA">NOLA</SelectItem>
+                    <SelectItem value="SOLA">SOLA</SelectItem>
+                    <SelectItem value="BRASIL">BRASIL</SelectItem>
+                    <SelectItem value="MEXICO">MEXICO</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-xs text-gray-500">
+                  Los valores por defecto para nuevas regiones vendrán de esta configuración
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="configurations" data-testid="subtab-region-configs">
+            Configuraciones de Región
+          </TabsTrigger>
+          <TabsTrigger value="reward-assignments" data-testid="subtab-reward-assignments">
+            Asignación de Rewards
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Configurations Tab */}
+        <TabsContent value="configurations">
+          <div className="space-y-6">
+            {/* Actions for configurations */}
+            <div className="flex justify-end gap-2">
+              {(!regions || regions.length === 0) && (
+                <Button
+                  onClick={handleSeedRegions}
+                  disabled={seedRegionsMutation.isPending}
+                  variant="outline"
+                >
+                  <Database className="w-4 h-4 mr-2" />
+                  {seedRegionsMutation.isPending ? t('admin.seeding') : t('admin.populateRegions')}
+                </Button>
+              )}
+              <Button onClick={() => setIsCreateModalOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                {t('admin.newRegion')}
+              </Button>
+            </div>
 
       {/* Filters */}
       <Card>
@@ -627,6 +793,113 @@ export default function RegionsManagementTab() {
           </Card>
         </div>
       )}
+          </div>
+        </TabsContent>
+
+        {/* Reward Assignments Tab */}
+        <TabsContent value="reward-assignments">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Asignación de Rewards por Región</CardTitle>
+                <CardDescription>
+                  Asigna o modifica los rewards asociados a cada configuración regional
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="text-center py-8">{t('common.loading')}</div>
+                ) : !regions || regions.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Globe className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No hay regiones configuradas</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Primero debes crear configuraciones regionales en la pestaña "Configuraciones"
+                    </p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Región</TableHead>
+                        <TableHead>Configuración</TableHead>
+                        <TableHead>Reward Actual</TableHead>
+                        <TableHead>Cambiar Reward</TableHead>
+                        <TableHead>Estado</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {regions.map((region) => (
+                        <TableRow key={region.id}>
+                          <TableCell>
+                            <Badge variant="outline">{region.region}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{region.name}</div>
+                              <div className="text-sm text-gray-600">
+                                {region.category}
+                                {region.subcategory && ` - ${region.subcategory}`}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {region.rewardId ? (
+                              <div className="text-sm">
+                                <div className="font-medium">
+                                  {rewards?.find((r: any) => r.id === region.rewardId)?.name || "Reward no encontrado"}
+                                </div>
+                                <div className="text-gray-600">
+                                  {rewards?.find((r: any) => r.id === region.rewardId)?.pointsCost} pts
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-gray-500 text-sm">Sin reward asignado</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={region.rewardId || "NONE"}
+                              onValueChange={(value) => {
+                                const rewardId = value === "NONE" ? null : value;
+                                updateRegionMutation.mutate({ 
+                                  id: region.id, 
+                                  updates: { rewardId } 
+                                });
+                              }}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Seleccionar reward" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="NONE">Sin reward</SelectItem>
+                                {rewards && rewards.length > 0 ? (
+                                  rewards.map((reward: any) => (
+                                    <SelectItem key={reward.id} value={reward.id}>
+                                      {reward.name} ({reward.pointsCost} pts)
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <SelectItem value="NO_REWARDS" disabled>No hay rewards disponibles</SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={region.rewardId ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                              {region.rewardId ? "Asignado" : "Sin asignar"}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Create Region Modal */}
       <Dialog open={isCreateModalOpen} onOpenChange={(open) => {
@@ -646,20 +919,38 @@ export default function RegionsManagementTab() {
               <Label htmlFor="new-region" className="text-right">
                 {t('admin.regionRequired')}
               </Label>
-              <Select
-                value={newRegion.region}
-                onValueChange={(value) => setNewRegion({ ...newRegion, region: value })}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder={t('admin.selectRegion')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="NOLA">NOLA</SelectItem>
-                  <SelectItem value="SOLA">SOLA</SelectItem>
-                  <SelectItem value="BRASIL">BRASIL</SelectItem>
-                  <SelectItem value="MEXICO">MÉXICO</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="col-span-3">
+                <Select
+                  value={newRegion.region}
+                  onValueChange={(value) => {
+                    console.log("🎯 Usuario seleccionó región en formulario:", value);
+                    setNewRegion({ ...newRegion, region: value });
+                  }}
+                  disabled={
+                    (currentUser as any)?.role === "regional-admin" || 
+                    (!!selectedRegion && newRegion.region === selectedRegion)
+                  }
+                >
+                  <SelectTrigger className={`${(currentUser as any)?.role === "regional-admin" ? "bg-gray-100" : ""}`}>
+                    <SelectValue placeholder={t('admin.selectRegion')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NOLA">NOLA</SelectItem>
+                    <SelectItem value="SOLA">SOLA</SelectItem>
+                    <SelectItem value="BRASIL">BRASIL</SelectItem>
+                    <SelectItem value="MEXICO">MÉXICO</SelectItem>
+                  </SelectContent>
+                </Select>
+                {((currentUser as any)?.role === "regional-admin" || 
+                  (!!selectedRegion && newRegion.region === selectedRegion)) && newRegion.region && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    {(currentUser as any)?.role === "regional-admin" 
+                      ? `Región bloqueada: ${newRegion.region}` 
+                      : `Región pre-seleccionada: ${newRegion.region} (desde configuración)`
+                    }
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* País - Se muestra solo si la región tiene países disponibles */}
@@ -802,33 +1093,6 @@ export default function RegionsManagementTab() {
                 className="col-span-3"
                 placeholder={t('admin.nameExample')}
               />
-            </div>
-
-            {/* Selector de Reward */}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="new-reward" className="text-right">
-                Premio Asociado
-              </Label>
-              <Select
-                value={newRegion.rewardId || "NONE"}
-                onValueChange={(value) => setNewRegion({ ...newRegion, rewardId: value === "NONE" ? "" : value })}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Selecciona un premio (opcional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="NONE">Sin premio asociado</SelectItem>
-                  {rewards && rewards.length > 0 ? (
-                    rewards.map((reward: any) => (
-                      <SelectItem key={reward.id} value={reward.id}>
-                        {reward.name} ({reward.pointsCost} pts)
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="NO_REWARDS" disabled>No hay premios activos</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">

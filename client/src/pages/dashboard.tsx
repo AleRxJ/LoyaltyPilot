@@ -22,6 +22,7 @@ import { useLocation } from "wouter";
 import type { AuthUser } from "@/lib/auth";
 import backgroundImage from "@assets/BANNER-PRINICPAL_1758666220909.jpg";
 import { useTranslation } from "@/hooks/useTranslation";
+import { isAdminRole } from "@/lib/roles";
 
 interface UserStats {
   totalPoints: number;
@@ -61,7 +62,7 @@ export default function Dashboard() {
 
   // Redirect admin users to admin panel
   useEffect(() => {
-    if (user && user.role === "admin") {
+    if (user && isAdminRole(user.role)) {
       navigate("/admin");
     }
   }, [user, navigate]);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import { apiRequest } from "@/lib/queryClient";
 import type { SupportTicketWithUser } from "@shared/schema";
 
 export default function SupportTicketsTab() {
+  const [selectedRegion, setSelectedRegion] = useState<string>("");
   const [selectedTicket, setSelectedTicket] = useState<SupportTicketWithUser | null>(null);
   const [isResponseDialogOpen, setIsResponseDialogOpen] = useState(false);
   const [adminResponse, setAdminResponse] = useState("");
@@ -33,8 +34,29 @@ export default function SupportTicketsTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const { data: currentUser } = useQuery({
+    queryKey: ["/api/auth/me"],
+  });
+
+  // Establecer región basada en el rol del usuario
+  useEffect(() => {
+    if (currentUser) {
+      const user = currentUser as any;
+      if (user.role === "regional-admin") {
+        const userRegion = user.region || user.country || "";
+        setSelectedRegion(userRegion);
+      } else if (user.role === "admin" || user.role === "super-admin") {
+        // Para admin/super-admin, establecer región por defecto si no hay una seleccionada
+        if (!selectedRegion) {
+          setSelectedRegion("NOLA");
+        }
+      }
+    }
+  }, [currentUser, selectedRegion]);
+
   const { data: tickets, isLoading } = useQuery<SupportTicketWithUser[]>({
-    queryKey: ["/api/admin/support-tickets"],
+    queryKey: ["/api/admin/support-tickets", selectedRegion],
+    enabled: !!selectedRegion,
   });
 
   const updateTicketMutation = useMutation({
@@ -53,7 +75,7 @@ export default function SupportTicketsTab() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/support-tickets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/support-tickets", selectedRegion] });
       toast({
         title: "Ticket actualizado",
         description: "El ticket ha sido actualizado exitosamente",
@@ -196,6 +218,42 @@ export default function SupportTicketsTab() {
   return (
     <>
       <div className="space-y-6">
+        {/* Selector de Región */}
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-gray-900 mb-2">Región</h3>
+              {currentUser && (currentUser as any).role === "regional-admin" ? (
+                <div className="flex items-center space-x-2">
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                    {selectedRegion}
+                  </Badge>
+                  <span className="text-xs text-gray-500">
+                    (Como administrador regional, solo puedes ver tickets de tu región)
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-3">
+                  <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Selecciona una región" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NOLA">NOLA</SelectItem>
+                      <SelectItem value="SOLA">SOLA</SelectItem>
+                      <SelectItem value="BRASIL">BRASIL</SelectItem>
+                      <SelectItem value="MEXICO">MEXICO</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-xs text-gray-500">
+                    Selecciona una región para ver sus tickets de soporte
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">

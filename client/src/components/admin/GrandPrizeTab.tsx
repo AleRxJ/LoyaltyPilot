@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ interface UserRanking {
 export default function GrandPrizeTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [selectedRegion, setSelectedRegion] = useState<string>("");
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [criteria, setCriteria] = useState<GrandPrizeCriteria>({
@@ -55,20 +56,42 @@ export default function GrandPrizeTab() {
     isActive: true,
   });
 
+  const { data: currentUser } = useQuery({
+    queryKey: ["/api/auth/me"],
+  });
+
+  // Establecer región basada en el rol del usuario
+  useEffect(() => {
+    if (currentUser) {
+      const user = currentUser as any;
+      if (user.role === "regional-admin") {
+        const userRegion = user.region || user.country || "";
+        setSelectedRegion(userRegion);
+      } else if (user.role === "admin" || user.role === "super-admin") {
+        // Para admin/super-admin, establecer región por defecto si no hay una seleccionada
+        if (!selectedRegion) {
+          setSelectedRegion("NOLA");
+        }
+      }
+    }
+  }, [currentUser, selectedRegion]);
+
   // Fetch ALL criteria
   const { data: allCriteria, isLoading: criteriaLoading } = useQuery<GrandPrizeCriteria[]>({
-    queryKey: ["/api/admin/grand-prize/criteria/all"],
+    queryKey: ["/api/admin/grand-prize/criteria/all", selectedRegion],
+    enabled: !!selectedRegion,
   });
 
   // Fetch current active criteria
   const { data: currentCriteria } = useQuery<GrandPrizeCriteria>({
-    queryKey: ["/api/admin/grand-prize/criteria"],
+    queryKey: ["/api/admin/grand-prize/criteria", selectedRegion],
+    enabled: !!selectedRegion,
   });
 
   // Fetch ranking based on criteria
   const { data: ranking, isLoading: rankingLoading } = useQuery<UserRanking[]>({
-    queryKey: ["/api/admin/grand-prize/ranking", currentCriteria?.id],
-    enabled: !!currentCriteria?.id,
+    queryKey: ["/api/admin/grand-prize/ranking", currentCriteria?.id, selectedRegion],
+    enabled: !!currentCriteria?.id && !!selectedRegion,
   });
 
   // Save/Update criteria mutation
@@ -95,9 +118,9 @@ export default function GrandPrizeTab() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/grand-prize/criteria"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/grand-prize/criteria/all"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/grand-prize/ranking"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/grand-prize/criteria", selectedRegion] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/grand-prize/criteria/all", selectedRegion] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/grand-prize/ranking", undefined, selectedRegion] });
       setEditingId(null);
       setCriteria({
         name: "",
@@ -141,8 +164,8 @@ export default function GrandPrizeTab() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/grand-prize/criteria"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/grand-prize/criteria/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/grand-prize/criteria", selectedRegion] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/grand-prize/criteria/all", selectedRegion] });
       toast({
         title: "Criterios eliminados",
         description: "Los criterios han sido eliminados exitosamente.",
@@ -208,6 +231,42 @@ export default function GrandPrizeTab() {
 
   return (
     <div className="space-y-6">
+      {/* Selector de Región */}
+      <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Región</h3>
+            {currentUser && (currentUser as any).role === "regional-admin" ? (
+              <div className="flex items-center space-x-2">
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  {selectedRegion}
+                </Badge>
+                <span className="text-xs text-gray-500">
+                  (Como administrador regional, solo puedes gestionar el Gran Premio Final de tu región)
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Selecciona una región" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NOLA">NOLA</SelectItem>
+                    <SelectItem value="SOLA">SOLA</SelectItem>
+                    <SelectItem value="BRASIL">BRASIL</SelectItem>
+                    <SelectItem value="MEXICO">MEXICO</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-xs text-gray-500">
+                  Selecciona una región para gestionar su Gran Premio Final
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Criteria Configuration Card */}
       <Card>
         <CardHeader>

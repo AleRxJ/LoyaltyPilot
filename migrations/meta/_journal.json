@@ -78,6 +78,20 @@
       "when": 1762451750070,
       "tag": "0010_illegal_invisible_woman",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1762464619925,
+      "tag": "0011_sloppy_franklin_storm",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1762530164436,
+      "tag": "0012_absurd_leech",
+      "breakpoints": true
     }
   ]
 }

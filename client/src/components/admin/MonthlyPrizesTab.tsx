@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,7 @@ export default function MonthlyPrizesTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const currentYear = new Date().getFullYear();
+  const [selectedRegion, setSelectedRegion] = useState<string>("");
 
   const [prize, setPrize] = useState<Prize>({
     regionConfigId: "",
@@ -66,17 +67,39 @@ export default function MonthlyPrizesTab() {
   const [filterMonth, setFilterMonth] = useState<number>(new Date().getMonth() + 1);
   const [filterYear, setFilterYear] = useState<number>(currentYear);
 
+  const { data: currentUser } = useQuery({
+    queryKey: ["/api/auth/me"],
+  });
+
+  // Establecer región basada en el rol del usuario
+  useEffect(() => {
+    if (currentUser) {
+      const user = currentUser as any;
+      if (user.role === "regional-admin") {
+        const userRegion = user.region || user.country || "";
+        setSelectedRegion(userRegion);
+      } else if (user.role === "admin" || user.role === "super-admin") {
+        // Para admin/super-admin, establecer región por defecto si no hay una seleccionada
+        if (!selectedRegion) {
+          setSelectedRegion("NOLA");
+        }
+      }
+    }
+  }, [currentUser, selectedRegion]);
+
   // Fetch region configs
   const { data: regionConfigs, isLoading: configsLoading } = useQuery<RegionConfig[]>({
-    queryKey: ["/api/admin/region-configs"],
+    queryKey: ["/api/admin/region-configs", selectedRegion],
+    enabled: !!selectedRegion,
   });
 
   // Fetch monthly prizes
   const { data: allPrizes, isLoading: prizesLoading } = useQuery<Prize[]>({
-    queryKey: ["/api/admin/monthly-prizes", filterMonth, filterYear],
+    queryKey: ["/api/admin/monthly-prizes", filterMonth, filterYear, selectedRegion],
+    enabled: !!selectedRegion,
     queryFn: async () => {
       const response = await fetch(
-        `/api/admin/monthly-prizes?month=${filterMonth}&year=${filterYear}`,
+        `/api/admin/monthly-prizes?month=${filterMonth}&year=${filterYear}&region=${selectedRegion}`,
         { credentials: "include" }
       );
       if (!response.ok) throw new Error("Failed to fetch prizes");
@@ -107,7 +130,7 @@ export default function MonthlyPrizesTab() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/monthly-prizes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/monthly-prizes", filterMonth, filterYear, selectedRegion] });
       setEditingId(null);
       setPrize({
         regionConfigId: "",
@@ -149,7 +172,7 @@ export default function MonthlyPrizesTab() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/monthly-prizes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/monthly-prizes", filterMonth, filterYear, selectedRegion] });
       toast({
         title: "Premio eliminado",
         description: "El premio ha sido eliminado exitosamente.",
@@ -225,6 +248,42 @@ export default function MonthlyPrizesTab() {
 
   return (
     <div className="space-y-6">
+      {/* Selector de Región */}
+      <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Región</h3>
+            {currentUser && (currentUser as any).role === "regional-admin" ? (
+              <div className="flex items-center space-x-2">
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  {selectedRegion}
+                </Badge>
+                <span className="text-xs text-gray-500">
+                  (Como administrador regional, solo puedes gestionar los premios mensuales de tu región)
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Selecciona una región" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NOLA">NOLA</SelectItem>
+                    <SelectItem value="SOLA">SOLA</SelectItem>
+                    <SelectItem value="BRASIL">BRASIL</SelectItem>
+                    <SelectItem value="MEXICO">MEXICO</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-xs text-gray-500">
+                  Selecciona una región para gestionar sus premios mensuales
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Formulario de Premio */}
       <Card>
         <CardHeader>

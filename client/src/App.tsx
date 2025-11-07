@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import { getCurrentUser } from "./lib/auth";
+import { isAdminRole } from "@/lib/roles";
 
 // Pages
 import Login from "@/pages/login";
@@ -59,19 +60,19 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     
     if (user && location === "/login") {
       // Always redirect from login if authenticated
-      const redirectPath = user.role === "admin" ? "/admin" : "/";
+      const redirectPath = isAdminRole(user.role) ? "/admin" : "/";
       setLocation(redirectPath);
     } else if (user && location === "/register" && !hasInviteToken) {
       // Only redirect from register if there's no invite token
-      const redirectPath = user.role === "admin" ? "/admin" : "/";
+      const redirectPath = isAdminRole(user.role) ? "/admin" : "/";
       setLocation(redirectPath);
     } else if (user && location.startsWith("/passwordless-login")) {
       // Redirect from passwordless login
-      const redirectPath = user.role === "admin" ? "/admin" : "/";
+      const redirectPath = isAdminRole(user.role) ? "/admin" : "/";
       setLocation(redirectPath);
     } else if (user && location.startsWith("/login/magic")) {
       // Redirect from magic link login
-      const redirectPath = user.role === "admin" ? "/admin" : "/";
+      const redirectPath = isAdminRole(user.role) ? "/admin" : "/";
       setLocation(redirectPath);
     }
   }, [user, location, setLocation]);

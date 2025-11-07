@@ -25,6 +25,49 @@ declare module 'express-session' {
   }
 }
 
+/**
+ * Helper para obtener la región del admin autenticado
+ * - Super-admin: retorna undefined (ve todas las regiones)
+ * - Regional-admin: retorna su región (NOLA, SOLA, BRASIL, MEXICO)
+ * - User/Admin regular: retorna undefined
+ */
+async function getAdminRegion(userId: string): Promise<string | undefined> {
+  const user = await storage.getUser(userId);
+  if (!user) return undefined;
+  
+  // Solo regional-admin tiene filtro de región
+  if (user.role === "regional-admin" && user.region) {
+    return user.region; // Retorna directamente la región: "NOLA", "SOLA", etc.
+  }
+  
+  // Super-admin y otros roles ven todo
+  return undefined;
+}
+
+/**
+ * Helper para verificar si el usuario es super-admin
+ */
+async function isSuperAdmin(userId: string): Promise<boolean> {
+  const user = await storage.getUser(userId);
+  return user?.role === "super-admin";
+}
+
+/**
+ * Helper para verificar si el usuario es regional-admin
+ */
+async function isRegionalAdmin(userId: string): Promise<boolean> {
+  const user = await storage.getUser(userId);
+  return user?.role === "regional-admin";
+}
+
+/**
+ * Helper para verificar si el usuario tiene permisos de administrador
+ * Incluye: admin, regional-admin, super-admin
+ */
+function isAdminRole(role: string | undefined): boolean {
+  return role === "admin" || role === "regional-admin" || role === "super-admin";
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.post("/api/auth/login", async (req, res) => {
@@ -229,6 +272,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // Si es regional-admin, obtener info de su región
+    let regionInfo = null;
+    if (user.role === "regional-admin" && user.adminRegionId) {
+      const regions = await storage.getAllRegionConfigs();
+      regionInfo = regions.find(r => r.id === user.adminRegionId);
+    }
+
     res.json({
       id: user.id,
       username: user.username,
@@ -236,7 +286,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
-      country: user.country
+      country: user.country,
+      adminRegionId: user.adminRegionId,
+      regionInfo: regionInfo ? {
+        id: regionInfo.id,
+        name: regionInfo.name,
+        region: regionInfo.region,
+        category: regionInfo.category,
+        subcategory: regionInfo.subcategory
+      } : null
     });
   });
 
@@ -423,7 +481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userRole = req.session?.userRole;
     const userId = req.session?.userId;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -458,7 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/deals/:id/reject", async (req, res) => {
     const userRole = req.session?.userRole;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -476,7 +534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/deals/:id", async (req, res) => {
     const userRole = req.session?.userRole;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -501,7 +559,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Reward routes
   app.get("/api/rewards", async (req, res) => {
     try {
-      const rewards = await storage.getRewards();
+      const userId = req.session?.userId;
+      let regionName: string | undefined;
+      
+      // Si hay usuario autenticado, obtener su región para filtrar rewards
+      if (userId) {
+        const user = await storage.getUser(userId);
+        if (user) {
+          // Admin y Super-admin ven todos los rewards (sin filtro)
+          if (user.role === "admin" || user.role === "super-admin") {
+            regionName = undefined;
+          } else {
+            // Usuarios regulares y regional-admins: filtrar por región
+            regionName = user.region || user.country || undefined;
+          }
+        }
+      }
+      
+      const rewards = await storage.getRewards(regionName);
+      
+      // Prevent caching to ensure fresh data after mutations
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+      
       res.json(rewards);
     } catch (error) {
       res.status(500).json({ message: "Failed to get rewards" });
@@ -516,7 +597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userRole = req.session?.userRole;
     console.log("User role:", userRole);
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       console.log("Access denied - not admin");
       return res.status(403).json({ message: "Admin access required" });
     }
@@ -542,7 +623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin reward update endpoint
   app.patch("/api/admin/rewards/:id", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -565,7 +646,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin reward delete endpoint
   app.delete("/api/admin/rewards/:id", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -587,7 +668,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin get all rewards endpoint
   app.get("/api/admin/rewards", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -603,12 +684,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin endpoints for reward approval - MUST BE BEFORE /:id route
   app.get("/api/admin/rewards/pending", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    const userId = req.session?.userId;
+    
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
     try {
-      const pendingRedemptions = await storage.getPendingRewardRedemptions();
+      const regionName = await getAdminRegion(userId);
+      const pendingRedemptions = await storage.getPendingRewardRedemptions(regionName);
       res.json(pendingRedemptions);
     } catch (error) {
       console.error("Get pending redemptions error:", error);
@@ -619,7 +707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin endpoint to get all reward redemptions - MUST BE BEFORE /:id route
   app.get("/api/admin/rewards/redemptions", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -635,7 +723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin get single reward endpoint - MUST BE AFTER specific routes
   app.get("/api/admin/rewards/:id", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -715,7 +803,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userRole = req.session?.userRole;
     const adminId = req.session?.userId;
     
-    if (userRole !== "admin" || !adminId) {
+    if (!isAdminRole(userRole) || !adminId) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -760,7 +848,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userRole = req.session?.userRole;
     const adminId = req.session?.userId;
     
-    if (userRole !== "admin" || !adminId) {
+    if (!isAdminRole(userRole) || !adminId) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -787,7 +875,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userRole = req.session?.userRole;
     const adminId = req.session?.userId;
     
-    if (userRole !== "admin" || !adminId) {
+    if (!isAdminRole(userRole) || !adminId) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -834,12 +922,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes
   app.get("/api/admin/users", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    const userId = req.session?.userId;
+    
+    if (userRole !== "admin" && userRole !== "regional-admin" && userRole !== "super-admin") {
       return res.status(403).json({ message: "Admin access required" });
     }
 
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
     try {
-      const users = await storage.getAllUsers();
+      const regionName = await getAdminRegion(userId);
+      const users = await storage.getAllUsers(regionName);
       res.json(users);
     } catch (error) {
       res.status(500).json({ message: "Failed to get users" });
@@ -849,7 +944,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin create user endpoint
   app.post("/api/admin/users", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -896,7 +991,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/admin/users/:userId/role", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -922,7 +1017,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update user information endpoint
   app.patch("/api/admin/users/:userId", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -963,7 +1058,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete user endpoint
   app.delete("/api/admin/users/:userId", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -994,7 +1089,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userRole = req.session?.userRole;
     const userId = req.session?.userId;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -1077,7 +1172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userRole = req.session?.userRole;
     const userId = req.session?.userId;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -1391,15 +1486,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/deals", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    const userId = req.session?.userId;
+    
+    if (userRole !== "admin" && userRole !== "regional-admin" && userRole !== "super-admin") {
       return res.status(403).json({ message: "Admin access required" });
+    }
+
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
     }
 
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
+      const regionName = await getAdminRegion(userId);
       
-      const result = await storage.getAllDeals(page, limit);
+      const result = await storage.getAllDeals(page, limit, regionName);
       res.json(result);
     } catch (error) {
       res.status(500).json({ message: "Failed to get all deals" });
@@ -1408,12 +1510,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/deals/pending", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    const userId = req.session?.userId;
+    
+    if (userRole !== "admin" && userRole !== "regional-admin" && userRole !== "super-admin") {
       return res.status(403).json({ message: "Admin access required" });
     }
 
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
     try {
-      const deals = await storage.getPendingDeals();
+      const regionName = await getAdminRegion(userId);
+      const deals = await storage.getPendingDeals(regionName);
       res.json(deals);
     } catch (error) {
       res.status(500).json({ message: "Failed to get pending deals" });
@@ -1422,16 +1531,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/reports", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    const userId = req.session?.userId;
+    
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
     try {
+      const regionName = await getAdminRegion(userId);
+      
       const filters = {
         country: req.query.country === "all" ? undefined : req.query.country as string,
         partnerLevel: req.query.partnerLevel === "all" ? undefined : req.query.partnerLevel as string,
         startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
         endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+        regionName, // Filtro de región para regional-admin
       };
 
       const data = await storage.getReportsData(filters);
@@ -1443,7 +1561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/reports/user-ranking", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -1463,16 +1581,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/reports/user-ranking/export", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    const userId = req.session?.userId;
+    
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
     try {
       // Using statically imported XLSX
       
+      // Get admin's region (only for regional-admins)
+      const regionName = userId ? await getAdminRegion(userId) : undefined;
+      
+      // If super-admin and region query param provided, use that
+      const queryRegion = req.query.region as string | undefined;
+      const effectiveRegion = userRole === "super-admin" && queryRegion ? queryRegion : regionName;
+      
       const filters = {
         startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
         endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+        regionName: effectiveRegion,
       };
 
       const data = await storage.getUserRankingReport(filters);
@@ -1536,7 +1664,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/reports/reward-redemptions", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -1556,14 +1684,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/reports/reward-redemptions/export", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    const userId = req.session?.userId;
+    
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
     try {
+      // Get admin's region (only for regional-admins)
+      const regionName = userId ? await getAdminRegion(userId) : undefined;
+      
+      // If super-admin and region query param provided, use that
+      const queryRegion = req.query.region as string | undefined;
+      const effectiveRegion = userRole === "super-admin" && queryRegion ? queryRegion : regionName;
+      
       const filters = {
         startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
         endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+        regionName: effectiveRegion,
       };
 
       const data = await storage.getRewardRedemptionsReport(filters);
@@ -1630,7 +1768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // CSV upload routes
   app.post("/api/admin/csv/upload-url", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -1648,7 +1786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Users CSV upload URL endpoint
   app.post("/api/admin/csv/users/upload-url", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -1682,7 +1820,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/admin/csv/process", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -1827,7 +1965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Users CSV processing endpoint
   app.post("/api/admin/csv/users/process", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -1995,12 +2133,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get pending users for approval
   app.get("/api/admin/users/pending", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    const userId = req.session?.userId;
+    
+    if (userRole !== "admin" && userRole !== "regional-admin" && userRole !== "super-admin") {
       return res.status(403).json({ message: "Admin access required" });
     }
 
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
     try {
-      const pendingUsers = await storage.getPendingUsers();
+      const regionName = await getAdminRegion(userId);
+      const pendingUsers = await storage.getPendingUsers(regionName);
       res.json(pendingUsers);
     } catch (error) {
       console.error("Error fetching pending users:", error);
@@ -2013,7 +2158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userRole = req.session?.userRole;
     const adminUserId = req.session?.userId;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -2052,7 +2197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/admin/users/:userId/reject", async (req, res) => {
     const userRole = req.session?.userRole;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -2085,7 +2230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/recalculate-points", async (req, res) => {
     const userRole = req.session?.userRole;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -2106,7 +2251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Deals per user report endpoint
   app.get("/api/admin/reports/deals-per-user", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -2126,14 +2271,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/reports/deals-per-user/export", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    const userId = req.session?.userId;
+    
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
     try {
+      // Get admin's region (only for regional-admins)
+      const regionName = userId ? await getAdminRegion(userId) : undefined;
+      
+      // If super-admin and region query param provided, use that
+      const queryRegion = req.query.region as string | undefined;
+      const effectiveRegion = userRole === "super-admin" && queryRegion ? queryRegion : regionName;
+      
       const filters = {
         startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
         endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+        regionName: effectiveRegion,
       };
 
       const data = await storage.getDealsPerUserReport(filters);
@@ -2338,12 +2493,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/support-tickets", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    const userId = req.session?.userId;
+    
+    if (userRole !== "admin" && userRole !== "regional-admin" && userRole !== "super-admin") {
       return res.status(403).json({ message: "Admin access required" });
     }
 
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
     try {
-      const tickets = await storage.getAllSupportTickets();
+      const regionName = await getAdminRegion(userId);
+      const tickets = await storage.getAllSupportTickets(regionName);
       res.json(tickets);
     } catch (error) {
       console.error("Get all support tickets error:", error);
@@ -2354,7 +2516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/support-tickets/:id", async (req, res) => {
     const userRole = req.session?.userRole;
     const userId = req.session?.userId;
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -2420,20 +2582,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/points-config", async (req, res) => {
     const userRole = req.session?.userRole;
-    if (userRole !== "admin") {
+    const userId = req.session?.userId;
+    
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
     try {
-      const config = await storage.getPointsConfig();
+      // Obtener región del query parameter
+      const region = req.query.region as string;
+      
+      if (!region) {
+        return res.status(400).json({ message: "Region parameter is required" });
+      }
+
+      // Validar región válida
+      const validRegions = ["NOLA", "SOLA", "BRASIL", "MEXICO"];
+      if (!validRegions.includes(region)) {
+        return res.status(400).json({ message: "Invalid region" });
+      }
+
+      // Buscar configuración específica para la región
+      const config = await storage.getPointsConfigByRegion(region);
       
       if (!config) {
+        // Si no existe configuración para esta región, crear una por defecto
         const defaultConfig = {
           id: "",
+          region,
           softwareRate: 1000,
           hardwareRate: 5000,
           equipmentRate: 10000,
           grandPrizeThreshold: 50000,
+          defaultNewCustomerGoalRate: 1000,
+          defaultRenewalGoalRate: 2000,
+          redemptionStartDate: null,
+          redemptionEndDate: null,
           updatedAt: new Date(),
           updatedBy: null
         };
@@ -2451,7 +2635,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userRole = req.session?.userRole;
     const userId = req.session?.userId;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -2461,7 +2645,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const updates = updatePointsConfigSchema.parse(req.body);
-      const config = await storage.updatePointsConfig(updates, userId);
+      
+      // Validar que la región esté incluida en la actualización
+      if (!updates.region) {
+        return res.status(400).json({ message: "Region is required" });
+      }
+
+      // Validar región válida
+      const validRegions = ["NOLA", "SOLA", "BRASIL", "MEXICO"];
+      if (!validRegions.includes(updates.region)) {
+        return res.status(400).json({ message: "Invalid region" });
+      }
+
+      const config = await storage.updatePointsConfigByRegion(updates, userId);
       
       if (!config) {
         return res.status(500).json({ message: "Failed to update points configuration" });
@@ -2480,13 +2676,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Regions configuration routes
   app.get("/api/admin/regions", async (req, res) => {
     const userRole = req.session?.userRole;
+    const userId = req.session?.userId;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
     try {
-      const regions = await storage.getAllRegionConfigs();
+      const regionName = await getAdminRegion(userId);
+      const regions = await storage.getAllRegionConfigs(regionName);
       res.json(regions);
     } catch (error) {
       console.error("Get regions error:", error);
@@ -2497,7 +2699,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/regions", async (req, res) => {
     const userRole = req.session?.userRole;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -2541,7 +2743,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/regions/seed", async (req, res) => {
     const userRole = req.session?.userRole;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -2557,7 +2759,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/regions/:id", async (req, res) => {
     const userRole = req.session?.userRole;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -2582,7 +2784,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/admin/regions/:id", async (req, res) => {
     const userRole = req.session?.userRole;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -2609,7 +2811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/campaigns", async (req, res) => {
     const userRole = req.session?.userRole;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -2626,7 +2828,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/campaigns", async (req, res) => {
     const userRole = req.session?.userRole;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -2653,7 +2855,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/campaigns/:id", async (req, res) => {
     const userRole = req.session?.userRole;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -2678,7 +2880,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/admin/campaigns/:id", async (req, res) => {
     const userRole = req.session?.userRole;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -2702,7 +2904,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/region-configs", async (req, res) => {
     const userRole = req.session?.userRole;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -2719,7 +2921,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/region-configs", async (req, res) => {
     const userRole = req.session?.userRole;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -2745,7 +2947,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/region-configs/:id", async (req, res) => {
     const userRole = req.session?.userRole;
     
-    if (userRole !== "admin") {
+    if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { Reward } from "@shared/schema";
 
@@ -19,6 +19,7 @@ const rewardSchema = z.object({
   description: z.string().optional(),
   pointsCost: z.string().min(1, "Points cost is required"),
   category: z.string().min(1, "Category is required"),
+  region: z.string().min(1, "Region is required"),
   isActive: z.boolean().default(true),
   stockQuantity: z.string().optional(),
   imageUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
@@ -49,6 +50,11 @@ export default function RewardModal({ isOpen, onClose, reward }: RewardModalProp
   const queryClient = useQueryClient();
   const isEditing = !!reward;
 
+  // Get current user to determine region access
+  const { data: currentUser } = useQuery<any>({
+    queryKey: ["/api/auth/me"],
+  });
+
   const form = useForm<RewardForm>({
     resolver: zodResolver(rewardSchema),
     defaultValues: {
@@ -56,6 +62,7 @@ export default function RewardModal({ isOpen, onClose, reward }: RewardModalProp
       description: "",
       pointsCost: "",
       category: "",
+      region: "",
       isActive: true,
       stockQuantity: "",
       imageUrl: "",
@@ -63,32 +70,49 @@ export default function RewardModal({ isOpen, onClose, reward }: RewardModalProp
     },
   });
 
-  // Reset form when reward prop changes
+  // Reset form when reward prop changes OR when modal opens
   useEffect(() => {
+    if (!isOpen) return; // Solo ejecutar cuando el modal está abierto
+    
     if (reward) {
       form.reset({
         name: reward.name || "",
         description: reward.description || "",
         pointsCost: reward.pointsCost?.toString() || "",
         category: reward.category || "",
+        region: reward.region || "",
         isActive: reward.isActive ?? true,
         stockQuantity: reward.stockQuantity?.toString() || "",
         imageUrl: reward.imageUrl || "",
         estimatedDeliveryDays: reward.estimatedDeliveryDays?.toString() || "",
       });
-    } else {
+    } else if (currentUser) {
+      // Si es regional-admin, auto-asignar su región
+      // Usar region si existe, sino country como fallback
+      const defaultRegion = currentUser.role === "regional-admin" 
+        ? (currentUser.region || currentUser.country || "")
+        : "";
+      
+      console.log("Setting default region:", defaultRegion, "for user:", currentUser);
+      
       form.reset({
         name: "",
         description: "",
         pointsCost: "",
         category: "",
+        region: defaultRegion,
         isActive: true,
         stockQuantity: "",
         imageUrl: "",
         estimatedDeliveryDays: "",
       });
+      
+      // Establecer el valor del campo explícitamente
+      if (defaultRegion) {
+        form.setValue("region", defaultRegion);
+      }
     }
-  }, [reward, form]);
+  }, [reward, form, currentUser, isOpen]);
 
   const createRewardMutation = useMutation({
     mutationFn: async (data: RewardForm) => {
@@ -229,6 +253,41 @@ export default function RewardModal({ isOpen, onClose, reward }: RewardModalProp
                 )}
               />
               
+              <FormField
+                control={form.control}
+                name="region"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Región</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value}
+                      disabled={currentUser?.role === "regional-admin"}
+                    >
+                      <FormControl>
+                        <SelectTrigger data-testid="select-region">
+                          <SelectValue placeholder="Seleccionar región" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="NOLA">NOLA</SelectItem>
+                        <SelectItem value="SOLA">SOLA</SelectItem>
+                        <SelectItem value="BRASIL">BRASIL</SelectItem>
+                        <SelectItem value="MEXICO">MEXICO</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    {currentUser?.role === "regional-admin" && field.value && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Región bloqueada: {field.value}
+                      </p>
+                    )}
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="stockQuantity"

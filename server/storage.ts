@@ -54,7 +54,7 @@ import {
 // Database connection and ORM helpers
 // ───────────────────────────────────────────────
 import { db } from "./db";
-import { and, asc, desc, eq, count, sum, gte, gt, lte, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ne, count, sum, gte, gt, lte, isNotNull, isNull, sql } from "drizzle-orm";
 
 // ───────────────────────────────────────────────
 // Utilities
@@ -83,14 +83,15 @@ export interface IStorage {
   createDeal(deal: InsertDeal): Promise<Deal>;
   getDeal(id: string): Promise<Deal | undefined>;
   getUserDeals(userId: string): Promise<Deal[]>;
-  getPendingDeals(): Promise<DealWithUser[]>;
+  getPendingDeals(regionId?: string): Promise<DealWithUser[]>;
+  getAllDeals(page?: number, limit?: number, regionId?: string): Promise<{ deals: DealWithUser[]; total: number }>;
   approveDeal(id: string, approvedBy: string): Promise<Deal | undefined>;
   rejectDeal(id: string): Promise<Deal | undefined>;
   updateDeal(id: string, updates: UpdateDeal): Promise<Deal | undefined>;
   getRecentDeals(userId: string, limit?: number): Promise<Deal[]>;
 
   // Reward methods
-  getRewards(): Promise<Reward[]>;
+  getRewards(regionName?: string): Promise<Reward[]>;
   getReward(id: string): Promise<Reward | undefined>;
   createReward(reward: InsertReward): Promise<Reward>;
   updateReward(
@@ -114,7 +115,7 @@ export interface IStorage {
     adminId: string,
     reason?: string,
   ): Promise<UserReward | undefined>;
-  getPendingRewardRedemptions(): Promise<
+  getPendingRewardRedemptions(regionId?: string): Promise<
     Array<
       UserReward & {
         userName?: string;
@@ -159,12 +160,9 @@ export interface IStorage {
   getActiveCampaigns(): Promise<Campaign[]>;
 
   // Admin methods
-  getAllUsers(): Promise<User[]>;
-  getAllDeals(
-    page?: number,
-    limit?: number,
-  ): Promise<{ deals: DealWithUser[]; total: number }>;
-  getPendingUsers(): Promise<User[]>;
+  getAllUsers(regionId?: string): Promise<User[]>;
+  getAllDeals(page?: number, limit?: number, regionId?: string): Promise<{ deals: DealWithUser[]; total: number }>;
+  getPendingUsers(regionId?: string): Promise<User[]>;
   approveUser(userId: string, approvedBy: string): Promise<User | undefined>;
   rejectUser(userId: string): Promise<User | undefined>;
   deleteUser(id: string): Promise<User | undefined>;
@@ -206,7 +204,7 @@ export interface IStorage {
   createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket>;
   getSupportTicket(id: string): Promise<SupportTicket | undefined>;
   getUserSupportTickets(userId: string): Promise<SupportTicket[]>;
-  getAllSupportTickets(): Promise<SupportTicketWithUser[]>;
+  getAllSupportTickets(regionId?: string): Promise<SupportTicketWithUser[]>;
   updateSupportTicket(
     id: string,
     updates: UpdateSupportTicket,
@@ -214,7 +212,12 @@ export interface IStorage {
 
   // Points Config methods
   getPointsConfig(): Promise<PointsConfig | undefined>;
+  getPointsConfigByRegion(region: string): Promise<PointsConfig | undefined>;
   updatePointsConfig(
+    updates: UpdatePointsConfig,
+    updatedBy: string,
+  ): Promise<PointsConfig | undefined>;
+  updatePointsConfigByRegion(
     updates: UpdatePointsConfig,
     updatedBy: string,
   ): Promise<PointsConfig | undefined>;
@@ -370,20 +373,26 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(deals.createdAt));
   }
 
-  async getPendingDeals(): Promise<DealWithUser[]> {
+  async getPendingDeals(regionName?: string): Promise<DealWithUser[]> {
+    // Build filter conditions - always filter by pending status
+    const baseConditions = [eq(deals.status, "pending")];
+
     const result = await db
       .select({
         id: deals.id,
         userId: deals.userId,
+        regionId: deals.regionId,
         productType: deals.productType,
         productName: deals.productName,
         dealValue: deals.dealValue,
+        dealType: deals.dealType,
         quantity: deals.quantity,
         closeDate: deals.closeDate,
         clientInfo: deals.clientInfo,
         licenseAgreementNumber: deals.licenseAgreementNumber,
         status: deals.status,
         pointsEarned: deals.pointsEarned,
+        goalsEarned: deals.goalsEarned,
         approvedBy: deals.approvedBy,
         approvedAt: deals.approvedAt,
         createdAt: deals.createdAt,
@@ -394,7 +403,11 @@ export class DatabaseStorage implements IStorage {
       })
       .from(deals)
       .leftJoin(users, eq(deals.userId, users.id))
-      .where(eq(deals.status, "pending"))
+      .where(
+        regionName 
+          ? and(...baseConditions, eq(users.region, regionName as "NOLA" | "SOLA" | "BRASIL" | "MEXICO"))
+          : and(...baseConditions)
+      )
       .orderBy(desc(deals.createdAt));
 
     return result as DealWithUser[];
@@ -640,7 +653,20 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
-  async getRewards(): Promise<Reward[]> {
+  async getRewards(regionName?: string): Promise<Reward[]> {
+    if (regionName) {
+      // Usuario con región: solo ve rewards de su región
+      return await db
+        .select()
+        .from(rewards)
+        .where(and(
+          eq(rewards.isActive, true),
+          eq(rewards.region, regionName as "NOLA" | "SOLA" | "BRASIL" | "MEXICO")
+        ))
+        .orderBy(rewards.pointsCost);
+    }
+    
+    // Sin región (super admin o sin autenticar): ve todos los rewards
     return await db
       .select()
       .from(rewards)
@@ -803,7 +829,7 @@ export class DatabaseStorage implements IStorage {
     return updatedRedemption || undefined;
   }
 
-  async getPendingRewardRedemptions(): Promise<
+  async getPendingRewardRedemptions(regionName?: string): Promise<
     Array<
       UserReward & {
         userName?: string;
@@ -813,6 +839,13 @@ export class DatabaseStorage implements IStorage {
       }
     >
   > {
+    const conditions = [eq(userRewards.status, "pending")];
+
+    if (regionName) {
+      // Regional admin: solo ve redenciones de usuarios de su REGIÓN
+      conditions.push(eq(users.region, regionName as "NOLA" | "SOLA" | "BRASIL" | "MEXICO")); // Filtra directamente por región
+    }
+
     const result = await db
       .select({
         id: userRewards.id,
@@ -825,6 +858,9 @@ export class DatabaseStorage implements IStorage {
         redeemedAt: userRewards.redeemedAt,
         deliveredAt: userRewards.deliveredAt,
         deliveryAddress: userRewards.deliveryAddress,
+        shipmentStatus: userRewards.shipmentStatus,
+        shippedAt: userRewards.shippedAt,
+        shippedBy: userRewards.shippedBy,
         userName: users.username,
         userFirstName: users.firstName,
         userLastName: users.lastName,
@@ -833,7 +869,7 @@ export class DatabaseStorage implements IStorage {
       .from(userRewards)
       .leftJoin(users, eq(userRewards.userId, users.id))
       .leftJoin(rewards, eq(userRewards.rewardId, rewards.id))
-      .where(eq(userRewards.status, "pending"))
+      .where(and(...conditions))
       .orderBy(desc(userRewards.redeemedAt));
 
     return result as Array<
@@ -1099,23 +1135,44 @@ export class DatabaseStorage implements IStorage {
       );
   }
 
-  async getAllUsers(): Promise<User[]> {
+  async getAllUsers(regionName?: string): Promise<User[]> {
+    if (regionName) {
+      // Regional admin: solo ve usuarios de su REGIÓN (NOLA, SOLA, BRASIL, MEXICO)
+      // Excluir super-admins (que tienen region diferente o roles especiales)
+      return await db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.region, regionName as "NOLA" | "SOLA" | "BRASIL" | "MEXICO"),
+            ne(users.role, "super-admin") // Excluir super-admins
+          )
+        )
+        .orderBy(desc(users.createdAt));
+    }
+    // Super admin: ve todos los usuarios
     return await db.select().from(users).orderBy(desc(users.createdAt));
   }
 
-  async getPendingUsers(): Promise<User[]> {
+  async getPendingUsers(regionName?: string): Promise<User[]> {
     // Only show users who completed registration (have username/password) but are not approved yet
     // Users who only have invite token (haven't registered yet) should NOT appear here
+    const conditions = [
+      eq(users.isActive, true), 
+      eq(users.isApproved, false),
+      isNotNull(users.username), // Only users who completed registration
+      ne(users.role, "super-admin") // Excluir super-admins de la lista de pendientes
+    ];
+
+    if (regionName) {
+      // Regional admin: solo ve usuarios pendientes de su REGIÓN
+      conditions.push(eq(users.region, regionName as "NOLA" | "SOLA" | "BRASIL" | "MEXICO")); // Filtra directamente por región
+    }
+
     return db
       .select()
       .from(users)
-      .where(
-        and(
-          eq(users.isActive, true), 
-          eq(users.isApproved, false),
-          isNotNull(users.username) // Only users who completed registration
-        )
-      )
+      .where(and(...conditions))
       .orderBy(desc(users.createdAt));
   }
 
@@ -1184,26 +1241,33 @@ export class DatabaseStorage implements IStorage {
   async getAllDeals(
     page: number = 1,
     limit: number = 20,
+    regionName?: string,
   ): Promise<{ deals: DealWithUser[]; total: number }> {
-    // Get total count
-    const [countResult] = await db.select({ count: count() }).from(deals);
+    // Get total count with region filter
+    const countQuery = regionName
+      ? db.select({ count: count() }).from(deals).leftJoin(users, eq(deals.userId, users.id)).where(eq(users.region, regionName as "NOLA" | "SOLA" | "BRASIL" | "MEXICO"))
+      : db.select({ count: count() }).from(deals);
+    const [countResult] = await countQuery;
     const totalCount = countResult?.count || 0;
 
     // Get paginated results
     const offset = (page - 1) * limit;
-    const result = await db
+    let query = db
       .select({
         id: deals.id,
         userId: deals.userId,
+        regionId: deals.regionId,
         productType: deals.productType,
         productName: deals.productName,
         dealValue: deals.dealValue,
+        dealType: deals.dealType,
         quantity: deals.quantity,
         closeDate: deals.closeDate,
         clientInfo: deals.clientInfo,
         licenseAgreementNumber: deals.licenseAgreementNumber,
         status: deals.status,
         pointsEarned: deals.pointsEarned,
+        goalsEarned: deals.goalsEarned,
         approvedBy: deals.approvedBy,
         approvedAt: deals.approvedAt,
         createdAt: deals.createdAt,
@@ -1218,6 +1282,10 @@ export class DatabaseStorage implements IStorage {
       .limit(limit)
       .offset(offset);
 
+    const result = regionName
+      ? await query.where(eq(users.region, regionName as "NOLA" | "SOLA" | "BRASIL" | "MEXICO"))
+      : await query;
+
     return {
       deals: result as DealWithUser[],
       total: totalCount,
@@ -1228,6 +1296,7 @@ export class DatabaseStorage implements IStorage {
     country?: string;
     startDate?: Date;
     endDate?: Date;
+    regionName?: string; // Nuevo filtro de región
   }): Promise<{
     userCount: number;
     dealCount: number;
@@ -1237,6 +1306,11 @@ export class DatabaseStorage implements IStorage {
     // Apply filters
     const userConditions = [];
     const dealConditions = [];
+
+    // Filtro de región para regional-admin
+    if (filters.regionName) {
+      userConditions.push(eq(users.region, filters.regionName as "NOLA" | "SOLA" | "BRASIL" | "MEXICO"));
+    }
 
     if (filters.country) {
       userConditions.push(eq(users.country, filters.country));
@@ -1248,29 +1322,60 @@ export class DatabaseStorage implements IStorage {
       dealConditions.push(lte(deals.createdAt, filters.endDate));
     }
 
-    // Build queries with conditions
+    // Always filter deals by approved status
+    dealConditions.unshift(eq(deals.status, "approved"));
+
+    // Build user count query
     const userQueryBuilder = db.select({ count: count() }).from(users);
-    const dealQueryBuilder = db
+    const [userResult] =
+      userConditions.length > 0
+        ? await userQueryBuilder.where(and(...userConditions))
+        : await userQueryBuilder;
+
+    // Build deal query with region filter
+    let dealQueryBuilder = db
       .select({
         count: count(),
         revenue: sum(deals.dealValue),
       })
       .from(deals);
 
-    // Always filter deals by approved status
-    dealConditions.unshift(eq(deals.status, "approved"));
-
-    const [userResult] =
-      userConditions.length > 0
-        ? await userQueryBuilder.where(and(...userConditions))
-        : await userQueryBuilder;
+    // Si hay filtro de región, join con users para filtrar por región del usuario
+    if (filters.regionName) {
+      dealQueryBuilder = dealQueryBuilder.leftJoin(users, eq(deals.userId, users.id)) as any;
+      dealConditions.push(eq(users.region, filters.regionName as "NOLA" | "SOLA" | "BRASIL" | "MEXICO"));
+    }
 
     const [dealResult] = await dealQueryBuilder.where(and(...dealConditions));
 
-    const [rewardResult] = await db
+    // Build reward redemptions query with region filter
+    let rewardQueryBuilder = db
       .select({ count: count() })
       .from(pointsHistory)
       .where(isNotNull(pointsHistory.rewardId));
+
+    // Si hay filtro de región, join con users
+    if (filters.regionName) {
+      const rewardResult = await db
+        .select({ count: count() })
+        .from(pointsHistory)
+        .leftJoin(users, eq(pointsHistory.userId, users.id))
+        .where(
+          and(
+            isNotNull(pointsHistory.rewardId),
+            eq(users.region, filters.regionName as "NOLA" | "SOLA" | "BRASIL" | "MEXICO")
+          )
+        );
+      
+      return {
+        userCount: userResult?.count || 0,
+        dealCount: dealResult?.count || 0,
+        totalRevenue: Number(dealResult?.revenue || 0),
+        redeemedRewards: rewardResult[0]?.count || 0,
+      };
+    }
+
+    const [rewardResult] = await rewardQueryBuilder;
 
     return {
       userCount: userResult?.count || 0,
@@ -1283,6 +1388,7 @@ export class DatabaseStorage implements IStorage {
   async getUserRankingReport(filters: {
     startDate?: Date;
     endDate?: Date;
+    regionName?: string;
   }): Promise<
     Array<{
       userId: string;
@@ -1298,6 +1404,7 @@ export class DatabaseStorage implements IStorage {
   > {
     const dealConditions = [eq(deals.status, "approved")];
     const pointsConditions = [];
+    const userConditions = [eq(users.role, "user")];
 
     if (filters.startDate) {
       dealConditions.push(gte(deals.createdAt, filters.startDate));
@@ -1306,6 +1413,11 @@ export class DatabaseStorage implements IStorage {
     if (filters.endDate) {
       dealConditions.push(lte(deals.createdAt, filters.endDate));
       pointsConditions.push(lte(pointsHistory.createdAt, filters.endDate));
+    }
+    
+    // Add region filter if provided
+    if (filters.regionName) {
+      userConditions.push(eq(users.region, filters.regionName as "NOLA" | "SOLA" | "BRASIL" | "MEXICO"));
     }
 
     // Get user points in the date range - only sum POSITIVE points (earned points, not redeemed)
@@ -1332,7 +1444,7 @@ export class DatabaseStorage implements IStorage {
       .where(and(...dealConditions))
       .groupBy(deals.userId);
 
-    // Get all users with their basic info
+    // Get all users with their basic info - filtered by region if provided
     const usersResult = await db
       .select({
         id: users.id,
@@ -1343,7 +1455,7 @@ export class DatabaseStorage implements IStorage {
         country: users.country,
       })
       .from(users)
-      .where(eq(users.role, "user"));
+      .where(and(...userConditions));
 
     const pointsResult = await pointsQuery;
     const dealsResult = await dealsQuery;
@@ -1373,6 +1485,7 @@ export class DatabaseStorage implements IStorage {
   async getRewardRedemptionsReport(filters: {
     startDate?: Date;
     endDate?: Date;
+    regionName?: string;
   }): Promise<
     Array<{
       userName: string;
@@ -1393,6 +1506,11 @@ export class DatabaseStorage implements IStorage {
     }
     if (filters.endDate) {
       conditions.push(lte(userRewards.redeemedAt, filters.endDate));
+    }
+    
+    // Add region filter if provided
+    if (filters.regionName) {
+      conditions.push(eq(users.region, filters.regionName as "NOLA" | "SOLA" | "BRASIL" | "MEXICO"));
     }
 
     const result = await db
@@ -1429,6 +1547,7 @@ export class DatabaseStorage implements IStorage {
   async getDealsPerUserReport(filters: {
     startDate?: Date;
     endDate?: Date;
+    regionName?: string;
   }): Promise<
     Array<{
       userId: string;
@@ -1443,12 +1562,18 @@ export class DatabaseStorage implements IStorage {
     }>
   > {
     const dealConditions = [eq(deals.status, "approved")];
+    const userConditions = [eq(users.role, "user")];
 
     if (filters.startDate) {
       dealConditions.push(gte(deals.createdAt, filters.startDate));
     }
     if (filters.endDate) {
       dealConditions.push(lte(deals.createdAt, filters.endDate));
+    }
+    
+    // Add region filter if provided
+    if (filters.regionName) {
+      userConditions.push(eq(users.region, filters.regionName as "NOLA" | "SOLA" | "BRASIL" | "MEXICO"));
     }
 
     // Get user deals in the date range
@@ -1462,7 +1587,7 @@ export class DatabaseStorage implements IStorage {
       .where(and(...dealConditions))
       .groupBy(deals.userId);
 
-    // Get all users with their basic info
+    // Get all users with their basic info - filtered by region if provided
     const usersResult = await db
       .select({
         id: users.id,
@@ -1473,7 +1598,7 @@ export class DatabaseStorage implements IStorage {
         country: users.country,
       })
       .from(users)
-      .where(eq(users.role, "user"));
+      .where(and(...userConditions));
 
     const dealsResult = await dealsQuery;
 
@@ -1568,8 +1693,8 @@ export class DatabaseStorage implements IStorage {
     return tickets;
   }
 
-  async getAllSupportTickets(): Promise<SupportTicketWithUser[]> {
-    const tickets = await db
+  async getAllSupportTickets(regionName?: string): Promise<SupportTicketWithUser[]> {
+    let query = db
       .select({
         id: supportTickets.id,
         userId: supportTickets.userId,
@@ -1592,6 +1717,13 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(supportTickets.userId, users.id))
       .orderBy(desc(supportTickets.createdAt));
 
+    if (regionName) {
+      // Regional admin: solo ve tickets de usuarios de su REGIÓN
+      const tickets = await query.where(eq(users.region, regionName as "NOLA" | "SOLA" | "BRASIL" | "MEXICO")); // Filtra directamente por región
+      return tickets as SupportTicketWithUser[];
+    }
+
+    const tickets = await query;
     return tickets as SupportTicketWithUser[];
   }
 
@@ -1638,11 +1770,65 @@ export class DatabaseStorage implements IStorage {
     return config || undefined;
   }
 
+  async getPointsConfigByRegion(region: string): Promise<PointsConfig | undefined> {
+    const [config] = await db
+      .select()
+      .from(pointsConfig)
+      .where(eq(pointsConfig.region, region as any))
+      .limit(1);
+    return config || undefined;
+  }
+
+  async updatePointsConfigByRegion(
+    updates: UpdatePointsConfig,
+    updatedBy: string,
+  ): Promise<PointsConfig | undefined> {
+    const existingConfig = await this.getPointsConfigByRegion(updates.region!);
+
+    if (!existingConfig) {
+      // Crear nueva configuración para esta región
+      const [newConfig] = await db
+        .insert(pointsConfig)
+        .values({
+          ...updates,
+          region: updates.region as any,
+          updatedBy,
+          updatedAt: new Date(),
+        })
+        .returning();
+      return newConfig;
+    }
+
+    // Actualizar configuración existente
+    const [config] = await db
+      .update(pointsConfig)
+      .set({ ...updates, updatedBy, updatedAt: new Date() })
+      .where(eq(pointsConfig.id, existingConfig.id))
+      .returning();
+    return config || undefined;
+  }
+
   // ═══════════════════════════════════════════════
   // Regions methods
   // ═══════════════════════════════════════════════
 
-  async getAllRegionConfigs(): Promise<RegionConfig[]> {
+  async getAllRegionConfigs(regionName?: string): Promise<RegionConfig[]> {
+    // Si hay filtro de región, solo traer configs de esa región
+    if (regionName) {
+      const configs = await db
+        .select()
+        .from(regionConfigs)
+        .where(
+          and(
+            eq(regionConfigs.isActive, true),
+            eq(regionConfigs.region, regionName as "NOLA" | "SOLA" | "BRASIL" | "MEXICO")
+          )
+        )
+        .orderBy(regionConfigs.region, regionConfigs.category);
+      return configs;
+    }
+
+    // Super-admin: traer todas las configs
     const configs = await db
       .select()
       .from(regionConfigs)

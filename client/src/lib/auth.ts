@@ -6,8 +6,16 @@ export interface AuthUser {
   email: string;
   firstName: string;
   lastName: string;
-  role: string;
+  role: "user" | "admin" | "regional-admin" | "super-admin";
   country: string;
+  adminRegionId?: string | null;
+  regionInfo?: {
+    id: string;
+    name: string;
+    region: string;
+    category: string;
+    subcategory: string;
+  } | null;
 }
 
 export const login = async (username: string, password: string): Promise<AuthUser> => {

@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { 
   LayoutDashboard,
   Users,
@@ -10,13 +11,31 @@ import {
   BarChart3,
   Settings,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MapPin,
+  Globe
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useQuery } from "@tanstack/react-query";
 
 interface SidebarProps {
   className?: string;
+}
+
+interface CurrentUser {
+  id: number;
+  email: string;
+  username: string;
+  role: "user" | "admin" | "regional-admin" | "super-admin";
+  adminRegionId?: string | null;
+  regionInfo?: {
+    id: string;
+    name: string;
+    region: string;
+    category: string;
+    subcategory: string;
+  } | null;
 }
 
 interface NavItem {
@@ -64,6 +83,11 @@ export default function Sidebar({ className }: SidebarProps) {
   const [location] = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  // Obtener información del usuario actual
+  const { data: currentUser } = useQuery<CurrentUser>({
+    queryKey: ["/api/auth/me"],
+  });
+
   return (
     <div
       className={cn(
@@ -96,6 +120,34 @@ export default function Sidebar({ className }: SidebarProps) {
           )}
         </Button>
       </div>
+
+      {/* Region Indicator */}
+      {currentUser && (currentUser.role === "regional-admin" || currentUser.role === "super-admin") && !isCollapsed && (
+        <div className="px-3 py-2 border-b bg-gray-50">
+          <div className="flex items-center gap-2 text-xs">
+            {currentUser.role === "super-admin" ? (
+              <>
+                <Globe className="h-4 w-4 text-blue-600" />
+                <span className="font-medium text-gray-700">Todas las Regiones</span>
+                <Badge variant="secondary" className="ml-auto text-xs">Super Admin</Badge>
+              </>
+            ) : currentUser.regionInfo ? (
+              <>
+                <MapPin className="h-4 w-4 text-green-600" />
+                <div className="flex-1">
+                  <div className="font-medium text-gray-700">{currentUser.regionInfo.region}</div>
+                  <div className="text-gray-500">{currentUser.regionInfo.category} - {currentUser.regionInfo.subcategory || currentUser.regionInfo.name}</div>
+                </div>
+              </>
+            ) : (
+              <>
+                <MapPin className="h-4 w-4 text-orange-600" />
+                <span className="font-medium text-gray-700">Región no asignada</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-2">

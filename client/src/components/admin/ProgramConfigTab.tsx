@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ export default function ProgramConfigTab() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [selectedRegion, setSelectedRegion] = useState<string>("");
   const [activeSubTab, setActiveSubTab] = useState("campaigns");
   
   // Campaign form states
@@ -67,13 +68,35 @@ export default function ProgramConfigTab() {
     monthlyGoalTarget: 0,
   });
 
+  const { data: currentUser } = useQuery({
+    queryKey: ["/api/auth/me"],
+  });
+
+  // Establecer región basada en el rol del usuario
+  useEffect(() => {
+    if (currentUser) {
+      const user = currentUser as any;
+      if (user.role === "regional-admin") {
+        const userRegion = user.region || user.country || "";
+        setSelectedRegion(userRegion);
+      } else if (user.role === "admin" || user.role === "super-admin") {
+        // Para admin/super-admin, establecer región por defecto si no hay una seleccionada
+        if (!selectedRegion) {
+          setSelectedRegion("NOLA");
+        }
+      }
+    }
+  }, [currentUser, selectedRegion]);
+
   // Queries
   const { data: campaigns, isLoading: campaignsLoading } = useQuery<Campaign[]>({
-    queryKey: ["/api/admin/campaigns"],
+    queryKey: ["/api/admin/campaigns", selectedRegion],
+    enabled: !!selectedRegion,
   });
 
   const { data: regionConfigs, isLoading: regionConfigsLoading } = useQuery<RegionConfig[]>({
-    queryKey: ["/api/admin/region-configs"],
+    queryKey: ["/api/admin/region-configs", selectedRegion],
+    enabled: !!selectedRegion,
   });
 
   // Create campaign mutation
@@ -82,7 +105,7 @@ export default function ProgramConfigTab() {
       return apiRequest("POST", "/api/admin/campaigns", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", selectedRegion] });
       setIsCreateCampaignOpen(false);
       setCampaignForm({
         name: "",
@@ -111,7 +134,7 @@ export default function ProgramConfigTab() {
       return apiRequest("PATCH", `/api/admin/campaigns/${id}`, { isActive });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", selectedRegion] });
       toast({
         title: "Success",
         description: "Campaign status updated",
@@ -132,7 +155,7 @@ export default function ProgramConfigTab() {
       return apiRequest("DELETE", `/api/admin/campaigns/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", selectedRegion] });
       toast({
         title: "Success",
         description: "Campaign deleted successfully",
@@ -153,7 +176,7 @@ export default function ProgramConfigTab() {
       return apiRequest("POST", "/api/admin/region-configs", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/region-configs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/region-configs", selectedRegion] });
       setIsCreateRegionConfigOpen(false);
       setRegionConfigForm({
         region: "",
@@ -184,7 +207,7 @@ export default function ProgramConfigTab() {
       return apiRequest("PATCH", `/api/admin/region-configs/${id}`, { isActive });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/region-configs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/region-configs", selectedRegion] });
       toast({
         title: "Success",
         description: "Region configuration status updated",
@@ -217,6 +240,42 @@ export default function ProgramConfigTab() {
           <p className="text-muted-foreground">
             {t('admin.programConfig.description')}
           </p>
+        </div>
+      </div>
+
+      {/* Selector de Región */}
+      <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Región</h3>
+            {currentUser && (currentUser as any).role === "regional-admin" ? (
+              <div className="flex items-center space-x-2">
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  {selectedRegion}
+                </Badge>
+                <span className="text-xs text-gray-500">
+                  (Como administrador regional, solo puedes gestionar la configuración de tu región)
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Selecciona una región" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NOLA">NOLA</SelectItem>
+                    <SelectItem value="SOLA">SOLA</SelectItem>
+                    <SelectItem value="BRASIL">BRASIL</SelectItem>
+                    <SelectItem value="MEXICO">MEXICO</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-xs text-gray-500">
+                  Selecciona una región para gestionar su configuración del programa
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

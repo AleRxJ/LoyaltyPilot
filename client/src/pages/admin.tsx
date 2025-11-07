@@ -66,8 +66,9 @@ const createUserSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   country: z.string().min(1, "Country is required"),
-  role: z.enum(["user", "admin"]).default("user"),
+  role: z.enum(["user", "admin", "regional-admin", "super-admin"]).default("user"),
   isActive: z.boolean().default(true),
+  adminRegionId: z.string().optional().nullable(),
 });
 
 // User edit form schema (without password)
@@ -77,8 +78,9 @@ const editUserSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   country: z.string().optional().nullable(),
-  role: z.enum(["user", "admin"]),
+  role: z.enum(["user", "admin", "regional-admin", "super-admin"]),
   isActive: z.boolean(),
+  adminRegionId: z.string().optional().nullable(),
 });
 
 type CreateUserForm = z.infer<typeof createUserSchema>;
@@ -96,7 +98,7 @@ export default function Admin() {
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [reportFilters, setReportFilters] = useState({
-    country: "all",
+    region: "all",
     startDate: "",
     endDate: "",
   });
@@ -138,32 +140,44 @@ export default function Admin() {
     queryKey: ["/api/auth/me"],
   });
 
+  // Region configs query - for super-admin to select regions
+  const { data: regionConfigs } = useQuery<Array<{
+    id: string;
+    name: string;
+    region: string;
+    category: string;
+    subcategory: string;
+  }>>({
+    queryKey: ["/api/admin/region-configs"],
+    enabled: currentUser?.role === "super-admin",
+  });
+
   const { data: users, isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
-    enabled: currentUser?.role === "admin",
+    enabled: currentUser?.role === "admin" || currentUser?.role === "regional-admin" || currentUser?.role === "super-admin",
   });
 
   // Pending users query
   const { data: pendingUsers, isLoading: pendingUsersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users/pending"],
-    enabled: currentUser?.role === "admin",
+    enabled: currentUser?.role === "admin" || currentUser?.role === "regional-admin" || currentUser?.role === "super-admin",
   });
 
   // Pending reward redemptions query
   const { data: pendingRedemptions, isLoading: pendingRedemptionsLoading } = useQuery<Array<any>>({
     queryKey: ["/api/admin/rewards/pending"],
-    enabled: currentUser?.role === "admin",
+    enabled: currentUser?.role === "admin" || currentUser?.role === "regional-admin" || currentUser?.role === "super-admin",
   });
 
   // All reward redemptions query
   const { data: allRedemptions, isLoading: allRedemptionsLoading } = useQuery<Array<any>>({
     queryKey: ["/api/admin/rewards/redemptions"],
-    enabled: currentUser?.role === "admin",
+    enabled: currentUser?.role === "admin" || currentUser?.role === "regional-admin" || currentUser?.role === "super-admin",
   });
 
   const { data: dealsData, isLoading: dealsLoading } = useQuery<{ deals: Array<Deal & { userFirstName?: string; userLastName?: string; userName?: string }>, total: number }>({
     queryKey: ["/api/admin/deals", currentPage],
-    enabled: currentUser?.role === "admin",
+    enabled: currentUser?.role === "admin" || currentUser?.role === "regional-admin" || currentUser?.role === "super-admin",
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append("page", currentPage.toString());
@@ -187,15 +201,18 @@ export default function Admin() {
 
   const { data: rewards, isLoading: rewardsLoading } = useQuery<Reward[]>({
     queryKey: ["/api/rewards"],
-    enabled: currentUser?.role === "admin",
+    enabled: currentUser?.role === "admin" || currentUser?.role === "regional-admin" || currentUser?.role === "super-admin",
   });
 
   const { data: reportsData, isLoading: reportsLoading } = useQuery<ReportsData>({
-    queryKey: ["/api/admin/reports", reportFilters.country, reportFilters.startDate, reportFilters.endDate],
-    enabled: currentUser?.role === "admin",
+    queryKey: ["/api/admin/reports", reportFilters.region, reportFilters.startDate, reportFilters.endDate],
+    enabled: currentUser?.role === "admin" || currentUser?.role === "regional-admin" || currentUser?.role === "super-admin",
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (reportFilters.country !== "all") params.append("country", reportFilters.country);
+      // Solo enviar region si es super-admin y seleccionó una región específica
+      if (currentUser?.role === "super-admin" && reportFilters.region !== "all") {
+        params.append("region", reportFilters.region);
+      }
       if (reportFilters.startDate) params.append("startDate", reportFilters.startDate);
       if (reportFilters.endDate) params.append("endDate", reportFilters.endDate);
       
@@ -315,7 +332,15 @@ export default function Admin() {
   });
 
   const handleCreateUser = (data: CreateUserForm) => {
-    createUserMutation.mutate(data);
+    // Si es regional-admin, automáticamente asignar su región
+    // Si es super-admin, usar la región seleccionada
+    const userData = {
+      ...data,
+      adminRegionId: currentUser?.role === "regional-admin" && data.role === "regional-admin" 
+        ? currentUser.adminRegionId 
+        : data.adminRegionId
+    };
+    createUserMutation.mutate(userData);
   };
 
   // Edit user mutation
@@ -352,6 +377,7 @@ export default function Admin() {
       country: user.country,
       role: user.role,
       isActive: user.isActive,
+      adminRegionId: user.adminRegionId || null,
     });
     setIsEditUserModalOpen(true);
   };
@@ -659,6 +685,11 @@ export default function Admin() {
       if (reportFilters.startDate) params.append("startDate", reportFilters.startDate);
       if (reportFilters.endDate) params.append("endDate", reportFilters.endDate);
       
+      // Add region filter - only if super-admin and not "all"
+      if (currentUser?.role === "super-admin" && reportFilters.region !== "all") {
+        params.append("region", reportFilters.region);
+      }
+      
       const url = `/api/admin/reports/reward-redemptions/export${params.toString() ? `?${params.toString()}` : ""}`;
       
       // Create a temporary download link
@@ -724,6 +755,11 @@ export default function Admin() {
       if (reportFilters.startDate) params.append("startDate", reportFilters.startDate);
       if (reportFilters.endDate) params.append("endDate", reportFilters.endDate);
       
+      // Add region filter - only if super-admin and not "all"
+      if (currentUser?.role === "super-admin" && reportFilters.region !== "all") {
+        params.append("region", reportFilters.region);
+      }
+      
       const url = `/api/admin/reports/deals-per-user/export${params.toString() ? `?${params.toString()}` : ""}`;
       
       // Create a temporary download link
@@ -788,6 +824,11 @@ export default function Admin() {
       const params = new URLSearchParams();
       if (reportFilters.startDate) params.append("startDate", reportFilters.startDate);
       if (reportFilters.endDate) params.append("endDate", reportFilters.endDate);
+      
+      // Add region filter - only if super-admin and not "all"
+      if (currentUser?.role === "super-admin" && reportFilters.region !== "all") {
+        params.append("region", reportFilters.region);
+      }
       
       const url = `/api/admin/reports/user-ranking/export${params.toString() ? `?${params.toString()}` : ""}`;
       
@@ -868,7 +909,7 @@ export default function Admin() {
     });
   };
 
-  if (currentUser?.role !== "admin") {
+  if (!currentUser || (currentUser.role !== "admin" && currentUser.role !== "regional-admin" && currentUser.role !== "super-admin")) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-full max-w-md mx-4">
@@ -1010,24 +1051,28 @@ export default function Admin() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div>
-                  <Label htmlFor="country">{t('admin.country')}</Label>
-                  <Select
-                    value={reportFilters.country}
-                    onValueChange={(value) => setReportFilters(prev => ({ ...prev, country: value }))}
-                  >
-                    <SelectTrigger data-testid="select-report-country">
-                      <SelectValue placeholder={t('admin.allCountries')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('admin.allCountries')}</SelectItem>
-                      <SelectItem value="US">United States</SelectItem>
-                      <SelectItem value="CA">Canada</SelectItem>
-                      <SelectItem value="MX">Mexico</SelectItem>
-                      <SelectItem value="BR">Brazil</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Selector de Región - Solo para Super Admin */}
+                {currentUser?.role === "super-admin" && (
+                  <div>
+                    <Label htmlFor="region">{t('admin.region')}</Label>
+                    <Select
+                      value={reportFilters.region}
+                      onValueChange={(value) => setReportFilters(prev => ({ ...prev, region: value }))}
+                    >
+                      <SelectTrigger data-testid="select-report-region">
+                        <SelectValue placeholder="Todas las Regiones" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas las Regiones</SelectItem>
+                        <SelectItem value="NOLA">NOLA</SelectItem>
+                        <SelectItem value="SOLA">SOLA</SelectItem>
+                        <SelectItem value="BRASIL">BRASIL</SelectItem>
+                        <SelectItem value="MEXICO">MEXICO</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                
                 <div>
                   <Label htmlFor="startDate">{t('admin.startDate')}</Label>
                   <Input
@@ -1287,13 +1332,66 @@ export default function Admin() {
                                   <SelectContent>
                                     <SelectItem value="user">User</SelectItem>
                                     <SelectItem value="admin">Admin</SelectItem>
+                                    {(currentUser?.role === "super-admin" || currentUser?.role === "regional-admin") && (
+                                      <SelectItem value="regional-admin">Regional Admin</SelectItem>
+                                    )}
+                                    {currentUser?.role === "super-admin" && (
+                                      <SelectItem value="super-admin">Super Admin</SelectItem>
+                                    )}
                                   </SelectContent>
                                 </Select>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
-                          
+
+                          {/* Region selector - solo para super-admin cuando crea regional-admin */}
+                          {currentUser?.role === "super-admin" && createUserForm.watch("role") === "regional-admin" && (
+                            <FormField
+                              control={createUserForm.control}
+                              name="adminRegionId"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Región Asignada</FormLabel>
+                                  <Select onValueChange={field.onChange} value={field.value || undefined}>
+                                    <FormControl>
+                                      <SelectTrigger data-testid="select-admin-region">
+                                        <SelectValue placeholder="Seleccionar región" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {regionConfigs?.map((region) => (
+                                        <SelectItem key={region.id} value={region.id}>
+                                          {region.region} - {region.category}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormDescription>
+                                    Este admin solo verá datos de esta región
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+
+                          {/* Indicador para regional-admin: se asignará automáticamente su región */}
+                          {currentUser?.role === "regional-admin" && createUserForm.watch("role") === "regional-admin" && (
+                            <FormItem>
+                              <FormLabel>Región Asignada</FormLabel>
+                              <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                                <MapPin className="h-4 w-4 text-blue-600" />
+                                <div className="text-sm text-blue-900">
+                                  <div className="font-medium">{currentUser.regionInfo?.region}</div>
+                                  <div className="text-xs text-blue-700">{currentUser.regionInfo?.category}</div>
+                                </div>
+                              </div>
+                              <FormDescription>
+                                Se asignará automáticamente tu región
+                              </FormDescription>
+                            </FormItem>
+                          )}
                         </div>
                         
                         <div className="flex justify-end space-x-2 pt-4">
@@ -1421,6 +1519,12 @@ export default function Admin() {
                                   <SelectContent>
                                     <SelectItem value="user">User</SelectItem>
                                     <SelectItem value="admin">Admin</SelectItem>
+                                    {(currentUser?.role === "super-admin" || currentUser?.role === "regional-admin") && (
+                                      <SelectItem value="regional-admin">Regional Admin</SelectItem>
+                                    )}
+                                    {currentUser?.role === "super-admin" && (
+                                      <SelectItem value="super-admin">Super Admin</SelectItem>
+                                    )}
                                   </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -1449,6 +1553,53 @@ export default function Admin() {
                             )}
                           />
                         </div>
+
+                        {/* Region selector - solo para super-admin editando regional-admin */}
+                        {currentUser?.role === "super-admin" && editUserForm.watch("role") === "regional-admin" && (
+                          <FormField
+                            control={editUserForm.control}
+                            name="adminRegionId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Región Asignada</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value || undefined}>
+                                  <FormControl>
+                                    <SelectTrigger data-testid="select-edit-admin-region">
+                                      <SelectValue placeholder="Seleccionar región" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {regionConfigs?.map((region) => (
+                                      <SelectItem key={region.id} value={region.id}>
+                                        {region.region} - {region.category}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormDescription>
+                                  Este admin solo verá datos de esta región
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+
+                        {/* Indicador para regional-admin: no puede cambiar su región */}
+                        {currentUser?.role === "regional-admin" && selectedUser?.role === "regional-admin" && selectedUser?.adminRegionId && (
+                          <FormItem>
+                            <FormLabel>Región Asignada</FormLabel>
+                            <div className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded-md">
+                              <MapPin className="h-4 w-4 text-gray-600" />
+                              <div className="text-sm text-gray-700">
+                                <div className="font-medium">Región asignada (no modificable)</div>
+                              </div>
+                            </div>
+                            <FormDescription>
+                              Solo super-admin puede cambiar la región asignada
+                            </FormDescription>
+                          </FormItem>
+                        )}
                         
                         <div className="flex justify-end space-x-2 pt-4">
                           <Button 
