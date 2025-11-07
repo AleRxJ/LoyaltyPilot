@@ -287,6 +287,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       lastName: user.lastName,
       role: user.role,
       country: user.country,
+      region: user.region, // Agregar el campo region del usuario
+      regionCategory: user.regionCategory,
+      regionSubcategory: user.regionSubcategory,
       adminRegionId: user.adminRegionId,
       regionInfo: regionInfo ? {
         id: regionInfo.id,
@@ -2693,6 +2696,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get regions error:", error);
       res.status(500).json({ message: "Failed to get regions" });
+    }
+  });
+
+  // Region statistics endpoint
+  app.get("/api/admin/region-stats", async (req, res) => {
+    const userRole = req.session?.userRole;
+    const userId = req.session?.userId;
+    
+    if (!isAdminRole(userRole)) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    try {
+      const regionName = await getAdminRegion(userId);
+      
+      // Get users by region
+      const users = await storage.getAllUsers();
+      const dealsResult = await storage.getAllDeals();
+      const deals = dealsResult.deals; // Extract deals array from result
+      const regionConfigs = await storage.getAllRegionConfigs();
+      
+      // Filter data by region if user is regional admin
+      const filteredUsers = regionName 
+        ? users.filter(user => user.region === regionName)
+        : users;
+      
+      const filteredDeals = regionName 
+        ? deals.filter((deal: any) => {
+            // Find the region for this deal
+            const dealRegion = regionConfigs.find(config => config.id === deal.regionId);
+            return dealRegion?.region === regionName;
+          })
+        : deals;
+
+      // Group stats by region
+      const regionStats = regionConfigs.reduce((acc: any[], config) => {
+        const regionUsers = users.filter(user => user.region === config.region);
+        const activeUsers = regionUsers.filter(user => user.isActive && user.isApproved);
+        const regionDeals = deals.filter((deal: any) => deal.regionId === config.id);
+        
+        const existingStat = acc.find(stat => stat.region === config.region);
+        if (existingStat) {
+          existingStat.total_users += regionUsers.length;
+          existingStat.active_users += activeUsers.length;
+          existingStat.total_deals += regionDeals.length;
+        } else {
+          acc.push({
+            region: config.region,
+            total_users: regionUsers.length,
+            active_users: activeUsers.length,
+            total_deals: regionDeals.length,
+            total_goals: config.monthlyGoalTarget || 0
+          });
+        }
+        
+        return acc;
+      }, []);
+
+      res.json(regionStats);
+    } catch (error) {
+      console.error("Get region stats error:", error);
+      res.status(500).json({ message: "Failed to get region stats" });
     }
   });
 

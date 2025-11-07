@@ -1679,19 +1679,35 @@ export default function Admin() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <Select
-                              value={user.role}
-                              onValueChange={(newRole) => handleUpdateUserRole(user.id, newRole)}
-                              disabled={updateUserRoleMutation.isPending}
-                            >
-                              <SelectTrigger className="w-24" data-testid={`select-role-${user.id}`}>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="user">User</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            {/* Show role as badge if user shouldn't be editable, otherwise show select */}
+                            {(user.role === "regional-admin" || user.role === "super-admin" || 
+                              (currentUser?.role === "regional-admin" && user.role === "admin") ||
+                              user.id === currentUser?.id) ? (
+                              <Badge className={
+                                user.role === "super-admin" ? "bg-red-100 text-red-800" :
+                                user.role === "regional-admin" ? "bg-purple-100 text-purple-800" :
+                                user.role === "admin" ? "bg-orange-100 text-orange-800" : 
+                                "bg-blue-100 text-blue-800"
+                              }>
+                                {user.role}
+                              </Badge>
+                            ) : (
+                              <Select
+                                value={user.role}
+                                onValueChange={(newRole) => handleUpdateUserRole(user.id, newRole)}
+                                disabled={updateUserRoleMutation.isPending}
+                              >
+                                <SelectTrigger className="w-24" data-testid={`select-role-${user.id}`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="user">User</SelectItem>
+                                  {currentUser?.role !== "regional-admin" && (
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {user.country}
@@ -1715,7 +1731,10 @@ export default function Admin() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleEditUser(user)}
-                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                disabled={user.id === currentUser?.id}
+                                className={user.id === currentUser?.id 
+                                  ? "text-gray-400 cursor-not-allowed" 
+                                  : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"}
                                 data-testid={`button-edit-${user.id}`}
                               >
                                 <Edit className="w-4 h-4" />
@@ -1725,7 +1744,10 @@ export default function Admin() {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 ml-2"
+                                    disabled={user.id === currentUser?.id}
+                                    className={user.id === currentUser?.id 
+                                      ? "text-gray-400 cursor-not-allowed ml-2" 
+                                      : "text-red-600 hover:text-red-700 hover:bg-red-50 ml-2"}
                                     data-testid={`button-delete-${user.id}`}
                                   >
                                     <Trash2 className="w-4 h-4" />
