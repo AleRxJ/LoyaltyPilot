@@ -440,13 +440,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const dealData = insertDealSchema.parse({ ...req.body, userId });
+      const { region, ...dealBody } = req.body;
+      
+      // Convert region name to regionId
+      let regionId = null;
+      if (region) {
+        // Get the first active region config for this region name
+        const regionConfigs = await storage.getAllRegionConfigs();
+        const matchingConfig = regionConfigs.find(config => 
+          config.region === region && config.isActive
+        );
+        
+        if (matchingConfig) {
+          regionId = matchingConfig.id;
+          console.log(`✅ Deal creation: Converting region "${region}" to regionId "${regionId}"`);
+        } else {
+          console.warn(`⚠️ Deal creation: No active region config found for "${region}"`);
+        }
+      }
+
+      const dealData = insertDealSchema.parse({ 
+        ...dealBody, 
+        userId,
+        regionId // Use the converted regionId instead of region name
+      });
+      
       const deal = await storage.createDeal(dealData);
+      console.log(`🎯 Deal created successfully:`, { 
+        dealId: deal.id, 
+        regionName: region, 
+        regionId: deal.regionId,
+        productName: deal.productName 
+      });
+      
       res.status(201).json(deal);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid data", errors: error.errors });
       }
+      console.error("Deal creation error:", error);
       res.status(500).json({ message: "Failed to create deal" });
     }
   });
@@ -1105,12 +1137,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(email);
-      if (existingUser) {
-        return res.status(400).json({ 
-          message: "A user with this email already exists" 
-        });
+      // Get admin info to determine region context
+      const adminUser = await storage.getUser(userId!);
+      
+      // Check if user already exists in the same region (for regional admins)
+      // or globally (for super admins who can invite to any region)
+      let existingUser;
+      
+      if (adminUser?.role === 'regional-admin' && adminUser.region) {
+        // Regional admin: only check within their region
+        existingUser = await storage.getUserByEmailAndRegion(email, adminUser.region);
+        
+        if (existingUser) {
+          return res.status(400).json({ 
+            message: `Ya existe un usuario con este email en la región ${adminUser.region}. Un mismo email puede existir en diferentes regiones, pero no puede duplicarse dentro de la misma región.` 
+          });
+        }
+      } else {
+        // Super admin or other admin: check globally to avoid confusion
+        existingUser = await storage.getUserByEmail(email);
+        
+        if (existingUser) {
+          return res.status(400).json({ 
+            message: "Ya existe un usuario con este email en el sistema. Si necesitas invitar al usuario a una región específica, contacta al administrador regional correspondiente." 
+          });
+        }
       }
 
       // Generate invite token
@@ -1119,7 +1170,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create a temporary username (will be set during registration)
       const tempUsername = `user_${nanoid(8)}`;
       
-      // Create user with pending status
+      const adminName = adminUser 
+        ? `${adminUser.firstName} ${adminUser.lastName}` 
+        : "Administrator";
+
+      // Create user with pending status and invitation tracking
       const hashedPassword = await bcrypt.hash(nanoid(16), 10); // temporary password
       
       const newUser = await storage.createUser({
@@ -1133,13 +1188,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: true,
         isApproved: false,
         inviteToken,
+        invitedBy: userId, // Track who sent the invitation
+        invitedFromRegion: adminUser?.region || null, // Track from which region the invitation was sent
       });
-
-      // Get admin info for email
-      const adminUser = await storage.getUser(userId!);
-      const adminName = adminUser 
-        ? `${adminUser.firstName} ${adminUser.lastName}` 
-        : "Administrator";
 
       // Send invite email
       const emailSent = await sendInviteEmail({
@@ -1211,14 +1262,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
             continue;
           }
 
-          // Check if user already exists
-          const existingUser = await storage.getUserByEmail(email);
-          if (existingUser) {
-            results.failed.push({
-              email,
-              reason: 'User already exists',
-            });
-            continue;
+          // Check if user already exists in the appropriate scope
+          let existingUser;
+          
+          if (adminUser?.role === 'regional-admin' && adminUser.region) {
+            // Regional admin: only check within their region
+            existingUser = await storage.getUserByEmailAndRegion(email, adminUser.region);
+            
+            if (existingUser) {
+              results.failed.push({
+                email,
+                reason: `Usuario ya existe en la región ${adminUser.region}`,
+              });
+              continue;
+            }
+          } else {
+            // Super admin or other admin: check globally
+            existingUser = await storage.getUserByEmail(email);
+            
+            if (existingUser) {
+              results.failed.push({
+                email,
+                reason: 'Usuario ya existe en el sistema',
+              });
+              continue;
+            }
           }
 
           // Generate invite token
@@ -1238,6 +1306,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isActive: true,
             isApproved: false,
             inviteToken,
+            invitedBy: userId, // Track who sent the invitation
+            invitedFromRegion: adminUser?.region || null, // Track from which region the invitation was sent
           });
 
           // Send invite email
@@ -1312,6 +1382,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Determine region assignment based on who sent the invitation
+      let finalRegion: "NOLA" | "SOLA" | "BRASIL" | "MEXICO";
+      let finalCategory: "ENTERPRISE" | "SMB" | "MSSP";
+      let finalSubcategory: string | null = subcategory || null;
+
+      // If invited by a regional admin, auto-assign their region
+      if (user.invitedFromRegion && user.invitedBy) {
+        const invitingAdmin = await storage.getUser(user.invitedBy);
+        
+        if (invitingAdmin && invitingAdmin.role === 'regional-admin') {
+          // Regional admin invitation - lock to their region
+          finalRegion = user.invitedFromRegion;
+          finalCategory = category as "ENTERPRISE" | "SMB" | "MSSP";
+          
+          console.log(`User invited by regional admin - auto-assigning region: ${finalRegion}`);
+        } else {
+          // Super admin or other admin - use user's choice
+          finalRegion = region as "NOLA" | "SOLA" | "BRASIL" | "MEXICO";
+          finalCategory = category as "ENTERPRISE" | "SMB" | "MSSP";
+        }
+      } else {
+        // Direct registration or no invitation tracking - use user's choice
+        finalRegion = region as "NOLA" | "SOLA" | "BRASIL" | "MEXICO";
+        finalCategory = category as "ENTERPRISE" | "SMB" | "MSSP";
+      }
+
       // Update user with new credentials and auto-approve (invited users are pre-approved)
       const hashedPassword = await bcrypt.hash(password, 10);
       
@@ -1319,9 +1415,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username,
         password: hashedPassword,
         country,
-        region: region as "NOLA" | "SOLA" | "BRASIL" | "MEXICO",
-        regionCategory: category as "ENTERPRISE" | "SMB" | "MSSP",
-        regionSubcategory: subcategory || null,
+        region: finalRegion,
+        regionCategory: finalCategory,
+        regionSubcategory: finalSubcategory,
         isApproved: true, // Auto-approve invited users
         approvedAt: new Date(),
         approvedBy: 'system', // System approval for invited users
@@ -1333,6 +1429,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(200).json({ 
         message: "Registration completed successfully. You can now log in!",
+        regionAutoAssigned: user.invitedFromRegion && user.invitedBy ? true : false,
+        assignedRegion: finalRegion,
         user: {
           id: updatedUser!.id,
           username: updatedUser!.username,
@@ -1378,6 +1476,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           firstName: user.firstName,
           lastName: user.lastName,
           country: user.country,
+        },
+        invitation: {
+          isRegionalInvite: !!user.invitedFromRegion,
+          region: user.invitedFromRegion,
+          invitedBy: user.invitedBy,
         }
       });
     } catch (error) {
@@ -2714,27 +2817,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const regionName = await getAdminRegion(userId);
+      console.log("🔍 Debug region-stats:", { userId, userRole, regionName, regionNameType: typeof regionName });
       
-      // Get users by region
-      const users = await storage.getAllUsers();
-      const dealsResult = await storage.getAllDeals();
-      const deals = dealsResult.deals; // Extract deals array from result
-      const regionConfigs = await storage.getAllRegionConfigs();
+      // Get data with proper regional filtering
+      const users = await storage.getAllUsers(regionName);
+      const dealsResult = await storage.getAllDeals(1, 1000, regionName); // Add regional filter to deals too
+      const deals = dealsResult.deals;
+      const regionConfigs = await storage.getAllRegionConfigs(regionName);
       
-      // Filter data by region if user is regional admin
-      const filteredUsers = regionName 
-        ? users.filter(user => user.region === regionName)
-        : users;
+      console.log("📊 Raw data:", { 
+        totalUsers: users.length, 
+        totalDeals: deals.length, 
+        totalConfigs: regionConfigs.length,
+        regionFilter: regionName
+      });
       
-      const filteredDeals = regionName 
-        ? deals.filter((deal: any) => {
-            // Find the region for this deal
-            const dealRegion = regionConfigs.find(config => config.id === deal.regionId);
-            return dealRegion?.region === regionName;
-          })
-        : deals;
-
-      // Group stats by region
+      // For regional admin: users are already filtered, just count them
+      if (regionName) {
+        console.log("🎯 Using regional admin logic for region:", regionName);
+        
+        // Regional admin - users are already filtered by their region
+        const activeUsers = users.filter(user => user.isActive && user.isApproved);
+        
+        // Filter deals for this region (get regionId from configs)
+        const regionConfigIds = regionConfigs.map(config => config.id);
+        const regionDeals = deals.filter((deal: any) => regionConfigIds.includes(deal.regionId));
+        
+        console.log(`🔍 Deals debugging:`, {
+          totalDealsInSystem: deals.length,
+          regionConfigIds,
+          dealsWithRegionId: deals.map(deal => ({ id: deal.id, regionId: deal.regionId, title: deal.productName })),
+          regionDeals: regionDeals.length,
+          filteredDeals: regionDeals.map(deal => ({ id: deal.id, regionId: deal.regionId, title: deal.productName }))
+        });
+        
+        console.log(`📍 Regional admin stats for ${regionName}:`, {
+          totalUsers: users.length,
+          activeUsers: activeUsers.length,
+          regionDeals: regionDeals.length,
+          regionConfigIds,
+          regionConfigsDetails: regionConfigs.map(c => ({ id: c.id, goalTarget: c.monthlyGoalTarget }))
+        });
+        
+        // Calculate total goals properly - avoid duplicating the same goal
+        // For regional admin, we might have multiple configs but want the total unique goal
+        const goalSet = new Set(regionConfigs.map(config => config.monthlyGoalTarget || 0));
+        const uniqueGoals = Array.from(goalSet);
+        const totalGoals = uniqueGoals.reduce((sum, goal) => sum + goal, 0);
+        
+        console.log(`🎯 Goals calculation:`, {
+          allGoals: regionConfigs.map(c => c.monthlyGoalTarget),
+          uniqueGoals,
+          totalGoals
+        });
+        
+        const regionStats = [{
+          region: regionName,
+          total_users: users.length,
+          active_users: activeUsers.length,
+          total_deals: regionDeals.length,
+          total_goals: totalGoals
+        }];
+        
+        console.log("📈 Final regionStats (regional admin):", regionStats);
+        res.json(regionStats);
+        return;
+      }
+      
+      console.log("🌍 Using super admin logic - grouping by all regions");
+      
+      // For super admin: group by all regions
       const regionStats = regionConfigs.reduce((acc: any[], config) => {
         const regionUsers = users.filter(user => user.region === config.region);
         const activeUsers = regionUsers.filter(user => user.isActive && user.isApproved);
@@ -2758,6 +2910,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return acc;
       }, []);
 
+      console.log("📈 Final regionStats:", regionStats);
       res.json(regionStats);
     } catch (error) {
       console.error("Get region stats error:", error);
@@ -2879,13 +3032,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all campaigns
   app.get("/api/admin/campaigns", async (req, res) => {
     const userRole = req.session?.userRole;
+    const userId = req.session?.userId;
     
     if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
     try {
-      const region = req.query.region as string;
+      // For regional admins, automatically filter by their region
+      const adminRegion = await getAdminRegion(userId);
+      const region = adminRegion || (req.query.region as string);
+      
       const campaigns = await storage.getCampaigns(region as any);
       res.json(campaigns);
     } catch (error) {
@@ -3142,17 +3303,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Monthly Prizes routes
   app.get("/api/admin/monthly-prizes", async (req, res) => {
     const userRole = req.session?.userRole;
+    const userId = req.session?.userId;
     
     if (!isAdminRole(userRole)) {
       return res.status(403).json({ message: "Admin access required" });
     }
 
+    if (!userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
     try {
       const { month, year, region } = req.query;
+      
+      // For regional admins, automatically filter by their region
+      const adminRegion = await getAdminRegion(userId);
+      const filterRegion = adminRegion || (region as string);
+      
       const prizes = await storage.getMonthlyPrizes(
         month ? parseInt(month as string) : undefined,
         year ? parseInt(year as string) : undefined,
-        region as string
+        filterRegion
       );
       res.json(prizes);
     } catch (error) {

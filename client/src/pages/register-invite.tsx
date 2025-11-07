@@ -123,7 +123,18 @@ export default function RegisterWithInvite() {
       
       if (data.valid) {
         setIsValid(true);
-        setInviteData(data.user);
+        setInviteData(data);
+        
+        // Si es una invitación regional, pre-seleccionar la región y mostrar alerta
+        if (data.invitation?.isRegionalInvite && data.invitation.region) {
+          setSelectedRegion(data.invitation.region);
+          setValue("region", data.invitation.region, { shouldValidate: true });
+          
+          toast({
+            title: "🎯 Invitación Regional",
+            description: `Has sido invitado desde la región ${data.invitation.region}. Tu región será asignada automáticamente.`,
+          });
+        }
       } else {
         toast({
           title: "Invitación inválida",
@@ -205,7 +216,9 @@ export default function RegisterWithInvite() {
 
       toast({
         title: "✅ ¡Registro completado!",
-        description: result.message || "Tu cuenta está lista. Ya puedes iniciar sesión.",
+        description: result.regionAutoAssigned 
+          ? `Tu cuenta está lista. Se te asignó automáticamente la región ${result.assignedRegion} desde donde fuiste invitado. Ya puedes iniciar sesión.`
+          : result.message || "Tu cuenta está lista. Ya puedes iniciar sesión.",
       });
 
       console.log("✅ Registro exitoso, redirigiendo al login...");
@@ -274,8 +287,18 @@ export default function RegisterWithInvite() {
           {inviteData && (
             <Alert className="mb-6">
               <AlertDescription>
-                <strong>Email:</strong> {inviteData.email}<br />
-                <strong>Nombre:</strong> {inviteData.firstName} {inviteData.lastName}
+                <strong>Email:</strong> {inviteData.user.email}<br />
+                <strong>Nombre:</strong> {inviteData.user.firstName} {inviteData.user.lastName}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {inviteData?.invitation?.isRegionalInvite && (
+            <Alert className="mb-6 border-blue-200 bg-blue-50">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800">
+                <strong>📍 Invitación Regional:</strong> Has sido invitado desde la región <strong>{inviteData.invitation.region}</strong>. 
+                Tu región será asignada automáticamente al completar el registro.
               </AlertDescription>
             </Alert>
           )}
@@ -324,7 +347,12 @@ export default function RegisterWithInvite() {
             </div>
 
             <div>
-              <Label htmlFor="region">Región *</Label>
+              <Label htmlFor="region">
+                Región * 
+                {inviteData?.invitation?.isRegionalInvite && (
+                  <span className="text-blue-600 text-sm ml-2">(Asignada automáticamente)</span>
+                )}
+              </Label>
               <Select
                 value={selectedRegion}
                 onValueChange={(value) => {
@@ -334,7 +362,7 @@ export default function RegisterWithInvite() {
                   setValue("category", "", { shouldValidate: false });
                   setValue("subcategory", "", { shouldValidate: false });
                 }}
-                disabled={isSubmitting}
+                disabled={isSubmitting || inviteData?.invitation?.isRegionalInvite}
               >
                 <SelectTrigger className={errors.region ? "border-red-500" : ""}>
                   <SelectValue placeholder="Selecciona tu región" />

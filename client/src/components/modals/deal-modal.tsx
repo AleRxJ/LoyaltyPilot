@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { Deal } from "@shared/schema";
 
@@ -22,6 +22,7 @@ const dealSchema = z.object({
   quantity: z.string().min(1, "Quantity is required"),
   closeDate: z.string().min(1, "Close date is required"),
   licenseAgreementNumber: z.string().optional(),
+  region: z.string().optional(), // New field for region
   clientInfo: z.string().optional(),
   status: z.enum(["pending", "approved", "rejected"]).optional(),
 });
@@ -39,6 +40,21 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
   const queryClient = useQueryClient();
   const isEditing = !!deal;
 
+  // Get current user information to pre-fill region
+  const { data: currentUser } = useQuery<{
+    id: string;
+    username: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    region: string;
+    regionCategory: string;
+    role: string;
+  }>({
+    queryKey: ["/api/auth/me"],
+    enabled: isOpen && !isEditing, // Only fetch when creating new deal
+  });
+
   const form = useForm<DealForm>({
     resolver: zodResolver(dealSchema),
     defaultValues: {
@@ -48,6 +64,7 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
       quantity: "",
       closeDate: "",
       licenseAgreementNumber: "",
+      region: "",
       clientInfo: "",
       status: "pending",
     },
@@ -62,11 +79,13 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
         dealValue: deal.dealValue?.toString() || "",
         quantity: deal.quantity?.toString() || "",
         closeDate: closeDate,
-        clientInfo: deal.clientInfo || "",
         licenseAgreementNumber: deal.licenseAgreementNumber || "",
+        region: currentUser?.region || "", // Use current user's region for existing deals too
+        clientInfo: deal.clientInfo || "",
         status: deal.status,
       });
     } else {
+      // Pre-fill region with user's region for new deals
       form.reset({
         productType: undefined,
         productName: "",
@@ -74,11 +93,12 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
         quantity: "",
         closeDate: "",
         licenseAgreementNumber: "",
+        region: currentUser?.region || "",
         clientInfo: "",
         status: "pending",
       });
     }
-  }, [deal, form]);
+  }, [deal, form, currentUser]);
 
   const createDealMutation = useMutation({
     mutationFn: async (data: DealForm) => {
@@ -286,6 +306,30 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
 
             <FormField
               control={form.control}
+              name="region"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Región</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={currentUser?.region || field.value}
+                      disabled={true}
+                      placeholder="Se asigna automáticamente"
+                      className="bg-gray-50 text-gray-600 cursor-not-allowed"
+                      data-testid="input-region"
+                    />
+                  </FormControl>
+                  <div className="text-sm text-gray-500 mt-1">
+                    Tu región se asigna automáticamente basada en tu perfil
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="clientInfo"
               render={({ field }) => (
                 <FormItem>
@@ -293,7 +337,7 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
                   <FormControl>
                     <Textarea
                       {...field}
-                      placeholder="Client name and additional details..."
+                      placeholder="Cliente, empresa, contacto y detalles adicionales..."
                       className="h-24"
                       data-testid="textarea-client-info"
                     />

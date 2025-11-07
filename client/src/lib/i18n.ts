@@ -315,6 +315,7 @@ const translations = {
       configurationsInRegion: "configurations in this region",
       detailsOf: "Details of the",
       // Statistics translations for regions
+      campaigns: "Campaigns",
       monthlyPrizes: "Monthly Prizes",
       totalMonthlyGoal: "Total Monthly Goal",
       supportTicketsCount: "Support Tickets",
@@ -727,6 +728,7 @@ const translations = {
       configurationsInRegion: "configuraciones en esta región",
       detailsOf: "Detalles de la",
       // Traducciones de estadísticas para regiones
+      campaigns: "Campañas",
       monthlyPrizes: "Premios Mensuales",
       totalMonthlyGoal: "Meta Total Mensual",
       supportTicketsCount: "Tickets Soporte",
@@ -1139,6 +1141,7 @@ const translations = {
       configurationsInRegion: "configurações nesta região",
       detailsOf: "Detalhes das",
       // Traduções de estatísticas para regiões
+      campaigns: "Campanhas",
       monthlyPrizes: "Prêmios Mensais",
       totalMonthlyGoal: "Meta Total Mensal",
       supportTicketsCount: "Tickets Suporte",
@@ -1240,6 +1243,14 @@ const translations = {
 export type Language = keyof typeof translations;
 
 let currentLanguage: Language = "en";
+
+// Initialize language from localStorage on module load
+if (typeof window !== "undefined") {
+  const saved = localStorage.getItem("preferred-language") as Language;
+  if (saved && translations[saved]) {
+    currentLanguage = saved;
+  }
+}
 
 export const setLanguage = (lang: Language) => {
   currentLanguage = lang;

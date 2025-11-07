@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -10,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Globe, Target, TrendingUp, Users, Calendar, Infinity, Flag, MapPin, Award, Medal, Trophy, Activity, Settings } from "lucide-react";
+import { Globe, Target, TrendingUp, Users, Calendar, Infinity, Flag, MapPin, Award, Medal, Trophy, Activity, Settings, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -68,13 +69,15 @@ export default function RegionsOverview() {
   });
 
   // Get region statistics
-  const { data: regionStats } = useQuery({
+  const { data: regionStats, refetch: refetchRegionStats } = useQuery({
     queryKey: ["/api/admin/region-stats"],
     queryFn: async () => {
       const response = await fetch("/api/admin/region-stats", { credentials: "include" });
       if (!response.ok) throw new Error("Failed to fetch region stats");
       return response.json();
     },
+    staleTime: 0, // Force fresh data
+    refetchOnMount: true, // Always refetch on mount
   });
 
   // Get campaigns count by region
@@ -177,7 +180,27 @@ export default function RegionsOverview() {
   };
 
   const getRegionStats = (region: string) => {
-    // Count deals for this region
+    // Get stats from the regionStats endpoint (which has proper regional filtering)
+    const regionData = regionStats?.find((stat: any) => stat.region === region);
+    
+    if (regionData) {
+      // Use the pre-calculated stats from the backend
+      const currentRegionConfigs = groupedRegions?.[region] || [];
+      
+      return {
+        deals: regionData.total_deals || 0,
+        campaigns: 0, // Will be updated when campaigns endpoint is also filtered
+        monthlyPrizes: 0, // Will be updated when monthly prizes endpoint is also filtered  
+        supportTickets: 0, // Will be updated when support tickets endpoint is also filtered
+        totalUsers: regionData.total_users || 0,
+        activeUsers: regionData.active_users || 0,
+        totalGoals: regionData.total_goals || 0,
+        activeConfigs: currentRegionConfigs.length || 0,
+        pointsConfigs: 0 // Will be calculated separately
+      };
+    }
+    
+    // Fallback to old logic if regionStats not available
     const regionDeals = dealsData?.filter((deal: any) => deal.region === region)?.length || 0;
     
     // Count campaigns for this region  
@@ -239,11 +262,24 @@ export default function RegionsOverview() {
 
   return (
     <div className="space-y-6">
-      {/* Region Cards */}
-      <div>
-        <h2 className="text-2xl font-bold mb-4">
+      {/* Header with refresh button */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">
           {isRegionalAdmin ? `${t('admin.regionsConfigured')} - ${userRegion}` : t('admin.regionsConfigured')}
         </h2>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => refetchRegionStats()}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Actualizar estadísticas
+        </Button>
+      </div>
+      
+      {/* Region Cards */}
+      <div>
         
         {/* Layout especial para administrador regional */}
         {isRegionalAdmin ? (

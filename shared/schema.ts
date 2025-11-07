@@ -21,7 +21,7 @@ export type Region = typeof regionEnum.enumValues[number];
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
-  email: text("email").notNull().unique(),
+  email: text("email").notNull(), // Removed .unique() to allow same email in different regions
   password: text("password").notNull(),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
@@ -36,13 +36,18 @@ export const users = pgTable("users", {
   approvedBy: varchar("approved_by"),
   approvedAt: timestamp("approved_at"),
   inviteToken: text("invite_token"),
+  invitedBy: varchar("invited_by"), // ID del admin que envió la invitación
+  invitedFromRegion: regionEnum("invited_from_region"), // Región desde la cual se envió la invitación
   loginToken: text("login_token"), // Token para passwordless login
   loginTokenExpiry: timestamp("login_token_expiry"), // Expiración del token de login
   resetToken: text("reset_token"),
   resetTokenExpiry: timestamp("reset_token_expiry"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
-});
+}, (table) => ({
+  // Unique constraint: same email can exist in different regions
+  emailRegionUnique: unique().on(table.email, table.region),
+}));
 
 export const deals = pgTable("deals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
