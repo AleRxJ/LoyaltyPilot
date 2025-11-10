@@ -405,7 +405,7 @@ export default function MonthlyPrizesTab() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="year">Año *</Label>
+              <Label htmlFor="year">{t("admin.yearRequired")}</Label>
               <Input
                 id="year"
                 type="number"
@@ -419,7 +419,7 @@ export default function MonthlyPrizesTab() {
 
           {/* Ranking y Descripción */}
           <div className="space-y-2">
-            <Label htmlFor="rank">Posición (Top) *</Label>
+            <Label htmlFor="rank">{t("admin.positionTopRequired")}</Label>
             <Input
               id="rank"
               type="number"

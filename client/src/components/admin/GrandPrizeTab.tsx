@@ -352,7 +352,7 @@ export default function GrandPrizeTab() {
 
           {(criteria.criteriaType === "deals" || criteria.criteriaType === "combined") && (
             <div className="space-y-2">
-              <Label htmlFor="min-deals">Deals Mínimos Completados</Label>
+              <Label htmlFor="min-deals">{t("admin.minDealsCompleted")}</Label>
               <Input
                 id="min-deals"
                 type="number"

@@ -356,7 +356,7 @@ export default function SupportTicketsTab() {
 
                           <div className="text-sm text-gray-500 space-y-1">
                             <p>
-                              <span className="font-medium">Usuario:</span>{" "}
+                              <span className="font-medium">{t("admin.userLabel")}</span>{" "}
                               {ticket.userFirstName} {ticket.userLastName} ({ticket.userName})
                             </p>
                             <p>

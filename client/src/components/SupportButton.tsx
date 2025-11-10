@@ -115,7 +115,7 @@ export default function SupportButton() {
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "No se pudo enviar el ticket de soporte",
+        description: error.message || t("admin.couldNotSendTicket"),
         variant: "destructive",
       });
     },

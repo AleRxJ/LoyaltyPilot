@@ -246,7 +246,7 @@ export default function RegisterWithInvite() {
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 flex flex-col items-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary-600 mb-4" />
-            <p className="text-gray-600">Verificando invitación...</p>
+            <p className="text-gray-600">{t("auth.verifyingInvitation")}</p>
           </CardContent>
         </Card>
       </div>
@@ -261,7 +261,7 @@ export default function RegisterWithInvite() {
             <div className="flex items-center justify-center mb-4">
               <AlertCircle className="h-12 w-12 text-red-500" />
             </div>
-            <CardTitle className="text-center">Invitación Inválida</CardTitle>
+            <CardTitle className="text-center">{t("auth.invalidInvitationTitle")}</CardTitle>
             <CardDescription className="text-center">
               Esta invitación no es válida o ya fue utilizada
             </CardDescription>
@@ -299,8 +299,8 @@ export default function RegisterWithInvite() {
             <Alert className="mb-6 border-blue-200 bg-blue-50">
               <AlertCircle className="h-4 w-4 text-blue-600" />
               <AlertDescription className="text-blue-800">
-                <strong>📍 Invitación Regional:</strong> Has sido invitado desde la región <strong>{inviteData.invitation.region}</strong>. 
-                Tu región será asignada automáticamente al completar el registro.
+                <strong>{t("auth.regionalInvitationLabel")}</strong> {t("auth.youHaveBeenInvitedFrom")} <strong>{inviteData.invitation.region}</strong>. 
+                {t("auth.yourRegionWillBeAssigned")}
               </AlertDescription>
             </Alert>
           )}
@@ -321,7 +321,7 @@ export default function RegisterWithInvite() {
             </div>
 
             <div>
-              <Label htmlFor="password">Contraseña *</Label>
+              <Label htmlFor="password">{t("auth.passwordRequired")}</Label>
               <Input
                 id="password"
                 type="password"
@@ -335,7 +335,7 @@ export default function RegisterWithInvite() {
             </div>
 
             <div>
-              <Label htmlFor="confirmPassword">Confirmar Contraseña *</Label>
+              <Label htmlFor="confirmPassword">{t("auth.confirmPasswordRequired")}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -352,7 +352,7 @@ export default function RegisterWithInvite() {
               <Label htmlFor="region">
                 Región * 
                 {inviteData?.invitation?.isRegionalInvite && (
-                  <span className="text-blue-600 text-sm ml-2">(Asignada automáticamente)</span>
+                  <span className="text-blue-600 text-sm ml-2">{t("auth.assignedAutomatically")}</span>
                 )}
               </Label>
               <Select
@@ -437,7 +437,7 @@ export default function RegisterWithInvite() {
 
             {selectedRegion && (
               <div>
-                <Label htmlFor="category">Categoría *</Label>
+                <Label htmlFor="category">{t("auth.categoryRequired")}</Label>
                 <Select
                   value={selectedCategory}
                   onValueChange={(value) => {
@@ -468,7 +468,7 @@ export default function RegisterWithInvite() {
               <>
                 {selectedRegion === "NOLA" && selectedCategory !== "MSSP" && (
                   <div>
-                    <Label htmlFor="subcategory">Subcategoría *</Label>
+                    <Label htmlFor="subcategory">{t("auth.subcategoryRequired")}</Label>
                     <Select
                       onValueChange={(value) => setValue("subcategory", value, { shouldValidate: true })}
                       disabled={isSubmitting}

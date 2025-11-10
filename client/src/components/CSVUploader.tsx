@@ -8,6 +8,7 @@ import AwsS3 from "@uppy/aws-s3";
 import type { UploadResult } from "@uppy/core";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface CSVUploaderProps {
   onGetUploadParameters: () => Promise<{
@@ -36,6 +37,7 @@ export function CSVUploader({
   buttonClassName,
   children,
 }: CSVUploaderProps) {
+  const { t } = useTranslation();
   const [showModal, setShowModal] = useState(false);
   const [uppy] = useState(() =>
     new Uppy({
@@ -76,7 +78,7 @@ export function CSVUploader({
         open={showModal}
         onRequestClose={() => setShowModal(false)}
         proudlyDisplayPoweredByUppy={false}
-        note="Upload a CSV file with columns: usuario, valor, status, tipo. Optional: acuerdo (License Agreement Number)"
+        note={t("common.csvUploadNote")}
       />
     </div>
   );

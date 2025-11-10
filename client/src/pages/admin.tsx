@@ -1352,7 +1352,7 @@ export default function Admin() {
                               name="adminRegionId"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Región Asignada</FormLabel>
+                                  <FormLabel>{t("auth.assignedRegion")}</FormLabel>
                                   <Select onValueChange={field.onChange} value={field.value || undefined}>
                                     <FormControl>
                                       <SelectTrigger data-testid="select-admin-region">
@@ -1379,7 +1379,7 @@ export default function Admin() {
                           {/* Indicador para regional-admin: se asignará automáticamente su región */}
                           {currentUser?.role === "regional-admin" && createUserForm.watch("role") === "regional-admin" && (
                             <FormItem>
-                              <FormLabel>Región Asignada</FormLabel>
+                              <FormLabel>{t("auth.assignedRegion")}</FormLabel>
                               <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
                                 <MapPin className="h-4 w-4 text-blue-600" />
                                 <div className="text-sm text-blue-900">
@@ -1561,7 +1561,7 @@ export default function Admin() {
                             name="adminRegionId"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Región Asignada</FormLabel>
+                                <FormLabel>{t("auth.assignedRegion")}</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value || undefined}>
                                   <FormControl>
                                     <SelectTrigger data-testid="select-edit-admin-region">
@@ -1588,15 +1588,15 @@ export default function Admin() {
                         {/* Indicador para regional-admin: no puede cambiar su región */}
                         {currentUser?.role === "regional-admin" && selectedUser?.role === "regional-admin" && selectedUser?.adminRegionId && (
                           <FormItem>
-                            <FormLabel>Región Asignada</FormLabel>
+                            <FormLabel>{t("auth.assignedRegion")}</FormLabel>
                             <div className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded-md">
                               <MapPin className="h-4 w-4 text-gray-600" />
                               <div className="text-sm text-gray-700">
-                                <div className="font-medium">Región asignada (no modificable)</div>
+                                <div className="font-medium">{t("auth.assignedRegionNotModifiable")}</div>
                               </div>
                             </div>
                             <FormDescription>
-                              Solo super-admin puede cambiar la región asignada
+                              {t("auth.onlySuperAdminCanChange")}
                             </FormDescription>
                           </FormItem>
                         )}

@@ -118,7 +118,7 @@ export default function MagicLinkLogin() {
                 <AlertCircle className="h-6 w-6 text-red-600" />
               </div>
             </div>
-            <CardTitle className="text-2xl text-red-600">Enlace Inválido</CardTitle>
+            <CardTitle className="text-2xl text-red-600">{t("auth.invalidLinkTitle")}</CardTitle>
             <CardDescription>{errorMessage}</CardDescription>
           </CardHeader>
           <CardContent>
@@ -142,7 +142,7 @@ export default function MagicLinkLogin() {
               <CheckCircle className="h-6 w-6 text-green-600" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-green-600">¡Acceso exitoso!</CardTitle>
+          <CardTitle className="text-2xl text-green-600">{t("auth.successfulAccessTitle")}</CardTitle>
           <CardDescription>Redirigiendo al dashboard...</CardDescription>
         </CardHeader>
       </Card>

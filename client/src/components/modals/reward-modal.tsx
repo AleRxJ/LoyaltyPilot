@@ -260,7 +260,7 @@ export default function RewardModal({ isOpen, onClose, reward }: RewardModalProp
                 name="region"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Región</FormLabel>
+                    <FormLabel>{t("rewards.regionLabel")}</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
                       value={field.value}
@@ -314,7 +314,7 @@ export default function RewardModal({ isOpen, onClose, reward }: RewardModalProp
                 name="estimatedDeliveryDays"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tiempo Estimado de Entrega (días)</FormLabel>
+                    <FormLabel>{t("rewards.estimatedDeliveryTimeDays")}</FormLabel>
                     <FormControl>
                       <Input
                         {...field}

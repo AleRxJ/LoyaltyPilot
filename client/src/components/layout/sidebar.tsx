@@ -142,7 +142,7 @@ export default function Sidebar({ className }: SidebarProps) {
             ) : (
               <>
                 <MapPin className="h-4 w-4 text-orange-600" />
-                <span className="font-medium text-gray-700">Región no asignada</span>
+                <span className="font-medium text-gray-700">{t("auth.regionNotAssigned")}</span>
               </>
             )}
           </div>

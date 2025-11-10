@@ -521,7 +521,7 @@ export default function RegionsManagementTab() {
                   {selectedRegion}
                 </Badge>
                 <span className="text-xs text-gray-500">
-                  (Como administrador regional, los valores por defecto provienen de tu región)
+                  {t("admin.regionalAdminDefaultValues")}
                 </span>
               </div>
             ) : (
@@ -553,10 +553,10 @@ export default function RegionsManagementTab() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-6">
           <TabsTrigger value="configurations" data-testid="subtab-region-configs">
-            Configuraciones de Región
+            {t("admin.regionConfigurations")}
           </TabsTrigger>
           <TabsTrigger value="reward-assignments" data-testid="subtab-reward-assignments">
-            Asignación de Rewards
+            {t("admin.rewardsAssignmentByRegion")}
           </TabsTrigger>
         </TabsList>
 
@@ -801,7 +801,7 @@ export default function RegionsManagementTab() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Asignación de Rewards por Región</CardTitle>
+                <CardTitle>{t("admin.rewardsAssignmentByRegion")}</CardTitle>
                 <CardDescription>
                   Asigna o modifica los rewards asociados a cada configuración regional
                 </CardDescription>
@@ -822,7 +822,7 @@ export default function RegionsManagementTab() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t("admin.region")}</TableHead>
-                        <TableHead>Configuración</TableHead>
+                        <TableHead>{t("admin.configuration")}</TableHead>
                         <TableHead>Reward Actual</TableHead>
                         <TableHead>Cambiar Reward</TableHead>
                         <TableHead>{t("admin.status")}</TableHead>
@@ -989,7 +989,7 @@ export default function RegionsManagementTab() {
                     <SelectValue placeholder={t("admin.selectCityOptional")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="NONE">Sin ciudad específica</SelectItem>
+                    <SelectItem value="NONE">{t("admin.noCitySpecific")}</SelectItem>
                     {availableCities.map(city => (
                       <SelectItem key={city} value={city}>{city}</SelectItem>
                     ))}

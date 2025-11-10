@@ -150,7 +150,7 @@ export default function UserInvitationsTab() {
     onError: (error: any) => {
       toast({
         title: t("common.error"),
-        description: error.message || "No se pudieron enviar las invitaciones",
+        description: error.message || t("admin.couldNotSendInvitations"),
         variant: "destructive",
       });
     },
@@ -386,17 +386,17 @@ export default function UserInvitationsTab() {
       {/* Pending Users Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Usuarios Pendientes de Aprobación</CardTitle>
+          <CardTitle>{t("admin.pendingUsersApproval")}</CardTitle>
           <CardDescription>
-            Usuarios que completaron su registro y están esperando aprobación
+            {t("admin.pendingUsersApprovalDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8">Cargando...</div>
+            <div className="text-center py-8">{t("admin.loading")}</div>
           ) : pendingUsers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No hay usuarios pendientes de aprobación
+              {t("admin.noPendingUsers")}
             </div>
           ) : (
             <Table>
