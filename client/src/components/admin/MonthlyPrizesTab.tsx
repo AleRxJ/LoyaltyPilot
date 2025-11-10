@@ -466,7 +466,7 @@ export default function MonthlyPrizesTab() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="goalTarget">Meta de Goles para Participar *</Label>
+              <Label htmlFor="goalTarget">{t("admin.goalTargetRequired")}</Label>
               <Input
                 id="goalTarget"
                 type="number"
@@ -504,7 +504,7 @@ export default function MonthlyPrizesTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5" />
-            Premios Configurados
+            {t("admin.configuredPrizes")}
           </CardTitle>
         </CardHeader>
         <CardContent>

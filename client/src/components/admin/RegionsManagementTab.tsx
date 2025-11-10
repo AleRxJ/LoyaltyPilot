@@ -278,7 +278,7 @@ export default function RegionsManagementTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/regions"] });
       toast({
-        title: "Regiones pobladas",
+        title: t("admin.regionsPopulated"),
         description: "Las regiones han sido creadas exitosamente",
       });
     },

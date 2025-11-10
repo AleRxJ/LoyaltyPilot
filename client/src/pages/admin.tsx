@@ -233,7 +233,7 @@ export default function Admin() {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "Deal approved successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/deals"] });
@@ -255,7 +255,7 @@ export default function Admin() {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "Deal rejected",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/deals"] });
@@ -277,7 +277,7 @@ export default function Admin() {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "User role updated successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
@@ -316,7 +316,7 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "User created successfully",
       });
       setIsCreateUserModalOpen(false);
@@ -351,7 +351,7 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "User updated successfully",
       });
       setIsEditUserModalOpen(false);
@@ -397,7 +397,7 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/reports"] });
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "User deleted successfully",
       });
     },
@@ -422,7 +422,7 @@ export default function Admin() {
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: `${data.message}${data.errors && data.errors.length > 0 ? `. ${data.errorCount} errors occurred.` : ''}`,
       });
     },
@@ -462,7 +462,7 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users/pending"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "User approved successfully",
       });
     },
@@ -484,7 +484,7 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users/pending"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "User rejected successfully",
       });
     },
@@ -505,7 +505,7 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rewards/redemptions"] });
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "Shipment status updated successfully",
       });
     },
@@ -534,7 +534,7 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rewards/pending"] });
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "Reward redemption approved successfully",
       });
     },
@@ -555,7 +555,7 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rewards/pending"] });
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "Reward redemption rejected",
       });
     },
@@ -584,7 +584,7 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/rewards"] });
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "Reward deleted successfully",
       });
     },
@@ -609,7 +609,7 @@ export default function Admin() {
     },
     onSuccess: (data: any) => {
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: `${data.message}${data.errors ? `. ${data.errors.length} errors occurred.` : ''}`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/deals"] });
@@ -676,8 +676,8 @@ export default function Admin() {
   const handleExportRewardRedemptions = async () => {
     try {
       toast({
-        title: "Generating Reward Redemptions Report",
-        description: "Creating your Excel report...",
+        title: t("admin.generatingRewardRedemptionsReport"),
+        description: t("admin.creatingExcelReport"),
       });
 
       // Build query parameters for the redemptions export
@@ -729,14 +729,14 @@ export default function Admin() {
       window.URL.revokeObjectURL(downloadUrl);
       
       toast({
-        title: "Report Downloaded",
+        title: t("admin.reportDownloaded"),
         description: `Your reward redemptions report has been saved as ${filename}`,
       });
       
     } catch (error) {
       console.error('Error generating reward redemptions Excel report:', error);
       toast({
-        title: "Export Failed",
+        title: t("admin.exportFailed"),
         description: "There was an error generating your reward redemptions report. Please try again.",
         variant: "destructive"
       });
@@ -746,8 +746,8 @@ export default function Admin() {
   const handleExportDealsPerUser = async () => {
     try {
       toast({
-        title: "Generating Deals per User Report",
-        description: "Creating your Excel report...",
+        title: t("admin.generatingDealsPerUserReport"),
+        description: t("admin.creatingExcelReport"),
       });
 
       // Build query parameters for the deals per user export
@@ -799,14 +799,14 @@ export default function Admin() {
       window.URL.revokeObjectURL(downloadUrl);
       
       toast({
-        title: "Report Downloaded",
+        title: t("admin.reportDownloaded"),
         description: `Your deals per user report has been saved as ${filename}`,
       });
       
     } catch (error) {
       console.error('Error generating deals per user Excel report:', error);
       toast({
-        title: "Export Failed",
+        title: t("admin.exportFailed"),
         description: "There was an error generating your deals per user report. Please try again.",
         variant: "destructive"
       });
@@ -816,8 +816,8 @@ export default function Admin() {
   const handleExportUserRanking = async () => {
     try {
       toast({
-        title: "Generating User Ranking",
-        description: "Creating your Excel report...",
+        title: t("admin.generatingUserRanking"),
+        description: t("admin.creatingExcelReport"),
       });
 
       // Build query parameters for the ranking export
@@ -867,14 +867,14 @@ export default function Admin() {
       window.URL.revokeObjectURL(downloadUrl);
       
       toast({
-        title: "Ranking Downloaded",
+        title: t("admin.rankingDownloaded"),
         description: `Your user ranking has been saved as ${filename}`,
       });
       
     } catch (error) {
       console.error('Error generating ranking report:', error);
       toast({
-        title: "Export Failed",
+        title: t("admin.exportFailed"),
         description: "There was an error generating your ranking report. Please try again.",
         variant: "destructive"
       });

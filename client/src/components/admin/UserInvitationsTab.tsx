@@ -138,7 +138,7 @@ export default function UserInvitationsTab() {
     },
     onSuccess: (data: any) => {
       toast({
-        title: "Invitaciones procesadas",
+        title: t("admin.invitationsProcessed"),
         description: `${data.summary.successful} de ${data.summary.total} invitaciones enviadas exitosamente.`,
       });
       setIsBulkInviteDialogOpen(false);
@@ -159,7 +159,7 @@ export default function UserInvitationsTab() {
   const handleSingleInvite = () => {
     if (!inviteForm.email || !inviteForm.firstName || !inviteForm.lastName) {
       toast({
-        title: "Campos requeridos",
+        title: t("admin.requiredFields"),
         description: "Por favor completa todos los campos",
         variant: "destructive",
       });

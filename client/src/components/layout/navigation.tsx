@@ -58,7 +58,7 @@ export default function Navigation({ user }: NavigationProps) {
       // Clear all queries from cache
       queryClient.clear();
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "Logged out successfully",
       });
       // Immediate redirect to login page - remove timeout

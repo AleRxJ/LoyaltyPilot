@@ -433,9 +433,9 @@ export default function GrandPrizeTab() {
           {/* Estado Activo */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="is-active">Criterio Activo</Label>
+              <Label htmlFor="is-active">{t("admin.activeCriteria")}</Label>
               <p className="text-sm text-muted-foreground">
-                Los criterios activos se usarán para calcular el ranking
+                {t("admin.activeCriteriaDescription")}
               </p>
             </div>
             <Switch
@@ -479,10 +479,10 @@ export default function GrandPrizeTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5" />
-            Criterios Configurados
+            {t("admin.configuredCriteria")}
           </CardTitle>
           <CardDescription>
-            Todos los criterios del Gran Premio (activos e inactivos)
+            {t("admin.allGrandPrizeCriteria")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -566,7 +566,7 @@ export default function GrandPrizeTab() {
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              No hay criterios configurados. Crea uno nuevo arriba.
+              {t("admin.noCriteriaConfigured")}
             </div>
           )}
         </CardContent>

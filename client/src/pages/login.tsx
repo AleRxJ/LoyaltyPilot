@@ -67,7 +67,7 @@ export default function Login() {
     mutationFn: ({ username, password }: LoginForm) => login(username, password),
     onSuccess: () => {
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "Logged in successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
@@ -85,7 +85,7 @@ export default function Login() {
     mutationFn: (userData: RegisterForm) => register(userData),
     onSuccess: (data: any) => {
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: data.message || "Account created successfully. Please wait for administrator approval before you can log in.",
       });
       setIsLogin(true);

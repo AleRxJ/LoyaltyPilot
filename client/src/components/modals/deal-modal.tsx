@@ -119,7 +119,7 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: isEditing 
           ? "Deal updated successfully" 
           : "Deal registered successfully and is pending approval",

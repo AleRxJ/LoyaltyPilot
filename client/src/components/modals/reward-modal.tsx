@@ -134,7 +134,7 @@ export default function RewardModal({ isOpen, onClose, reward }: RewardModalProp
     },
     onSuccess: () => {
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: `Reward ${isEditing ? "updated" : "created"} successfully`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/rewards"] });

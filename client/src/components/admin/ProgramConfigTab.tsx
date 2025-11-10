@@ -136,7 +136,7 @@ export default function ProgramConfigTab() {
         region: selectedRegion || "",
       });
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "Campaign created successfully",
       });
     },
@@ -157,7 +157,7 @@ export default function ProgramConfigTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", selectedRegion] });
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "Campaign status updated",
       });
     },
@@ -178,7 +178,7 @@ export default function ProgramConfigTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/campaigns", selectedRegion] });
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "Campaign deleted successfully",
       });
     },
@@ -209,7 +209,7 @@ export default function ProgramConfigTab() {
         monthlyGoalTarget: 0,
       });
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "Region configuration created successfully",
       });
     },
@@ -230,7 +230,7 @@ export default function ProgramConfigTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/region-configs", selectedRegion] });
       toast({
-        title: "Success",
+        title: t("common.success"),
         description: "Region configuration status updated",
       });
     },

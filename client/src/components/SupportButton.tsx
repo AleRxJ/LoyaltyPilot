@@ -104,7 +104,7 @@ export default function SupportButton() {
     },
     onSuccess: () => {
       toast({
-        title: "Ticket enviado",
+        title: t("admin.ticketSent"),
         description:
           "Tu solicitud de soporte ha sido enviada. Te contactaremos pronto.",
       });

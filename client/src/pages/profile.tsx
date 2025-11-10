@@ -62,7 +62,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (error || (!isLoading && !user)) {
       toast({
-        title: "Session Expired",
+        title: t("admin.sessionExpired"),
         description: "Please log in again",
         variant: "destructive",
       });

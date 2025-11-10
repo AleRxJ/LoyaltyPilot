@@ -79,7 +79,7 @@ export default function SupportTicketsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/support-tickets", selectedRegion] });
       toast({
-        title: "Ticket actualizado",
+        title: t("admin.ticketUpdated"),
         description: t("admin.ticketUpdatedSuccessfully"),
       });
       setIsResponseDialogOpen(false);

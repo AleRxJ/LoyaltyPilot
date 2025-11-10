@@ -57,9 +57,9 @@ export default function Rewards() {
       const isAlreadyPending = errorMessage.includes("already have a pending redemption");
       
       toast({
-        title: isAlreadyPending ? "Redemption Already Pending" : "Error",
+        title: isAlreadyPending ? t("rewards.redemptionAlreadyPending") : t("common.error"),
         description: isAlreadyPending 
-          ? "You already have a pending redemption for this reward. Please wait for admin approval."
+          ? t("rewards.alreadyPendingDescription")
           : errorMessage,
         variant: "destructive",
       });
