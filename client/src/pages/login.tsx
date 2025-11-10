@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 import { login, register } from "@/lib/auth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -34,6 +35,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function Login() {
+  const { t } = useTranslation();
   const [isLogin, setIsLogin] = useState(true);
   const [showMagicLinkDialog, setShowMagicLinkDialog] = useState(false);
   const [magicLinkEmail, setMagicLinkEmail] = useState("");
@@ -72,7 +74,7 @@ export default function Login() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "Login failed",
         variant: "destructive",
       });
@@ -91,7 +93,7 @@ export default function Login() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "Registration failed",
         variant: "destructive",
       });
@@ -124,7 +126,7 @@ export default function Login() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "Failed to send magic link",
         variant: "destructive",
       });
@@ -413,18 +415,18 @@ export default function Login() {
       <Dialog open={showMagicLinkDialog} onOpenChange={setShowMagicLinkDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>🔐 Acceso sin Contraseña</DialogTitle>
+            <DialogTitle>{t("auth.passwordlessAccess")}</DialogTitle>
             <DialogDescription>
-              Ingresa tu email y te enviaremos un enlace mágico para acceder a tu cuenta.
+              {t("auth.magicLinkDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="magic-link-email">Email</Label>
+              <Label htmlFor="magic-link-email">{t("common.email")}</Label>
               <Input
                 id="magic-link-email"
                 type="email"
-                placeholder="tu@email.com"
+                placeholder={t("auth.yourEmail")}
                 value={magicLinkEmail}
                 onChange={(e) => setMagicLinkEmail(e.target.value)}
                 onKeyDown={(e) => {
@@ -444,14 +446,14 @@ export default function Login() {
                 setMagicLinkEmail("");
               }}
             >
-              Cancelar
+              {t("common.cancel")}
             </Button>
             <Button
               type="button"
               onClick={() => magicLinkMutation.mutate(magicLinkEmail)}
               disabled={!magicLinkEmail || magicLinkMutation.isPending}
             >
-              {magicLinkMutation.isPending ? "Enviando..." : "Enviar enlace"}
+              {magicLinkMutation.isPending ? t("support.submitting") : t("auth.sendMagicLink")}
             </Button>
           </DialogFooter>
         </DialogContent>

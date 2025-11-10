@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { Reward } from "@shared/schema";
@@ -47,6 +48,7 @@ const categories = [
 
 export default function RewardModal({ isOpen, onClose, reward }: RewardModalProps) {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const isEditing = !!reward;
 
@@ -163,7 +165,7 @@ export default function RewardModal({ isOpen, onClose, reward }: RewardModalProp
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-900">
-            {isEditing ? "Edit Reward" : "Create New Reward"}
+            {isEditing ? t("rewards.editReward") : t("rewards.createNewReward")}
           </DialogTitle>
         </DialogHeader>
         

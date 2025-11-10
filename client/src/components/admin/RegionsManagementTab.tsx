@@ -681,7 +681,7 @@ export default function RegionsManagementTab() {
                     <TableCell>
                       {region.rewardId ? (
                         <span className="text-sm">
-                          {rewards?.find((r: any) => r.id === region.rewardId)?.name || "Premio asignado"}
+                          {rewards?.find((r: any) => r.id === region.rewardId)?.name || t("admin.assignedReward")}
                         </span>
                       ) : (
                         <span className="text-muted-foreground text-sm">Sin premio</span>
@@ -869,7 +869,7 @@ export default function RegionsManagementTab() {
                               }}
                             >
                               <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Seleccionar reward" />
+                                <SelectValue placeholder={t("admin.selectReward")} />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="NONE">Sin reward</SelectItem>
@@ -887,7 +887,7 @@ export default function RegionsManagementTab() {
                           </TableCell>
                           <TableCell>
                             <Badge className={region.rewardId ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
-                              {region.rewardId ? "Asignado" : "Sin asignar"}
+                              {region.rewardId ? t("admin.assigned") : t("admin.unassigned")}
                             </Badge>
                           </TableCell>
                         </TableRow>
@@ -1257,16 +1257,16 @@ export default function RegionsManagementTab() {
         <Dialog open={!!editingRegion} onOpenChange={() => setEditingRegion(null)}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Editar Configuración de Región</DialogTitle>
+              <DialogTitle>{t("admin.editRegionConfig")}</DialogTitle>
               <DialogDescription>
-                Modifica los parámetros de acumulación de goles para {editingRegion.name}
+                {t("admin.updateConfigForRegion")} {editingRegion.name}
               </DialogDescription>
             </DialogHeader>
             
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">
-                  Nombre
+                  {t("admin.name")}
                 </Label>
                 <Input
                   id="name"
@@ -1279,17 +1279,17 @@ export default function RegionsManagementTab() {
               {/* Selector de Premio */}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-reward" className="text-right">
-                  Premio Asociado
+                  {t("admin.associatedReward")}
                 </Label>
                 <Select
                   value={editingRegion.rewardId || "NONE"}
                   onValueChange={(value) => setEditingRegion({ ...editingRegion, rewardId: value === "NONE" ? null : value })}
                 >
                   <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Selecciona un premio (opcional)" />
+                    <SelectValue placeholder={t("admin.selectRewardOptional")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="NONE">Sin premio asociado</SelectItem>
+                    <SelectItem value="NONE">{t("admin.noAssociatedReward")}</SelectItem>
                     {rewards && rewards.length > 0 ? (
                       rewards.map((reward: any) => (
                         <SelectItem key={reward.id} value={reward.id}>
@@ -1297,7 +1297,7 @@ export default function RegionsManagementTab() {
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="NO_REWARDS" disabled>No hay premios activos</SelectItem>
+                      <SelectItem value="NO_REWARDS" disabled>{t("admin.noActiveRewards")}</SelectItem>
                     )}
                   </SelectContent>
                 </Select>
@@ -1306,7 +1306,7 @@ export default function RegionsManagementTab() {
               {/* Mostrar región y categoría (solo lectura) */}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">
-                  Región
+                  {t("admin.region")}
                 </Label>
                 <div className="col-span-3">
                   <Badge variant="outline" className="text-sm">
@@ -1317,7 +1317,7 @@ export default function RegionsManagementTab() {
 
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">
-                  Categoría
+                  {t("admin.category")}
                 </Label>
                 <div className="col-span-3">
                   <Badge variant="secondary" className="text-sm">
@@ -1329,7 +1329,7 @@ export default function RegionsManagementTab() {
               {editingRegion.subcategory && (
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right">
-                    Subcategoría
+                    {t("admin.subcategoryLabel")}
                   </Label>
                   <div className="col-span-3">
                     <Badge className="text-sm">
@@ -1488,7 +1488,7 @@ export default function RegionsManagementTab() {
                 disabled={updateRegionMutation.isPending}
               >
                 <Save className="w-4 h-4 mr-2" />
-                {updateRegionMutation.isPending ? "Guardando..." : "Guardar Cambios"}
+                {updateRegionMutation.isPending ? t("admin.savingChanges") : t("common.save")}
               </Button>
             </DialogFooter>
           </DialogContent>

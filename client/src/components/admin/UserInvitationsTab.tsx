@@ -83,7 +83,7 @@ export default function UserInvitationsTab() {
     onSuccess: () => {
       toast({
         title: "Invitación enviada",
-        description: "El email de invitación ha sido enviado exitosamente.",
+        description: t("admin.invitationSentSuccessfully"),
       });
       setIsInviteDialogOpen(false);
       setInviteForm({ email: "", firstName: "", lastName: "" });
@@ -92,8 +92,8 @@ export default function UserInvitationsTab() {
     onError: (error: any) => {
       console.error("Mutation error:", error);
       toast({
-        title: "Error",
-        description: error.message || "No se pudo enviar la invitación",
+        title: t("common.error"),
+        description: error.message || t("admin.couldNotSendInvitation"),
         variant: "destructive",
       });
     },
@@ -149,7 +149,7 @@ export default function UserInvitationsTab() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "No se pudieron enviar las invitaciones",
         variant: "destructive",
       });
@@ -195,16 +195,16 @@ export default function UserInvitationsTab() {
 
         if (users.length === 0) {
           toast({
-            title: "Error",
-            description: "No se encontraron usuarios válidos en el archivo CSV",
+            title: t("common.error"),
+            description: t("admin.noValidUsersFound"),
             variant: "destructive",
           });
         }
       } catch (error) {
         console.error("Error parsing CSV:", error);
         toast({
-          title: "Error",
-          description: "No se pudo procesar el archivo CSV",
+          title: t("common.error"),
+          description: t("admin.couldNotProcessCSVFile"),
           variant: "destructive",
         });
       }
@@ -216,8 +216,8 @@ export default function UserInvitationsTab() {
   const handleBulkInvite = () => {
     if (bulkUsers.length === 0) {
       toast({
-        title: "Sin usuarios",
-        description: "Por favor carga un archivo CSV con usuarios válidos",
+        title: t("admin.noUsers"),
+        description: t("admin.pleaseLoadCSVFile"),
         variant: "destructive",
       });
       return;
@@ -227,13 +227,13 @@ export default function UserInvitationsTab() {
 
   const downloadCsvTemplate = () => {
     const template = [
-      { email: "usuario@ejemplo.com", firstName: "Nombre", lastName: "Apellido" },
-      { email: "otro@ejemplo.com", firstName: "John", lastName: "Doe" },
+      { email: "user@example.com", firstName: t("admin.firstNameField"), lastName: t("admin.lastNameField") },
+      { email: "other@example.com", firstName: "John", lastName: "Doe" },
     ];
 
     const worksheet = XLSX.utils.json_to_sheet(template);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Usuarios");
+    XLSX.utils.book_append_sheet(workbook, worksheet, t("admin.usersSheet"));
     XLSX.writeFile(workbook, "plantilla-usuarios.xlsx");
   };
 
@@ -252,14 +252,14 @@ export default function UserInvitationsTab() {
             <DialogTrigger asChild>
               <Button>
                 <UserPlus className="w-4 h-4 mr-2" />
-                Invitar Usuario
+                {t('admin.inviteUser')}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Invitar Nuevo Usuario</DialogTitle>
+                <DialogTitle>{t('admin.inviteNewUser')}</DialogTitle>
                 <DialogDescription>
-                  El usuario recibirá un email con instrucciones para completar su registro
+                  {t('admin.userWillReceiveEmail')}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -268,26 +268,26 @@ export default function UserInvitationsTab() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="usuario@ejemplo.com"
+                    placeholder="user@example.com"
                     value={inviteForm.email}
                     onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="firstName">Nombre *</Label>
+                    <Label htmlFor="firstName">{t("admin.firstNameField")} *</Label>
                     <Input
                       id="firstName"
-                      placeholder="Nombre"
+                      placeholder={t("admin.firstNameField")}
                       value={inviteForm.firstName}
                       onChange={(e) => setInviteForm({ ...inviteForm, firstName: e.target.value })}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="lastName">Apellido *</Label>
+                    <Label htmlFor="lastName">{t("admin.lastNameField")} *</Label>
                     <Input
                       id="lastName"
-                      placeholder="Apellido"
+                      placeholder={t("admin.lastNameField")}
                       value={inviteForm.lastName}
                       onChange={(e) => setInviteForm({ ...inviteForm, lastName: e.target.value })}
                     />
@@ -308,14 +308,14 @@ export default function UserInvitationsTab() {
             <DialogTrigger asChild>
               <Button variant="outline">
                 <Upload className="w-4 h-4 mr-2" />
-                Importar CSV
+                {t('admin.importCSV')}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Importar Usuarios por CSV</DialogTitle>
+                <DialogTitle>{t('admin.importUsersCSV')}</DialogTitle>
                 <DialogDescription>
-                  Sube un archivo CSV con los datos de los usuarios a invitar
+                  {t('admin.uploadCSVDescription')}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">

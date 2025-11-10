@@ -524,21 +524,21 @@ export default function ProgramConfigTab() {
                   </DialogTrigger>
                   <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                      <DialogTitle>Create Region Configuration</DialogTitle>
+                      <DialogTitle>{t("admin.createRegionConfiguration")}</DialogTitle>
                       <DialogDescription>
-                        Set up custom goal rates for a specific region and category
+                        {t("admin.configureCustomGoalRates")}
                       </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleCreateRegionConfig} className="space-y-4">
                       <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
-                          <Label htmlFor="region">Region</Label>
+                          <Label htmlFor="region">{t("admin.region")}</Label>
                           <Select
                             value={regionConfigForm.region}
                             onValueChange={(value) => setRegionConfigForm({ ...regionConfigForm, region: value })}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Select region" />
+                              <SelectValue placeholder={t("admin.selectRegionPlaceholder")} />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="NOLA">NOLA</SelectItem>
@@ -556,7 +556,7 @@ export default function ProgramConfigTab() {
                             onValueChange={(value) => setRegionConfigForm({ ...regionConfigForm, category: value })}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Select category" />
+                              <SelectValue placeholder={t("admin.selectCategoryPlaceholder")} />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="ENTERPRISE">ENTERPRISE</SelectItem>
@@ -624,7 +624,7 @@ export default function ProgramConfigTab() {
                       </div>
 
                       <Button type="submit" className="w-full" disabled={createRegionConfigMutation.isPending}>
-                        {createRegionConfigMutation.isPending ? "Creating..." : "Create Configuration"}
+                        {createRegionConfigMutation.isPending ? t("admin.creatingConfig") : t("admin.programConfig.regions.createConfiguration")}
                       </Button>
                     </form>
                   </DialogContent>

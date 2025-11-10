@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Trophy, Calendar, Edit, Trash2, Plus } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,7 @@ const MONTHS = [
 ];
 
 export default function MonthlyPrizesTab() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const currentYear = new Date().getFullYear();
@@ -176,7 +178,7 @@ export default function MonthlyPrizesTab() {
 
       if (!response.ok) {
         const error = await response.text();
-        throw new Error(error || "Error al guardar el premio");
+        throw new Error(error || t("admin.errorSavingPrize"));
       }
 
       return response.json();
@@ -195,14 +197,14 @@ export default function MonthlyPrizesTab() {
         goalTarget: 0,
       });
       toast({
-        title: "Premio guardado",
-        description: "El premio mensual ha sido guardado exitosamente.",
+        title: t("admin.prizeSaved"),
+        description: t("admin.prizeSavedSuccessfully"),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: error.message || "No se pudo guardar el premio.",
+        title: t("common.error"),
+        description: error.message || t("admin.couldNotSavePrize"),
         variant: "destructive",
       });
     },
@@ -218,7 +220,7 @@ export default function MonthlyPrizesTab() {
 
       if (!response.ok) {
         const error = await response.text();
-        throw new Error(error || "Error al eliminar el premio");
+        throw new Error(error || t("admin.errorDeletingPrize"));
       }
 
       return response.json();
@@ -226,14 +228,14 @@ export default function MonthlyPrizesTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/monthly-prizes", filterMonth, filterYear, selectedRegion] });
       toast({
-        title: "Premio eliminado",
-        description: "El premio ha sido eliminado exitosamente.",
+        title: t("admin.prizeDeleted"),
+        description: t("admin.prizeDeletedSuccessfully"),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: error.message || "No se pudo eliminar el premio.",
+        title: t("common.error"),
+        description: error.message || t("admin.couldNotDeletePrize"),
         variant: "destructive",
       });
     },
@@ -242,7 +244,7 @@ export default function MonthlyPrizesTab() {
   const handleSavePrize = () => {
     if (!prize.regionConfigId || !prize.prizeName || prize.goalTarget === undefined) {
       toast({
-        title: "Campos requeridos",
+        title: t("admin.requiredFields"),
         description: "Por favor completa todos los campos obligatorios.",
         variant: "destructive",
       });
@@ -311,14 +313,14 @@ export default function MonthlyPrizesTab() {
                   {selectedRegion}
                 </Badge>
                 <span className="text-xs text-gray-500">
-                  (Como administrador regional, solo puedes gestionar los premios mensuales de tu región)
+                  ({t('admin.regionalAdminMonthlyPrizesInfo')})
                 </span>
               </div>
             ) : (
               <div className="flex items-center space-x-3">
                 <Select value={selectedRegion} onValueChange={setSelectedRegion}>
                   <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Selecciona una región" />
+                    <SelectValue placeholder={t('admin.selectRegion')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NOLA">NOLA</SelectItem>
@@ -328,7 +330,7 @@ export default function MonthlyPrizesTab() {
                   </SelectContent>
                 </Select>
                 <span className="text-xs text-gray-500">
-                  Selecciona una región para gestionar sus premios mensuales
+                  {t('admin.selectRegionToManagePrizes')}
                 </span>
               </div>
             )}
@@ -341,21 +343,21 @@ export default function MonthlyPrizesTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Trophy className="w-5 h-5" />
-            {editingId ? "Editar Premio Mensual" : "Crear Premio Mensual Acelerador"}
+            {editingId ? t('admin.editMonthlyPrize') : t('admin.createMonthlyAcceleratorPrize')}
           </CardTitle>
           <CardDescription>
-            Define premios mensuales por rendimiento para incentivar a los usuarios
+            {t('admin.defineMonthlyPrizesDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Categoría - SIMPLE */}
           <div className="space-y-2">
             <Label htmlFor="region-config">
-              Categoría *
+              {t('admin.category')} *
             </Label>
             {configsLoading ? (
               <div className="p-3 bg-gray-50 border rounded-md text-sm text-gray-500">
-                Cargando...
+                {t('common.loading')}
               </div>
             ) : !regionConfigs || regionConfigs.length === 0 ? (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-700">
@@ -451,7 +453,7 @@ export default function MonthlyPrizesTab() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="value">Valor del Premio (USD) - Opcional</Label>
+              <Label htmlFor="value">{t("admin.prizeValue")}</Label>
               <Input
                 id="value"
                 type="number"
@@ -483,14 +485,14 @@ export default function MonthlyPrizesTab() {
             <Button onClick={handleSavePrize} disabled={savePrizeMutation.isPending} className="flex-1">
               <Plus className="w-4 h-4 mr-2" />
               {savePrizeMutation.isPending
-                ? "Guardando..."
+                ? t('common.saving')
                 : editingId
-                ? "Actualizar Premio"
-                : "Crear Premio"}
+                ? t('admin.updatePrize')
+                : t('admin.createPrize')}
             </Button>
             {editingId && (
               <Button onClick={handleCancelEdit} variant="outline" className="flex-1">
-                Cancelar
+                {t('common.cancel')}
               </Button>
             )}
           </div>
@@ -571,19 +573,18 @@ export default function MonthlyPrizesTab() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>¿Eliminar premio?</AlertDialogTitle>
+                          <AlertDialogTitle>{t("admin.deletePrize")}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Esta acción no se puede deshacer. Se eliminará permanentemente el premio
-                            "{p.prizeDescription}".
+                            {t("admin.deletePrizeConfirmation")}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => handleDeletePrize(p.id!)}
                             className="bg-red-600 hover:bg-red-700"
                           >
-                            Eliminar
+                            {t("common.delete")}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -594,7 +595,7 @@ export default function MonthlyPrizesTab() {
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              No hay premios configurados para {MONTHS.find((m) => m.value === filterMonth)?.label} {filterYear}
+              {t("admin.noPrizesConfiguredFor")} {MONTHS.find((m) => m.value === filterMonth)?.label} {filterYear}
             </div>
           )}
         </CardContent>

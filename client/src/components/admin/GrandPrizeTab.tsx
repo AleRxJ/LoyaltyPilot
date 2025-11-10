@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Trophy, Users, TrendingUp, Calendar, Award, Save, Edit, Trash2, Plus } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,7 @@ interface UserRanking {
 }
 
 export default function GrandPrizeTab() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedRegion, setSelectedRegion] = useState<string>("");
@@ -131,7 +133,7 @@ export default function GrandPrizeTab() {
 
       if (!response.ok) {
         const error = await response.text();
-        throw new Error(error || "Error al guardar los criterios");
+        throw new Error(error || t("admin.errorSavingCriteria"));
       }
 
       return response.json();
@@ -154,14 +156,14 @@ export default function GrandPrizeTab() {
         isActive: true,
       });
       toast({
-        title: "Criterios guardados",
-        description: "Los criterios del Gran Premio han sido actualizados exitosamente.",
+        title: t("admin.criteriaSaved"),
+        description: t("admin.grandPrizeCriteriaUpdated"),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: error.message || "No se pudieron guardar los criterios.",
+        title: t("common.error"),
+        description: error.message || t("admin.couldNotSaveCriteria"),
         variant: "destructive",
       });
     },
@@ -177,7 +179,7 @@ export default function GrandPrizeTab() {
 
       if (!response.ok) {
         const error = await response.text();
-        throw new Error(error || "Error al eliminar los criterios");
+        throw new Error(error || t("admin.errorDeletingCriteria"));
       }
 
       return response.json();
@@ -186,14 +188,14 @@ export default function GrandPrizeTab() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/grand-prize/criteria", selectedRegion] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/grand-prize/criteria/all", selectedRegion] });
       toast({
-        title: "Criterios eliminados",
-        description: "Los criterios han sido eliminados exitosamente.",
+        title: t("admin.criteriaDeleted"),
+        description: t("admin.criteriaDeletedSuccessfully"),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: error.message || "No se pudieron eliminar los criterios.",
+        title: t("common.error"),
+        description: error.message || t("admin.couldNotDeleteCriteria"),
         variant: "destructive",
       });
     },
@@ -259,21 +261,21 @@ export default function GrandPrizeTab() {
       <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Región</h3>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">{t('admin.region')}</h3>
             {currentUser && (currentUser as any).role === "regional-admin" ? (
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                   {selectedRegion}
                 </Badge>
                 <span className="text-xs text-gray-500">
-                  (Como administrador regional, solo puedes gestionar el Gran Premio Final de tu región)
+                  ({t('admin.regionalAdminGrandPrizeInfo')})
                 </span>
               </div>
             ) : (
               <div className="flex items-center space-x-3">
                 <Select value={selectedRegion} onValueChange={setSelectedRegion}>
                   <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Selecciona una región" />
+                    <SelectValue placeholder={t('admin.selectRegion')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NOLA">NOLA</SelectItem>
@@ -283,7 +285,7 @@ export default function GrandPrizeTab() {
                   </SelectContent>
                 </Select>
                 <span className="text-xs text-gray-500">
-                  Selecciona una región para gestionar su Gran Premio Final
+                  {t('admin.selectRegionToManageGrandPrize')}
                 </span>
               </div>
             )}
@@ -296,21 +298,21 @@ export default function GrandPrizeTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Trophy className="w-5 h-5" />
-            Configuración de Criterios
+            {t('admin.criteriaConfiguration')}
           </CardTitle>
           <CardDescription>
-            Define los criterios para seleccionar al ganador del Gran Premio Final
+            {t('admin.defineGrandPrizeCriteriaDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Nombre del Criterio */}
           <div className="space-y-2">
-            <Label htmlFor="criteria-name">Nombre del Criterio</Label>
+            <Label htmlFor="criteria-name">{t('admin.criteriaName')}</Label>
             <Input
               id="criteria-name"
               value={criteria.name}
               onChange={(e) => setCriteria({ ...criteria, name: e.target.value })}
-              placeholder="Ej: Gran Premio Q4 2025"
+              placeholder={t('admin.criteriaNamePlaceholder')}
             />
           </div>
 
@@ -454,10 +456,10 @@ export default function GrandPrizeTab() {
             >
               <Save className="w-4 h-4 mr-2" />
               {saveCriteriaMutation.isPending 
-                ? "Guardando..." 
+                ? t("common.saving")
                 : editingId 
-                  ? "Actualizar Criterios" 
-                  : "Crear Nuevo Criterio"}
+                  ? t("admin.updateCriteria")
+                  : t("admin.createNewCriteria")}
             </Button>
             {editingId && (
               <Button 
@@ -465,7 +467,7 @@ export default function GrandPrizeTab() {
                 variant="outline"
                 className="flex-1"
               >
-                Cancelar
+                {t("common.cancel")}
               </Button>
             )}
           </div>
@@ -502,8 +504,8 @@ export default function GrandPrizeTab() {
                     </div>
                     <div className="text-sm text-muted-foreground space-y-1">
                       <p>Tipo: {
-                        crit.criteriaType === "points" ? "Solo Puntos" :
-                        crit.criteriaType === "deals" ? "Solo Deals" :
+                        crit.criteriaType === "points" ? t("admin.onlyPoints") :
+                        crit.criteriaType === "deals" ? t("admin.onlyDeals") :
                         `Combinado (${crit.pointsWeight}% puntos / ${crit.dealsWeight}% deals)`
                       }</p>
                       <p>
@@ -542,18 +544,18 @@ export default function GrandPrizeTab() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>¿Eliminar criterio?</AlertDialogTitle>
+                          <AlertDialogTitle>{t("admin.deleteCriteria")}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Esta acción no se puede deshacer. Se eliminará permanentemente el criterio "{crit.name}".
+                            {t("admin.deleteCriteriaConfirmation")}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => handleDeleteCriteria(crit.id!)}
                             className="bg-red-600 hover:bg-red-700"
                           >
-                            Eliminar
+                            {t("common.delete")}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>

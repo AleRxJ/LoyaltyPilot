@@ -242,7 +242,7 @@ export default function Admin() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "Failed to approve deal",
         variant: "destructive",
       });
@@ -264,7 +264,7 @@ export default function Admin() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "Failed to reject deal",
         variant: "destructive",
       });
@@ -284,7 +284,7 @@ export default function Admin() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "Failed to update user role",
         variant: "destructive",
       });
@@ -324,7 +324,7 @@ export default function Admin() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "Failed to create user",
         variant: "destructive",
       });
@@ -360,7 +360,7 @@ export default function Admin() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "Failed to update user",
         variant: "destructive",
       });
@@ -403,7 +403,7 @@ export default function Admin() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "Failed to delete user",
         variant: "destructive",
       });
@@ -428,7 +428,7 @@ export default function Admin() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "Failed to process users CSV file",
         variant: "destructive",
       });
@@ -468,7 +468,7 @@ export default function Admin() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "Failed to approve user",
         variant: "destructive",
       });
@@ -490,7 +490,7 @@ export default function Admin() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "Failed to reject user",
         variant: "destructive",
       });
@@ -511,7 +511,7 @@ export default function Admin() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "Failed to update shipment status",
         variant: "destructive",
       });
@@ -540,7 +540,7 @@ export default function Admin() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "Failed to approve redemption",
         variant: "destructive",
       });
@@ -561,7 +561,7 @@ export default function Admin() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "Failed to reject redemption",
         variant: "destructive",
       });
@@ -590,7 +590,7 @@ export default function Admin() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "Failed to delete reward",
         variant: "destructive",
       });
@@ -617,7 +617,7 @@ export default function Admin() {
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: error.message || "Failed to process CSV file",
         variant: "destructive",
       });
@@ -632,7 +632,7 @@ export default function Admin() {
       if (!data.uploadURL) {
         console.error("No uploadURL in response:", data);
         toast({
-          title: "Error", 
+          title: t("common.error"), 
           description: "No upload URL received from server",
           variant: "destructive",
         });
@@ -646,7 +646,7 @@ export default function Admin() {
     } catch (error) {
       console.error("Error getting upload parameters:", error);
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: "Failed to get upload URL",
         variant: "destructive",
       });
@@ -665,7 +665,7 @@ export default function Admin() {
         processCSVMutation.mutate(uploadURL);
       } else {
         toast({
-          title: "Error",
+          title: t("common.error"),
           description: "Failed to get upload URL from file upload",
           variant: "destructive",
         });
@@ -1420,9 +1420,9 @@ export default function Admin() {
                 <Dialog open={isEditUserModalOpen} onOpenChange={setIsEditUserModalOpen}>
                   <DialogContent className="sm:max-w-[600px]">
                     <DialogHeader>
-                      <DialogTitle>Edit User</DialogTitle>
+                      <DialogTitle>{t('admin.editUser')}</DialogTitle>
                       <DialogDescription>
-                        Update user information for {selectedUser?.firstName} {selectedUser?.lastName}.
+                        {t('admin.updateUserInfo')} {selectedUser?.firstName} {selectedUser?.lastName}.
                       </DialogDescription>
                     </DialogHeader>
                     <Form {...editUserForm}>
@@ -1755,16 +1755,14 @@ export default function Admin() {
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete User</AlertDialogTitle>
+                                    <AlertDialogTitle>{t('admin.deleteUser')}</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Are you sure you want to delete {user.firstName} {user.lastName}? 
-                                      This action cannot be undone and will permanently remove the user 
-                                      from the system.
+                                      {t('admin.deleteUserConfirmation')}
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel data-testid="button-cancel-delete">
-                                      Cancel
+                                      {t('common.cancel')}
                                     </AlertDialogCancel>
                                     <AlertDialogAction
                                       onClick={() => handleDeleteUser(user.id)}
@@ -2449,10 +2447,10 @@ export default function Admin() {
                     {t('admin.programConfiguration')}
                   </TabsTrigger>
                   <TabsTrigger value="grand-prize" data-testid="subtab-grand-prize">
-                    Gran Premio Final
+                    {t('admin.grandPrizeFinal')}
                   </TabsTrigger>
                   <TabsTrigger value="monthly-prizes" data-testid="subtab-monthly-prizes">
-                    Premios Mensuales
+                    {t('admin.monthlyPrizes')}
                   </TabsTrigger>
                 </TabsList>
 

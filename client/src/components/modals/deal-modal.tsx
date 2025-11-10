@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { Deal } from "@shared/schema";
@@ -36,6 +37,7 @@ interface DealModalProps {
 }
 
 export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isEditing = !!deal;
@@ -154,7 +156,7 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-900">
-            {isEditing ? "Edit Deal" : "Register New Deal"}
+            {isEditing ? t('deals.editDeal') : t('deals.registerNewDeal')}
           </DialogTitle>
         </DialogHeader>
         
@@ -166,17 +168,17 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
                 name="productType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Product Type</FormLabel>
+                    <FormLabel>{t('deals.productType')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-product-type">
-                          <SelectValue placeholder="Select product type" />
+                          <SelectValue placeholder={t('deals.selectProductType')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="software">Software</SelectItem>
-                        <SelectItem value="hardware">Hardware</SelectItem>
-                        <SelectItem value="equipment">Equipment</SelectItem>
+                        <SelectItem value="software">{t('deals.software')}</SelectItem>
+                        <SelectItem value="hardware">{t('deals.hardware')}</SelectItem>
+                        <SelectItem value="equipment">{t('deals.equipment')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -189,7 +191,7 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
                 name="dealValue"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Deal Value ($)</FormLabel>
+                    <FormLabel>{t('deals.dealValue')}</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -209,7 +211,7 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
               name="productName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Product Name</FormLabel>
+                  <FormLabel>{t('deals.productName')}</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -228,7 +230,7 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
                 name="quantity"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Quantity/Licenses</FormLabel>
+                    <FormLabel>{t('deals.quantity')}</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -247,7 +249,7 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
                 name="closeDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Close Date</FormLabel>
+                    <FormLabel>{t('deals.closeDate')}</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -267,17 +269,17 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel>{t('deals.status')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-status">
-                          <SelectValue placeholder="Select status" />
+                          <SelectValue placeholder={t('deals.selectStatus')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
+                        <SelectItem value="pending">{t('deals.pending')}</SelectItem>
+                        <SelectItem value="approved">{t('deals.approved')}</SelectItem>
+                        <SelectItem value="rejected">{t('deals.rejected')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -291,7 +293,7 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
               name="licenseAgreementNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>License Agreement Number (Optional)</FormLabel>
+                  <FormLabel>{t('deals.licenseAgreementNumber')}</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -309,19 +311,19 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
               name="region"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Región</FormLabel>
+                  <FormLabel>{t('deals.region')}</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
                       value={currentUser?.region || field.value}
                       disabled={true}
-                      placeholder="Se asigna automáticamente"
+                      placeholder={t('deals.regionAutoAssigned')}
                       className="bg-gray-50 text-gray-600 cursor-not-allowed"
                       data-testid="input-region"
                     />
                   </FormControl>
                   <div className="text-sm text-gray-500 mt-1">
-                    Tu región se asigna automáticamente basada en tu perfil
+                    {t('deals.regionAssignedAutomatically')}
                   </div>
                   <FormMessage />
                 </FormItem>
@@ -333,11 +335,11 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
               name="clientInfo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Client Information (Optional)</FormLabel>
+                  <FormLabel>{t('deals.clientInfo')}</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
-                      placeholder="Cliente, empresa, contacto y detalles adicionales..."
+                      placeholder={t('deals.clientInfoPlaceholder')}
                       className="h-24"
                       data-testid="textarea-client-info"
                     />
@@ -349,7 +351,7 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
 
             <div className="flex justify-end space-x-3 pt-4">
               <Button type="button" variant="outline" onClick={handleClose} data-testid="button-cancel">
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button 
                 type="submit" 
@@ -357,8 +359,8 @@ export default function DealModal({ isOpen, onClose, deal }: DealModalProps) {
                 data-testid="button-submit-deal"
               >
                 {createDealMutation.isPending 
-                  ? (isEditing ? "Updating..." : "Submitting...") 
-                  : (isEditing ? "Update Deal" : "Submit Deal")
+                  ? (isEditing ? t('deals.updating') : t('deals.submitting')) 
+                  : (isEditing ? t('deals.updateDeal') : t('deals.submitDeal'))
                 }
               </Button>
             </div>

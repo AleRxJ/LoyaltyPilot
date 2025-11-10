@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTranslation } from "@/hooks/useTranslation";
 import {
   Accordion,
   AccordionContent,
@@ -90,6 +91,7 @@ const faqs = [
 ];
 
 export default function SupportButton() {
+  const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
   const [faqDialogOpen, setFaqDialogOpen] = useState(false);
@@ -177,10 +179,9 @@ export default function SupportButton() {
       <Dialog open={ticketDialogOpen} onOpenChange={setTicketDialogOpen}>
         <DialogContent className="sm:max-w-[500px]" data-testid="dialog-support-ticket">
           <DialogHeader>
-            <DialogTitle>Solicitud de Soporte</DialogTitle>
+            <DialogTitle>{t("support.supportRequest")}</DialogTitle>
             <DialogDescription>
-              Describe tu problema o consulta y nos pondremos en contacto
-              contigo lo antes posible.
+              {t("support.supportRequestDescription")}
             </DialogDescription>
           </DialogHeader>
 
@@ -191,10 +192,10 @@ export default function SupportButton() {
                 name="subject"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Asunto</FormLabel>
+                    <FormLabel>{t("support.subject")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Ej: Problema con canje de recompensa"
+                        placeholder={t("support.subjectPlaceholder")}
                         {...field}
                         data-testid="input-subject"
                       />
@@ -209,20 +210,20 @@ export default function SupportButton() {
                 name="priority"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Prioridad</FormLabel>
+                    <FormLabel>{t("support.priority")}</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger data-testid="select-priority">
-                          <SelectValue placeholder="Selecciona la prioridad" />
+                          <SelectValue placeholder={t("support.selectPriority")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="low">Baja</SelectItem>
-                        <SelectItem value="medium">Media</SelectItem>
-                        <SelectItem value="high">Alta</SelectItem>
+                        <SelectItem value="low">{t("support.low")}</SelectItem>
+                        <SelectItem value="medium">{t("support.medium")}</SelectItem>
+                        <SelectItem value="high">{t("support.high")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -235,10 +236,10 @@ export default function SupportButton() {
                 name="message"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mensaje</FormLabel>
+                    <FormLabel>{t("support.message")}</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Describe tu problema o consulta..."
+                        placeholder={t("support.messagePlaceholder")}
                         className="min-h-[120px]"
                         {...field}
                         data-testid="textarea-message"
@@ -264,11 +265,11 @@ export default function SupportButton() {
                   data-testid="button-submit-ticket"
                 >
                   {createTicketMutation.isPending ? (
-                    "Enviando..."
+                    t("support.submitting")
                   ) : (
                     <>
                       <Send className="h-4 w-4 mr-2" />
-                      Enviar
+                      {t("support.submitTicket")}
                     </>
                   )}
                 </Button>
@@ -281,10 +282,9 @@ export default function SupportButton() {
       <Dialog open={faqDialogOpen} onOpenChange={setFaqDialogOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto" data-testid="dialog-faq">
           <DialogHeader>
-            <DialogTitle>Preguntas Frecuentes (FAQ)</DialogTitle>
+            <DialogTitle>{t("support.faq")}</DialogTitle>
             <DialogDescription>
-              Encuentra respuestas rápidas a las preguntas más comunes sobre
-              nuestro programa de lealtad.
+              {t("support.faqDescription")}
             </DialogDescription>
           </DialogHeader>
 

@@ -274,7 +274,7 @@ export default function RegionsOverview() {
           className="flex items-center gap-2"
         >
           <RefreshCw className="h-4 w-4" />
-          Actualizar estadísticas
+          {t('admin.refreshStats')}
         </Button>
       </div>
       
@@ -300,18 +300,18 @@ export default function RegionsOverview() {
                       <div>
                         <CardTitle className="text-3xl font-bold">{regionName}</CardTitle>
                         <CardDescription className="text-white/80 text-lg mt-1">
-                          Tu región asignada - {configs.length} configuraciones activas
+                          {t('admin.yourAssignedRegion')} - {configs.length} {t('admin.activeConfigurations')}
                         </CardDescription>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <Badge variant="secondary" className="bg-white/30 text-white text-lg px-4 py-2">
                         <Trophy className="h-5 w-5 mr-2" />
-                        {configs.length} configs
+                        {configs.length} {t('admin.configs')}
                       </Badge>
                       <Badge variant="secondary" className="bg-green-500/80 text-white">
                         <Medal className="h-4 w-4 mr-1" />
-                        Admin Regional
+                        {t('admin.regionalAdmin')}
                       </Badge>
                     </div>
                   </div>

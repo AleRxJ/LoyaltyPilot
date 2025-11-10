@@ -21,10 +21,12 @@ import {
 } from "@/components/ui/dialog";
 import { MessageCircle, Clock, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/hooks/useTranslation";
 import { apiRequest } from "@/lib/queryClient";
 import type { SupportTicketWithUser } from "@shared/schema";
 
 export default function SupportTicketsTab() {
+  const { t } = useTranslation();
   const [selectedRegion, setSelectedRegion] = useState<string>("");
   const [selectedTicket, setSelectedTicket] = useState<SupportTicketWithUser | null>(null);
   const [isResponseDialogOpen, setIsResponseDialogOpen] = useState(false);
@@ -78,7 +80,7 @@ export default function SupportTicketsTab() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/support-tickets", selectedRegion] });
       toast({
         title: "Ticket actualizado",
-        description: "El ticket ha sido actualizado exitosamente",
+        description: t("admin.ticketUpdatedSuccessfully"),
       });
       setIsResponseDialogOpen(false);
       setAdminResponse("");
@@ -86,8 +88,8 @@ export default function SupportTicketsTab() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: error.message || "No se pudo actualizar el ticket",
+        title: t("common.error"),
+        description: error.message || t("admin.couldNotUpdateTicket"),
         variant: "destructive",
       });
     },
@@ -175,13 +177,13 @@ export default function SupportTicketsTab() {
   const formatStatus = (status: string) => {
     switch (status) {
       case "open":
-        return "Abierto";
+        return t("admin.ticketOpen");
       case "in_progress":
-        return "En Progreso";
+        return t("admin.ticketInProgress");
       case "resolved":
-        return "Resuelto";
+        return t("admin.ticketResolved");
       case "closed":
-        return "Cerrado";
+        return t("admin.ticketClosed");
       default:
         return status;
     }
@@ -190,11 +192,11 @@ export default function SupportTicketsTab() {
   const formatPriority = (priority: string) => {
     switch (priority) {
       case "high":
-        return "Alta";
+        return t("admin.priorityHigh");
       case "medium":
-        return "Media";
+        return t("admin.priorityMedium");
       case "low":
-        return "Baja";
+        return t("admin.priorityLow");
       default:
         return priority;
     }
@@ -222,21 +224,21 @@ export default function SupportTicketsTab() {
         <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h3 className="text-sm font-medium text-gray-900 mb-2">Región</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-2">{t("deals.region")}</h3>
               {currentUser && (currentUser as any).role === "regional-admin" ? (
                 <div className="flex items-center space-x-2">
                   <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                     {selectedRegion}
                   </Badge>
                   <span className="text-xs text-gray-500">
-                    (Como administrador regional, solo puedes ver tickets de tu región)
+                    ({t("admin.regionalAdminViewOnlyRegion")})
                   </span>
                 </div>
               ) : (
                 <div className="flex items-center space-x-3">
                   <Select value={selectedRegion} onValueChange={setSelectedRegion}>
                     <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Selecciona una región" />
+                      <SelectValue placeholder={t("admin.selectRegionPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="NOLA">NOLA</SelectItem>
@@ -246,7 +248,7 @@ export default function SupportTicketsTab() {
                     </SelectContent>
                   </Select>
                   <span className="text-xs text-gray-500">
-                    Selecciona una región para ver sus tickets de soporte
+                    {t("admin.selectRegionToViewTickets")}
                   </span>
                 </div>
               )}
@@ -259,7 +261,7 @@ export default function SupportTicketsTab() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Abiertos</p>
+                  <p className="text-sm text-gray-600">{t("admin.openTickets")}</p>
                   <p className="text-2xl font-bold" data-testid="text-open-tickets">
                     {openTickets.length}
                   </p>
@@ -273,7 +275,7 @@ export default function SupportTicketsTab() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">En Progreso</p>
+                  <p className="text-sm text-gray-600">{t("admin.inProgressTickets")}</p>
                   <p className="text-2xl font-bold" data-testid="text-inprogress-tickets">
                     {inProgressTickets.length}
                   </p>
@@ -287,7 +289,7 @@ export default function SupportTicketsTab() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Resueltos</p>
+                  <p className="text-sm text-gray-600">{t("admin.resolvedTickets")}</p>
                   <p className="text-2xl font-bold" data-testid="text-resolved-tickets">
                     {resolvedTickets.length}
                   </p>
@@ -301,7 +303,7 @@ export default function SupportTicketsTab() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Cerrados</p>
+                  <p className="text-sm text-gray-600">{t("admin.closedTickets")}</p>
                   <p className="text-2xl font-bold" data-testid="text-closed-tickets">
                     {closedTickets.length}
                   </p>
@@ -314,12 +316,12 @@ export default function SupportTicketsTab() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Tickets de Soporte</CardTitle>
+            <CardTitle>{t("admin.supportTickets")}</CardTitle>
           </CardHeader>
           <CardContent>
             {!tickets || tickets.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                No hay tickets de soporte registrados
+                {t("admin.noTicketsInThisRegion")}
               </div>
             ) : (
               <div className="space-y-4">
@@ -424,9 +426,9 @@ export default function SupportTicketsTab() {
       <Dialog open={isResponseDialogOpen} onOpenChange={setIsResponseDialogOpen}>
         <DialogContent className="sm:max-w-[600px]" data-testid="dialog-ticket-response">
           <DialogHeader>
-            <DialogTitle>Responder Ticket de Soporte</DialogTitle>
+            <DialogTitle>{t("support.respondToTicket")}</DialogTitle>
             <DialogDescription>
-              Responde al usuario y actualiza el estado del ticket
+              {t("support.updateTicketStatus")}
             </DialogDescription>
           </DialogHeader>
 
@@ -436,32 +438,32 @@ export default function SupportTicketsTab() {
                 <h4 className="font-semibold mb-2">{selectedTicket.subject}</h4>
                 <p className="text-sm text-gray-600 mb-2">{selectedTicket.message}</p>
                 <p className="text-xs text-gray-500">
-                  Usuario: {selectedTicket.userFirstName} {selectedTicket.userLastName} (
+                  {t("admin.ticketUser")}: {selectedTicket.userFirstName} {selectedTicket.userLastName} (
                   {selectedTicket.userEmail})
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Estado</label>
+                <label className="block text-sm font-medium mb-2">{t("admin.ticketStatus")}</label>
                 <Select value={newStatus} onValueChange={setNewStatus}>
                   <SelectTrigger data-testid="select-ticket-status">
-                    <SelectValue placeholder="Selecciona el estado" />
+                    <SelectValue placeholder={t("admin.selectStatus")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="open">Abierto</SelectItem>
-                    <SelectItem value="in_progress">En Progreso</SelectItem>
-                    <SelectItem value="resolved">Resuelto</SelectItem>
-                    <SelectItem value="closed">Cerrado</SelectItem>
+                    <SelectItem value="open">{t("admin.ticketOpen")}</SelectItem>
+                    <SelectItem value="in_progress">{t("admin.ticketInProgress")}</SelectItem>
+                    <SelectItem value="resolved">{t("admin.ticketResolved")}</SelectItem>
+                    <SelectItem value="closed">{t("admin.ticketClosed")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Respuesta (opcional)
+                  {t("common.response")} ({t("common.optional")})
                 </label>
                 <Textarea
-                  placeholder="Escribe tu respuesta al usuario..."
+                  placeholder={t("admin.writeResponse")}
                   value={adminResponse}
                   onChange={(e) => setAdminResponse(e.target.value)}
                   className="min-h-[120px]"
@@ -475,14 +477,14 @@ export default function SupportTicketsTab() {
                   onClick={() => setIsResponseDialogOpen(false)}
                   data-testid="button-cancel-response"
                 >
-                  Cancelar
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   onClick={handleSubmitResponse}
                   disabled={updateTicketMutation.isPending}
                   data-testid="button-submit-response"
                 >
-                  {updateTicketMutation.isPending ? "Guardando..." : "Guardar"}
+                  {updateTicketMutation.isPending ? t("common.saving") : t("common.save")}
                 </Button>
               </div>
             </div>
