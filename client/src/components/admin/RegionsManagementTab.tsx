@@ -296,7 +296,7 @@ export default function RegionsManagementTab() {
       const res = await apiRequest("POST", "/api/admin/regions", data);
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || "Error al crear la región");
+        throw new Error(errorData.message || t("admin.errorCreatingRegionMessage"));
       }
       return res.json();
     },
@@ -305,13 +305,13 @@ export default function RegionsManagementTab() {
       setIsCreateModalOpen(false);
       resetNewRegionForm();
       toast({
-        title: "Región creada",
-        description: "La nueva región ha sido creada exitosamente",
+        title: t("admin.regionCreated"),
+        description: t("admin.regionCreatedSuccessfully"),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error al crear región",
+        title: t("admin.errorCreatingRegion"),
         description: error.message,
         variant: "destructive",
       });
@@ -327,8 +327,8 @@ export default function RegionsManagementTab() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/regions"] });
       setEditingRegion(null);
       toast({
-        title: "Región actualizada",
-        description: "La configuración de la región ha sido actualizada exitosamente",
+        title: t("admin.regionUpdated"),
+        description: t("admin.regionUpdatedSuccessfully"),
       });
     },
     onError: (error: Error) => {
@@ -353,13 +353,13 @@ export default function RegionsManagementTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/regions"] });
       toast({
-        title: "Región eliminada",
-        description: "La región ha sido eliminada exitosamente",
+        title: t("admin.regionDeleted"),
+        description: t("admin.regionDeletedSuccessfully"),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error al eliminar región",
+        title: t("admin.errorDeletingRegion"),
         description: error.message,
         variant: "destructive",
       });
@@ -426,7 +426,7 @@ export default function RegionsManagementTab() {
     
     if (duplicate) {
       toast({
-        title: "Región duplicada",
+        title: t("admin.duplicateRegion"),
         description: `Ya existe una configuración para ${newRegion.region} - ${newRegion.category}${subcategoryToCheck ? ' - ' + subcategoryToCheck : ''}`,
         variant: "destructive",
       });
@@ -514,7 +514,7 @@ export default function RegionsManagementTab() {
       <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Región para Configuración de Puntos</h3>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">{t("admin.regionForPointsConfig")}</h3>
             {currentUser && (currentUser as any).role === "regional-admin" ? (
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
@@ -531,7 +531,7 @@ export default function RegionsManagementTab() {
                   setSelectedRegion(value);
                 }}>
                   <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Selecciona una región" />
+                    <SelectValue placeholder={t("admin.selectRegionPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NOLA">NOLA</SelectItem>
@@ -821,11 +821,11 @@ export default function RegionsManagementTab() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Región</TableHead>
+                        <TableHead>{t("admin.region")}</TableHead>
                         <TableHead>Configuración</TableHead>
                         <TableHead>Reward Actual</TableHead>
                         <TableHead>Cambiar Reward</TableHead>
-                        <TableHead>Estado</TableHead>
+                        <TableHead>{t("admin.status")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -847,7 +847,7 @@ export default function RegionsManagementTab() {
                             {region.rewardId ? (
                               <div className="text-sm">
                                 <div className="font-medium">
-                                  {rewards?.find((r: any) => r.id === region.rewardId)?.name || "Reward no encontrado"}
+                                  {rewards?.find((r: any) => r.id === region.rewardId)?.name || t("common.rewardNotFound")}
                                 </div>
                                 <div className="text-gray-600">
                                   {rewards?.find((r: any) => r.id === region.rewardId)?.pointsCost} pts
@@ -964,7 +964,7 @@ export default function RegionsManagementTab() {
                   onValueChange={(value) => setNewRegion({ ...newRegion, country: value })}
                 >
                   <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Selecciona un país" />
+                    <SelectValue placeholder={t("admin.selectCountry")} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableCountries.map(country => (
@@ -986,7 +986,7 @@ export default function RegionsManagementTab() {
                   onValueChange={(value) => setNewRegion({ ...newRegion, city: value === "NONE" ? "" : value })}
                 >
                   <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Selecciona una ciudad (opcional)" />
+                    <SelectValue placeholder={t("admin.selectCityOptional")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NONE">Sin ciudad específica</SelectItem>
@@ -1029,7 +1029,7 @@ export default function RegionsManagementTab() {
                   onValueChange={(value) => setNewRegion({ ...newRegion, mexicoLevel: value })}
                 >
                   <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Selecciona el nivel" />
+                    <SelectValue placeholder={t("admin.selectLevel")} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableMexicoLevels.map(level => (
@@ -1246,7 +1246,7 @@ export default function RegionsManagementTab() {
               disabled={createRegionMutation.isPending}
             >
               <Plus className="w-4 h-4 mr-2" />
-              {createRegionMutation.isPending ? "Creando..." : "Crear Región"}
+              {createRegionMutation.isPending ? t("admin.creatingRegion") : t("admin.createRegion")}
             </Button>
           </DialogFooter>
         </DialogContent>

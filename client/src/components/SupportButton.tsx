@@ -47,52 +47,44 @@ const supportTicketSchema = z.object({
 
 type SupportTicketForm = z.infer<typeof supportTicketSchema>;
 
-const faqs = [
-  {
-    question: "¿Cómo puedo registrar un nuevo deal?",
-    answer:
-      "Para registrar un nuevo deal, dirígete a la sección 'Deals' en el menú principal y haz clic en 'Nuevo Deal'. Completa todos los campos requeridos como tipo de producto, nombre, valor, cantidad y fecha de cierre. Una vez enviado, el deal quedará pendiente de aprobación por un administrador.",
-  },
-  {
-    question: "¿Cuántos puntos gano por cada deal?",
-    answer:
-      "Los puntos se calculan automáticamente basándose en el valor del deal. Normalmente, ganas 1 punto por cada dólar del deal. Los puntos solo se acreditan una vez que el deal es aprobado por un administrador. Algunos productos o campañas especiales pueden tener multiplicadores de puntos.",
-  },
-  {
-    question: "¿Cómo canjeo mis puntos por recompensas?",
-    answer:
-      "Ve a la sección 'Recompensas' donde podrás ver todas las recompensas disponibles y los puntos necesarios para cada una. Selecciona la recompensa que deseas, verifica que tienes suficientes puntos y haz clic en 'Canjear'. La solicitud será procesada por un administrador y recibirás una notificación cuando sea aprobada.",
-  },
-  {
-    question: "¿Cuánto tiempo tarda en aprobarse mi deal?",
-    answer:
-      "El tiempo de aprobación de deals varía dependiendo de la complejidad y el volumen de solicitudes. Generalmente, los deals son revisados en un plazo de 24-48 horas hábiles. Recibirás una notificación por correo cuando tu deal sea aprobado o si se requiere información adicional.",
-  },
-  {
-    question: "¿Puedo cancelar o modificar un deal después de enviarlo?",
-    answer:
-      "Una vez que un deal ha sido enviado, no puedes modificarlo directamente. Si necesitas realizar cambios, contacta al soporte a través de este botón o envía un correo al administrador. Los deals pendientes pueden ser modificados por un administrador antes de su aprobación.",
-  },
-  {
-    question: "¿Qué hago si no veo mis puntos reflejados?",
-    answer:
-      "Los puntos se acreditan automáticamente cuando tu deal es aprobado. Si tu deal fue aprobado y no ves los puntos, verifica en tu historial de puntos. Si el problema persiste después de 24 horas, contacta al soporte con el número de deal afectado.",
-  },
-  {
-    question: "¿Las recompensas tienen fecha de expiración?",
-    answer:
-      "Los puntos acumulados no expiran, pero algunas recompensas pueden tener disponibilidad limitada por stock. Las recompensas especiales o de temporada pueden estar disponibles solo por tiempo limitado. Te recomendamos revisar regularmente el catálogo de recompensas.",
-  },
-  {
-    question: "¿Cómo puedo rastrear el envío de mi recompensa?",
-    answer:
-      "Una vez que tu solicitud de recompensa sea aprobada y enviada, recibirás un correo con la información de seguimiento. También puedes verificar el estado en la sección 'Mis Recompensas' donde verás el estado actual (Pendiente, Aprobado, Enviado, Entregado).",
-  },
-];
-
 export default function SupportButton() {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const faqs = [
+    {
+      question: t("support.faq.q1.question"),
+      answer: t("support.faq.q1.answer"),
+    },
+    {
+      question: t("support.faq.q2.question"),
+      answer: t("support.faq.q2.answer"),
+    },
+    {
+      question: t("support.faq.q3.question"),
+      answer: t("support.faq.q3.answer"),
+    },
+    {
+      question: t("support.faq.q4.question"),
+      answer: t("support.faq.q4.answer"),
+    },
+    {
+      question: t("support.faq.q5.question"),
+      answer: t("support.faq.q5.answer"),
+    },
+    {
+      question: t("support.faq.q6.question"),
+      answer: t("support.faq.q6.answer"),
+    },
+    {
+      question: t("support.faq.q7.question"),
+      answer: t("support.faq.q7.answer"),
+    },
+    {
+      question: t("support.faq.q8.question"),
+      answer: t("support.faq.q8.answer"),
+    },
+  ];
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
   const [faqDialogOpen, setFaqDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -282,7 +274,7 @@ export default function SupportButton() {
       <Dialog open={faqDialogOpen} onOpenChange={setFaqDialogOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto" data-testid="dialog-faq">
           <DialogHeader>
-            <DialogTitle>{t("support.faq")}</DialogTitle>
+            <DialogTitle>{t("support.faqTitle")}</DialogTitle>
             <DialogDescription>
               {t("support.faqDescription")}
             </DialogDescription>

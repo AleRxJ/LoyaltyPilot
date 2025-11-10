@@ -306,7 +306,7 @@ export default function MonthlyPrizesTab() {
       <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Región</h3>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">{t("admin.region")}</h3>
             {currentUser && (currentUser as any).role === "regional-admin" ? (
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
@@ -370,7 +370,7 @@ export default function MonthlyPrizesTab() {
                 onValueChange={(value) => setPrize({ ...prize, regionConfigId: value })}
               >
                 <SelectTrigger id="region-config">
-                  <SelectValue placeholder="Selecciona categoría" />
+                  <SelectValue placeholder={t("admin.selectCategory")} />
                 </SelectTrigger>
                 <SelectContent>
                   {regionConfigs?.map((config) => (
@@ -432,22 +432,22 @@ export default function MonthlyPrizesTab() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="prizeName">Nombre del Premio *</Label>
+            <Label htmlFor="prizeName">{t("admin.prizeNameLabel")}</Label>
             <Input
               id="prizeName"
               value={prize.prizeName}
               onChange={(e) => setPrize({ ...prize, prizeName: e.target.value })}
-              placeholder="Ej: iPhone 15 Pro"
+              placeholder={t("admin.prizeNamePlaceholder")}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Descripción del Premio - Opcional</Label>
+            <Label htmlFor="description">{t("admin.prizeDescriptionOptional")}</Label>
             <Input
               id="description"
               value={prize.prizeDescription}
               onChange={(e) => setPrize({ ...prize, prizeDescription: e.target.value })}
-              placeholder="Ej: 256GB, Color Titanio Negro"
+              placeholder={t("admin.prizeDescriptionPlaceholder")}
             />
           </div>
 
@@ -461,7 +461,7 @@ export default function MonthlyPrizesTab() {
                 onChange={(e) =>
                   setPrize({ ...prize, prizeValue: e.target.value ? parseFloat(e.target.value) : undefined })
                 }
-                placeholder="1200"
+                placeholder={t("admin.estimatedValuePlaceholder")}
               />
             </div>
 

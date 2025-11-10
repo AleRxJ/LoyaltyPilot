@@ -20,8 +20,8 @@ const registerSchema = z.object({
   confirmPassword: z.string(),
   country: z.string().optional(),
   city: z.string().optional(),
-  region: z.string().min(1, "Debes seleccionar una región"),
-  category: z.string().min(1, "Debes seleccionar una categoría"),
+  region: z.string().min(1, "validation.regionRequired"),
+  category: z.string().min(1, "validation.categoryRequired"),
   subcategory: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -34,6 +34,7 @@ export default function RegisterWithInvite() {
   const [, navigate] = useLocation();
   const [, params] = useRoute("/register");
   const { toast } = useToast();
+  const { t } = useTranslation();
   
   const [isVerifying, setIsVerifying] = useState(true);
   const [isValid, setIsValid] = useState(false);
@@ -64,8 +65,8 @@ export default function RegisterWithInvite() {
     
     if (!inviteToken) {
       toast({
-        title: "Token no encontrado",
-        description: "No se proporcionó un token de invitación válido",
+        title: t("validation.tokenNotFound"),
+        description: t("validation.invalidTokenDescription"),
         variant: "destructive",
       });
       navigate("/login");
@@ -132,14 +133,14 @@ export default function RegisterWithInvite() {
           setValue("region", data.invitation.region, { shouldValidate: true });
           
           toast({
-            title: "🎯 Invitación Regional",
-            description: `Has sido invitado desde la región ${data.invitation.region}. Tu región será asignada automáticamente.`,
+            title: t("validation.regionalInvitationTitle"),
+            description: t("validation.regionalInvitationDescription").replace("{region}", data.invitation.region),
           });
         }
       } else {
         toast({
-          title: "Invitación inválida",
-          description: data.message || "Esta invitación no es válida o ya fue utilizada",
+          title: t("validation.invalidInvitation"),
+          description: data.message || t("validation.invalidInvitationDescription"),
           variant: "destructive",
         });
         setTimeout(() => navigate("/login"), 3000);
@@ -147,7 +148,7 @@ export default function RegisterWithInvite() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "No se pudo verificar la invitación",
+        description: t("auth.couldNotVerifyInvitation"),
         variant: "destructive",
       });
       setTimeout(() => navigate("/login"), 3000);
@@ -216,10 +217,10 @@ export default function RegisterWithInvite() {
       }
 
       toast({
-        title: "✅ ¡Registro completado!",
+        title: t("auth.registrationCompleted"),
         description: result.regionAutoAssigned 
           ? `Tu cuenta está lista. Se te asignó automáticamente la región ${result.assignedRegion} desde donde fuiste invitado. Ya puedes iniciar sesión.`
-          : result.message || "Tu cuenta está lista. Ya puedes iniciar sesión.",
+          : result.message || t("auth.accountReady"),
       });
 
       console.log("✅ Registro exitoso, redirigiendo al login...");
@@ -310,7 +311,7 @@ export default function RegisterWithInvite() {
               <Input
                 id="username"
                 type="text"
-                placeholder="Elige un nombre de usuario"
+                placeholder={t("auth.usernamePlaceholder")}
                 {...register("username")}
                 disabled={isSubmitting}
               />
@@ -324,7 +325,7 @@ export default function RegisterWithInvite() {
               <Input
                 id="password"
                 type="password"
-                placeholder="Mínimo 6 caracteres"
+                placeholder={t("auth.passwordPlaceholder")}
                 {...register("password")}
                 disabled={isSubmitting}
               />
@@ -338,7 +339,7 @@ export default function RegisterWithInvite() {
               <Input
                 id="confirmPassword"
                 type="password"
-                placeholder="Repite tu contraseña"
+                placeholder={t("auth.confirmPasswordPlaceholder")}
                 {...register("confirmPassword")}
                 disabled={isSubmitting}
               />
@@ -366,7 +367,7 @@ export default function RegisterWithInvite() {
                 disabled={isSubmitting || inviteData?.invitation?.isRegionalInvite}
               >
                 <SelectTrigger className={errors.region ? "border-red-500" : ""}>
-                  <SelectValue placeholder="Selecciona tu región" />
+                  <SelectValue placeholder={t("auth.selectRegion")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NOLA">NOLA (North of Latin America)</SelectItem>
@@ -384,7 +385,7 @@ export default function RegisterWithInvite() {
             {selectedRegion && availableCountries.length > 0 && availableCountries[0] !== "" && (
               <div>
                 <Label htmlFor="country">
-                  {selectedRegion === "NOLA" ? "Subcategoría" : "País"} *
+                  {selectedRegion === "NOLA" ? t("auth.subcategory") : t("common.country")} *
                 </Label>
                 <Select
                   value={selectedCountry}
@@ -395,7 +396,7 @@ export default function RegisterWithInvite() {
                   disabled={isSubmitting}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={selectedRegion === "NOLA" ? "Selecciona subcategoría" : "Selecciona país"} />
+                    <SelectValue placeholder={selectedRegion === "NOLA" ? t("auth.selectSubcategoryPlaceholder") : t("auth.selectCountryPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableCountries.map((country) => (
@@ -421,7 +422,7 @@ export default function RegisterWithInvite() {
                   disabled={isSubmitting}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecciona tu ciudad" />
+                    <SelectValue placeholder={t("auth.selectCity")} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableCities.map((city) => (
@@ -447,7 +448,7 @@ export default function RegisterWithInvite() {
                   disabled={isSubmitting}
                 >
                   <SelectTrigger className={errors.category ? "border-red-500" : ""}>
-                    <SelectValue placeholder="Selecciona tu categoría" />
+                    <SelectValue placeholder={t("auth.selectCategory")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
@@ -473,7 +474,7 @@ export default function RegisterWithInvite() {
                       disabled={isSubmitting}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecciona tu subcategoría" />
+                        <SelectValue placeholder={t("auth.selectSubcategory")} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="COLOMBIA">Colombia</SelectItem>
@@ -491,7 +492,7 @@ export default function RegisterWithInvite() {
                       disabled={isSubmitting}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecciona tu nivel" />
+                        <SelectValue placeholder={t("auth.selectLevel")} />
                       </SelectTrigger>
                       <SelectContent>
                         {selectedCategory === "ENTERPRISE" && (

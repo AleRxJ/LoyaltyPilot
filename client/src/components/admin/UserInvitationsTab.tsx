@@ -82,7 +82,7 @@ export default function UserInvitationsTab() {
     },
     onSuccess: () => {
       toast({
-        title: "Invitación enviada",
+        title: t("admin.invitationSent"),
         description: t("admin.invitationSentSuccessfully"),
       });
       setIsInviteDialogOpen(false);
@@ -268,7 +268,7 @@ export default function UserInvitationsTab() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="user@example.com"
+                    placeholder={t("auth.emailPlaceholder")}
                     value={inviteForm.email}
                     onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
                   />
@@ -298,7 +298,7 @@ export default function UserInvitationsTab() {
                   className="w-full"
                   disabled={inviteMutation.isPending}
                 >
-                  {inviteMutation.isPending ? "Enviando..." : "Enviar Invitación"}
+                  {inviteMutation.isPending ? t("admin.sendingInvitation") : t("admin.sendInvitation")}
                 </Button>
               </div>
             </DialogContent>
@@ -353,7 +353,7 @@ export default function UserInvitationsTab() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Email</TableHead>
-                          <TableHead>Nombre</TableHead>
+                          <TableHead>{t("common.name")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -404,10 +404,10 @@ export default function UserInvitationsTab() {
                 <TableRow>
                   <TableHead>Usuario</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>País</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Fecha Registro</TableHead>
+                  <TableHead>{t("common.name")}</TableHead>
+                  <TableHead>{t("common.country")}</TableHead>
+                  <TableHead>{t("common.status")}</TableHead>
+                  <TableHead>{t("common.registrationDate")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

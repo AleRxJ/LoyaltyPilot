@@ -5,11 +5,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function MagicLinkLogin() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   
   const [isVerifying, setIsVerifying] = useState(true);
   const [isValid, setIsValid] = useState(false);
@@ -22,8 +24,8 @@ export default function MagicLinkLogin() {
       
       if (!token) {
         toast({
-          title: "Token no encontrado",
-          description: "No se proporcionó un token de acceso válido",
+          title: t("auth.tokenNotProvided"),
+          description: t("auth.tokenNotProvided"),
           variant: "destructive",
         });
         setTimeout(() => navigate("/login"), 3000);
@@ -57,7 +59,7 @@ export default function MagicLinkLogin() {
           await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
           
           toast({
-            title: "✅ ¡Acceso exitoso!",
+            title: t("auth.successfulAccess"),
             description: `Bienvenido de vuelta, ${data.user.firstName}`,
           });
           
@@ -67,10 +69,10 @@ export default function MagicLinkLogin() {
           }, 1500);
         } else {
           setIsValid(false);
-          setErrorMessage(data.message || "Enlace inválido o expirado");
+          setErrorMessage(data.message || t("auth.invalidOrExpiredLink"));
           toast({
-            title: "❌ Enlace inválido",
-            description: data.message || "Este enlace es inválido o ha expirado",
+            title: t("auth.invalidLink"),
+            description: data.message || t("auth.linkInvalidOrExpired"),
             variant: "destructive",
           });
           setTimeout(() => navigate("/login"), 3000);

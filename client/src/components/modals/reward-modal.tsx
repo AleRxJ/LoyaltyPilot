@@ -268,7 +268,7 @@ export default function RewardModal({ isOpen, onClose, reward }: RewardModalProp
                     >
                       <FormControl>
                         <SelectTrigger data-testid="select-region">
-                          <SelectValue placeholder="Seleccionar región" />
+                          <SelectValue placeholder={t("admin.selectRegionPlaceholder")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>

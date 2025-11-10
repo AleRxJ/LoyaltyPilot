@@ -1060,10 +1060,10 @@ export default function Admin() {
                       onValueChange={(value) => setReportFilters(prev => ({ ...prev, region: value }))}
                     >
                       <SelectTrigger data-testid="select-report-region">
-                        <SelectValue placeholder="Todas las Regiones" />
+                        <SelectValue placeholder={t("common.allRegions")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Todas las Regiones</SelectItem>
+                        <SelectItem value="all">{t("common.allRegions")}</SelectItem>
                         <SelectItem value="NOLA">NOLA</SelectItem>
                         <SelectItem value="SOLA">SOLA</SelectItem>
                         <SelectItem value="BRASIL">BRASIL</SelectItem>
@@ -1356,7 +1356,7 @@ export default function Admin() {
                                   <Select onValueChange={field.onChange} value={field.value || undefined}>
                                     <FormControl>
                                       <SelectTrigger data-testid="select-admin-region">
-                                        <SelectValue placeholder="Seleccionar región" />
+                                        <SelectValue placeholder={t("admin.selectRegionPlaceholder")} />
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
@@ -1565,7 +1565,7 @@ export default function Admin() {
                                 <Select onValueChange={field.onChange} value={field.value || undefined}>
                                   <FormControl>
                                     <SelectTrigger data-testid="select-edit-admin-region">
-                                      <SelectValue placeholder="Seleccionar región" />
+                                      <SelectValue placeholder={t("admin.selectRegionPlaceholder")} />
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>

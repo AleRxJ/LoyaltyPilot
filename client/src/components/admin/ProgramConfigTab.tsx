@@ -268,21 +268,21 @@ export default function ProgramConfigTab() {
       <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Región</h3>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">{t("admin.region")}</h3>
             {currentUser && (currentUser as any).role === "regional-admin" ? (
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                   {selectedRegion}
                 </Badge>
                 <span className="text-xs text-gray-500">
-                  (Como administrador regional, solo puedes gestionar la configuración de tu región)
+                  ({t("admin.regionalAdminNote")})
                 </span>
               </div>
             ) : (
               <div className="flex items-center space-x-3">
                 <Select value={selectedRegion} onValueChange={setSelectedRegion}>
                   <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Selecciona una región" />
+                    <SelectValue placeholder={t("admin.selectRegionPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NOLA">NOLA</SelectItem>
@@ -292,7 +292,7 @@ export default function ProgramConfigTab() {
                   </SelectContent>
                 </Select>
                 <span className="text-xs text-gray-500">
-                  Selecciona una región para gestionar su configuración del programa
+                  {t("admin.selectRegionMessage")}
                 </span>
               </div>
             )}
@@ -354,7 +354,7 @@ export default function ProgramConfigTab() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="campaignRegion">Región</Label>
+                        <Label htmlFor="campaignRegion">{t("admin.region")}</Label>
                         <Input
                           id="campaignRegion"
                           value={campaignForm.region}
@@ -362,7 +362,7 @@ export default function ProgramConfigTab() {
                           className="bg-gray-50"
                         />
                         <p className="text-sm text-gray-500">
-                          Esta campaña se creará para la región seleccionada
+                          {t("admin.campaignForSelectedRegion")}
                         </p>
                       </div>
 
@@ -572,7 +572,7 @@ export default function ProgramConfigTab() {
                             id="subcategory"
                             value={regionConfigForm.subcategory}
                             onChange={(e) => setRegionConfigForm({ ...regionConfigForm, subcategory: e.target.value })}
-                            placeholder="e.g., COLOMBIA, PLATINUM"
+                            placeholder={t("admin.subcategoryPlaceholder")}
                           />
                         </div>
 
@@ -582,7 +582,7 @@ export default function ProgramConfigTab() {
                             id="configName"
                             value={regionConfigForm.name}
                             onChange={(e) => setRegionConfigForm({ ...regionConfigForm, name: e.target.value })}
-                            placeholder="e.g., NOLA ENTERPRISE COLOMBIA"
+                            placeholder={t("admin.configNamePlaceholder")}
                             required
                           />
                         </div>

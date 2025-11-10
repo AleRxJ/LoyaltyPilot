@@ -32,7 +32,7 @@ import { apiRequest } from "@/lib/queryClient";
 import type { PointsConfig } from "@shared/schema";
 
 const pointsConfigFormSchema = z.object({
-  region: z.string().min(1, "Región requerida"),
+  region: z.string().min(1, { message: "validation.regionRequired" }),
   softwareRate: z.number().min(1, "Debe ser al menos 1").max(1000000, "Valor muy alto"),
   hardwareRate: z.number().min(1, "Debe ser al menos 1").max(1000000, "Valor muy alto"),
   equipmentRate: z.number().min(1, "Debe ser al menos 1").max(1000000, "Valor muy alto"),
@@ -145,14 +145,14 @@ export default function PointsConfigTab() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/points-config", selectedRegion] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/points-config"] }); // Para cachés generales
       toast({
-        title: "Configuración actualizada",
+        title: t("admin.configurationUpdated"),
         description: `Las reglas de asignación de puntos para ${selectedRegion} han sido actualizadas exitosamente`,
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "No se pudo actualizar la configuración",
+        description: error.message || t("admin.couldNotUpdateConfiguration"),
         variant: "destructive",
       });
     },
@@ -199,11 +199,11 @@ export default function PointsConfigTab() {
               <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-sm font-medium">Configuración para región:</Label>
+                    <Label className="text-sm font-medium">{t("admin.configurationForRegion")}</Label>
                     <p className="text-xs text-gray-600 mt-1">
                       {(currentUser as any)?.role === "regional-admin" 
-                        ? "Como administrador regional, solo puedes configurar tu región"
-                        : "Selecciona la región para configurar"
+                        ? t("admin.regionalAdminConfigNote")
+                        : t("admin.selectRegionToConfig")
                       }
                     </p>
                   </div>
@@ -212,7 +212,7 @@ export default function PointsConfigTab() {
                       <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md text-sm font-medium">
                         {selectedRegion}
                       </span>
-                      <span className="text-xs text-gray-500">(Región asignada)</span>
+                      <span className="text-xs text-gray-500">({t("admin.assignedRegion")})</span>
                     </div>
                   ) : (
                     <Select
@@ -220,7 +220,7 @@ export default function PointsConfigTab() {
                       onValueChange={(value) => setSelectedRegion(value)}
                     >
                       <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Seleccionar región" />
+                        <SelectValue placeholder={t("admin.selectRegionPlaceholder")} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="NOLA">NOLA</SelectItem>
@@ -246,7 +246,7 @@ export default function PointsConfigTab() {
                       <FormControl>
                         <Input
                           type="number"
-                          placeholder="1000"
+                          placeholder={t("admin.softwareRatePlaceholder")}
                           data-testid="input-software-rate"
                           {...field}
                           onChange={(e) => field.onChange(Number(e.target.value))}
@@ -270,7 +270,7 @@ export default function PointsConfigTab() {
                       <FormControl>
                         <Input
                           type="number"
-                          placeholder="5000"
+                          placeholder={t("admin.hardwareRatePlaceholder")}
                           data-testid="input-hardware-rate"
                           {...field}
                           onChange={(e) => field.onChange(Number(e.target.value))}

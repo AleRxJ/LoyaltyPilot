@@ -143,11 +143,11 @@ export default function Rewards() {
   const getShipmentStatusLabel = (shipmentStatus: string) => {
     switch (shipmentStatus) {
       case "pending":
-        return "Pending Shipment";
+        return t("rewards.pendingShipment");
       case "shipped":
-        return "Shipped";
+        return t("rewards.shipped");
       case "delivered":
-        return "Delivered";
+        return t("rewards.delivered");
       default:
         return "Unknown";
     }
@@ -213,7 +213,7 @@ export default function Rewards() {
         <Alert className="mb-6 bg-blue-50 border-blue-200" data-testid="alert-redemption-period">
           <Calendar className="h-4 w-4 text-blue-600" />
           <AlertDescription className="text-blue-900">
-            <span className="font-semibold">Período de Redención:</span>{" "}
+            <span className="font-semibold">{t("rewards.redemptionPeriod")}</span>{" "}
             {new Date(pointsConfig.redemptionStartDate).toLocaleDateString("es-ES", {
               year: "numeric",
               month: "long",
@@ -457,10 +457,10 @@ export default function Rewards() {
                       disabled={!stats || stats.availablePoints < reward.pointsCost || redeemMutation.isPending}
                     >
                       {!stats || stats.availablePoints < reward.pointsCost
-                        ? "Insufficient Points"
+                        ? t("rewards.insufficientPoints")
                         : redeemMutation.isPending
-                        ? "Redeeming..."
-                        : "Redeem"}
+                        ? t("rewards.redeeming")
+                        : t("rewards.redeem")}
                     </Button>
                   </CardContent>
                 </Card>

@@ -118,8 +118,8 @@ export default function Login() {
     },
     onSuccess: () => {
       toast({
-        title: "✅ Enlace enviado",
-        description: "Si el email existe en nuestro sistema, recibirás un enlace de acceso. Revisa tu bandeja de entrada.",
+        title: t("auth.linkSentTitle"),
+        description: t("auth.linkSentDescription"),
       });
       setShowMagicLinkDialog(false);
       setMagicLinkEmail("");

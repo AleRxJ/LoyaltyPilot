@@ -339,7 +339,7 @@ export default function GrandPrizeTab() {
           {/* Criterios según el tipo */}
           {(criteria.criteriaType === "points" || criteria.criteriaType === "combined") && (
             <div className="space-y-2">
-              <Label htmlFor="min-points">Puntos Mínimos Requeridos</Label>
+              <Label htmlFor="min-points">{t("admin.minPointsRequired")}</Label>
               <Input
                 id="min-points"
                 type="number"
@@ -411,7 +411,7 @@ export default function GrandPrizeTab() {
           {/* Rango de Fechas */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="start-date">Fecha Inicio</Label>
+              <Label htmlFor="start-date">{t("admin.startDate")}</Label>
               <Input
                 id="start-date"
                 type="date"
@@ -420,7 +420,7 @@ export default function GrandPrizeTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="end-date">Fecha Fin</Label>
+              <Label htmlFor="end-date">{t("admin.endDate")}</Label>
               <Input
                 id="end-date"
                 type="date"
